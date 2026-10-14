@@ -69,6 +69,7 @@ class Position:
     pre_entry_equity: float
     entry_fee: float
     entry_time_ms: int
+    decision_close_time_ms: int | None = None
     max_adverse_percent: float = 0.0
 
 
@@ -79,8 +80,10 @@ class PaperAccount:
     position: Position | None = None
     closed_trades: list = field(default_factory=list)
 
-    def enter(self, decision: Decision, time_ms: int, *, fee_rate: float = 0.0, slippage_rate: float = 0.0):
+    def enter(self, decision: Decision, time_ms: int, *, decision_close_time_ms=None, fee_rate: float = 0.0, slippage_rate: float = 0.0):
         decision.validate()
+        if decision_close_time_ms is not None and time_ms <= decision_close_time_ms:
+            raise ValueError("entry must be after decision candle close")
         if decision.action == "WAIT":
             return None
         if self.position is not None:
@@ -95,7 +98,7 @@ class PaperAccount:
         if notional + fee > equity:
             raise ValueError("insufficient cash")
         self.cash -= notional + fee
-        self.position = Position(decision, qty, fill, equity, fee, time_ms)
+        self.position = Position(decision, qty, fill, equity, fee, time_ms, decision_close_time_ms)
         return self.position
 
     def mark(self, low: float, high: float):

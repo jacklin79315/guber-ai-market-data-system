@@ -37,6 +37,19 @@ class TestCandleExecution(unittest.TestCase):
         self.assertEqual(r["reason"], "TP")
         self.assertTrue(r["ambiguous_fill"])
 
+    def test_stop_mae_does_not_include_post_stop_crash(self):
+        r = process_closed_candle(self.a, candle(1, 10, 80, 104, 90))
+        self.assertEqual(r["reason"], "SL")
+        self.assertAlmostEqual(r["mae_percent"], 5)
+        self.assertTrue(r["mae_clipped_to_stop"])
+
+    def test_short_stop_mae_clipped(self):
+        a = PaperAccount()
+        a.enter(Decision("SHORT", "ETHUSDT", 100, 90, 105, .5), 0)
+        r = process_closed_candle(a, candle(1, 10, 97, 130, 120))
+        self.assertEqual(r["reason"], "SL")
+        self.assertAlmostEqual(r["mae_percent"], 5)
+
     def test_time_limit(self):
         r = process_closed_candle(self.a, candle(1, 10, 98, 105),
                                   max_exit_time_ms=10)

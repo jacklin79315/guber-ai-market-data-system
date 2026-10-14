@@ -12,7 +12,11 @@ def main():
     from collector import db
     from p3.native_history_replay import replay_native_history
     from p3.multi_model_replay import STRATEGY_TIMEFRAMES
-    for symbol in ("BTCUSDT", "ETHUSDT"):
+    requested = os.getenv("P3B_SYMBOL")
+    if requested is not None and requested not in ("BTCUSDT", "ETHUSDT"):
+        raise SystemExit("Unsupported P3B_SYMBOL")
+    symbols = (requested,) if requested else ("BTCUSDT", "ETHUSDT")
+    for symbol in symbols:
         result = replay_native_history(
             db, symbol, {strategy: {} for strategy in STRATEGY_TIMEFRAMES}
         )

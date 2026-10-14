@@ -1,0 +1,22 @@
+name: P3A input layer tests
+
+on:
+  push:
+    branches:
+      - feature/p3a-input-layer
+  pull_request:
+    paths:
+      - 'p3/**'
+      - 'tests/test_p3*.py'
+      - '.github/workflows/p3a-tests.yml'
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run P3A unit tests
+        run: python -m unittest discover -s tests -p 'test_p3*.py' -v

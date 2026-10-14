@@ -17,6 +17,7 @@ def main():
         raise SystemExit("Unsupported P3B_SYMBOL")
     symbols = (requested,) if requested else ("BTCUSDT", "ETHUSDT")
     for symbol in symbols:
+        print(json.dumps({"symbol": symbol, "status": "STARTED", "pipeline_only_no_ai_decisions": True}), flush=True)
         result = replay_native_history(
             db, symbol, {strategy: {} for strategy in STRATEGY_TIMEFRAMES}
         )

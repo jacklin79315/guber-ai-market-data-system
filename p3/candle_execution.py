@@ -76,7 +76,19 @@ def process_closed_candle(account: PaperAccount, candle: dict, *,
         if hit == "AMBIGUOUS":
             hit = "SL"
             ambiguous = True
-    account.mark(l, h)
+    # MAE must only use prices observed before the exit trigger. A parent
+    # candle's full high/low may include movement AFTER the position closed.
+    # With finer candles, only include candles through the first trigger.
+    if hit is not None and lower_timeframe_candles and 'covered' in locals() and covered:
+        for child in finer:
+            account.mark(child["low"], child["high"])
+            if _trigger(decision, child["high"], child["low"]):
+                break
+    elif hit is None:
+        account.mark(l, h)
+    else:
+        # Without a reliable intrabar path, use conservative parent extremes.
+        account.mark(l, h)
     if hit is not None:
         price = decision.stop_loss if hit == "SL" else decision.take_profit
         result = account.exit(price, candle["close_time"], fee_rate=fee_rate,

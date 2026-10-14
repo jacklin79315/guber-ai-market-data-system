@@ -131,6 +131,8 @@ class PaperAccount:
                   "entry_time_ms": p.entry_time_ms, "exit_time_ms": time_ms,
                   "entry_price": p.entry_price, "exit_price": fill,
                   "quantity": p.quantity, "net_pnl": net_pnl,
+                  "pre_entry_equity": p.pre_entry_equity,
+                  "planned_rr": abs(p.decision.take_profit - p.decision.entry) / abs(p.decision.entry - p.decision.stop_loss),
                   "mae_percent": p.max_adverse_percent,
                   "reward_p": reward(net_pnl, p.pre_entry_equity, p.max_adverse_percent),
                   "reason": reason, "equity_after": self.cash}

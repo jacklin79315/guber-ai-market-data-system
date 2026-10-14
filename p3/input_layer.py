@@ -4,12 +4,12 @@ Each decision sees only candles with close_time <= decision_time.
 Volatility classification uses the last 30 *completed daily* ATR percentages.
 No synthetic candle resampling. Data gaps fail closed.
 """
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Mapping, Sequence
 import math
 
 TIMEFRAMES = ("15m", "1h", "4h", "1d")
+INTERVAL_MS = {"15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000}
 VOLATILITY_BANDS = ((5.0, "LOW"), (10.0, "MEDIUM"), (20.0, "HIGH"))
 STRATEGIES = ("INTRADAY", "ONE_TO_THREE_DAYS", "ONE_WEEK", "FIFTEEN_TO_THIRTY_DAYS")
 
@@ -39,6 +39,8 @@ def classify_volatility(daily_rows: Sequence[Mapping], decision_time_ms: int) ->
     last = eligible[-30:]
     if len({int(r["open_time"]) for r in last}) != 30:
         raise InsufficientHistory("duplicate daily observations")
+    if any(int(b["open_time"]) - int(a["open_time"]) != INTERVAL_MS["1d"] for a, b in zip(last, last[1:])):
+        raise InsufficientHistory("gap in daily ATR history")
     values = [_numeric(r.get("atr_percent"), "atr_percent") for r in last]
     if any(v < 0 for v in values):
         raise InsufficientHistory("negative ATR%")
@@ -69,9 +71,13 @@ def assemble_observation(
         row = max(eligible, key=lambda r: int(r["close_time"]))
         if row.get("symbol") != symbol or row.get("timeframe") != tf:
             raise ValueError(f"symbol/timeframe mismatch: {tf}")
+        if decision_time_ms - int(row["close_time"]) > INTERVAL_MS[tf]:
+            raise InsufficientHistory(f"stale {tf} features")
         latest[tf] = row
     volatility = classify_volatility(rows_by_timeframe["1d"], decision_time_ms)
     meta = dict(asset_metadata or {})
+    if meta.get("as_of_time_ms") is not None and int(meta["as_of_time_ms"]) > decision_time_ms:
+        raise ValueError("future asset metadata")
     return {
         "symbol": symbol,
         "decision_time_ms": decision_time_ms,

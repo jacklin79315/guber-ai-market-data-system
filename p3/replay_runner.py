@@ -48,7 +48,8 @@ def replay(candles, decisions_by_close, *, fee_rate=0.0,
                     events.append({"type": "ENTRY", "symbol": decision.symbol,
                                    "side": decision.action,
                                    "time_ms": position.entry_time_ms,
-                                   "price": position.entry_price})
+                                   "price": position.entry_price,
+                                   "entry_time_estimated": True})
         # Mark-to-market at the completed bar close, using only that bar's
         # close. Reserved collateral is restored when valuing an open position.
         p = account.position
@@ -76,20 +77,26 @@ def replay_with_metrics(candles, decisions_by_close, *, fee_rate=0.0,
     elapsed = bars[-1]["close_time"] - bars[0]["open_time"] + 1 if bars else None
     metrics = summarize(account, elapsed_ms=elapsed, score_k=score_k)
     if curve:
-        peak = curve[0]["equity"]
+        peak = 10000.0
         drawdown = 0.0
         for point in curve:
             peak = max(peak, point["equity"])
             if peak > 0:
                 drawdown = max(drawdown, 100 * (peak - point["equity"]) / peak)
         metrics["final_mark_to_market_equity"] = curve[-1]["equity"]
+        if elapsed is not None:
+            metrics["annualized_mark_to_market_return_percent"] = (
+                100 * (curve[-1]["equity"] / 10000.0 - 1) /
+                (elapsed / (365.25 * 24 * 60 * 60 * 1000))
+            )
         metrics["max_close_to_close_drawdown_percent"] = drawdown
         metrics["mean_capital_utilization_percent"] = (
-            100 * sum(p["exposure"] / p["equity"] for p in curve
-                      if p["equity"] > 0) / len(curve)
+            100 * sum(p["exposure"] / p["equity"] if p["equity"] > 0 else 0.0
+                      for p in curve) / len(curve)
         )
     else:
         metrics["final_mark_to_market_equity"] = None
+        metrics["annualized_mark_to_market_return_percent"] = None
         metrics["max_close_to_close_drawdown_percent"] = None
         metrics["mean_capital_utilization_percent"] = None
     return {"account": account, "events": events, "equity_curve": curve,

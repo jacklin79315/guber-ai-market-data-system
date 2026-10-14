@@ -64,6 +64,19 @@ class TestReplayRunner(unittest.TestCase):
         self.assertAlmostEqual(result["metrics"]["final_mark_to_market_equity"], 10500)
         self.assertIsNotNone(result["metrics"]["annualized_return_percent"])
 
+    def test_first_candle_loss_counts_toward_drawdown(self):
+        candles = [bar(1, 1000, 99, 101),
+                   bar(1001, 2000, 96, 101, 97)]
+        d = Decision("LONG", "BTCUSDT", 100, 110, 95, .5)
+        result = replay_with_metrics(candles, {1000: d})
+        self.assertAlmostEqual(
+            result["metrics"]["max_close_to_close_drawdown_percent"], 1.5)
+        self.assertAlmostEqual(
+            result["metrics"]["final_mark_to_market_equity"], 9850)
+        self.assertLess(
+            result["metrics"]["annualized_mark_to_market_return_percent"], 0)
+        self.assertTrue(result["events"][0]["entry_time_estimated"])
+
     def test_reject_overlapping_bars(self):
         with self.assertRaises(ValueError):
             replay([bar(1, 1000, 99, 101), bar(1000, 2000, 99, 101)], {})

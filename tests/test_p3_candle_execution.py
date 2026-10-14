@@ -29,6 +29,13 @@ class TestCandleExecution(unittest.TestCase):
         self.assertEqual(result["reason"], "TP")
         self.assertFalse(result["ambiguous_fill"])
 
+    def test_mae_does_not_include_later_finer_candles(self):
+        fine = [candle(1, 5, 98, 111), candle(6, 10, 80, 105)]
+        result = process_closed_candle(self.a, candle(1, 10, 80, 111),
+                                       lower_timeframe_candles=fine)
+        self.assertEqual(result["reason"], "TP")
+        self.assertAlmostEqual(result["mae_percent"], 2.0)
+
     def test_partial_finer_history_does_not_claim_resolution(self):
         fine = [candle(1, 5, 98, 111)]
         result = process_closed_candle(self.a, candle(1, 10, 94, 111),

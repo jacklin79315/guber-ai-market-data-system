@@ -38,6 +38,14 @@ class TestPaperEngine(unittest.TestCase):
         with self.assertRaises(ValueError):
             PaperAccount().enter(Decision("SHORT", "BTCUSDT", 100, 110, 90, .5), 1)
 
+    def test_reject_entry_on_decision_close(self):
+        a = PaperAccount()
+        d = Decision("LONG", "BTCUSDT", 100, 110, 90, .5)
+        with self.assertRaises(ValueError):
+            a.enter(d, 1000, decision_close_time_ms=1000)
+        a.enter(d, 1001, decision_close_time_ms=1000)
+        self.assertIsNotNone(a.position)
+
     def test_reject_second_open_position(self):
         a = PaperAccount()
         d = Decision("LONG", "BTCUSDT", 100, 110, 90, .5)

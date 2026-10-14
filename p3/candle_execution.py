@@ -1,8 +1,8 @@
-"""P3B OHLC exit evaluator. Uses only *closed native* candles.
+"""P3B closed native-candle exit simulation.
 
-If both stop and target are reached in one candle, try native lower-timeframe
-candles in chronological order; if still ambiguous, stop wins conservatively.
-No synthetic candle resampling or signal generation.
+When a candle hits both TP and SL, the closer level to the candle close wins.
+An exact tie resolves to SL. This is a historical simulation assumption,
+not a claim about actual intrabar execution order.
 """
 from .paper_engine import PaperAccount, _positive
 
@@ -19,7 +19,7 @@ def _validate_candle(candle):
     return o, h, l, c
 
 
-def _trigger(decision, high, low):
+def _trigger(decision, high, low, close):
     if decision.action == "LONG":
         stop = low <= decision.stop_loss
         target = high >= decision.take_profit
@@ -27,22 +27,23 @@ def _trigger(decision, high, low):
         stop = high >= decision.stop_loss
         target = low <= decision.take_profit
     if stop and target:
-        return "AMBIGUOUS"
+        tp_distance = abs(close - decision.take_profit)
+        sl_distance = abs(close - decision.stop_loss)
+        return ("TP" if tp_distance < sl_distance else "SL"), True
     if stop:
-        return "SL"
+        return "SL", False
     if target:
-        return "TP"
-    return None
+        return "TP", False
+    return None, False
 
 
 def process_closed_candle(account: PaperAccount, candle: dict, *,
-                          lower_timeframe_candles=(), fee_rate=0.0,
-                          slippage_rate=0.0, max_exit_time_ms=None):
-    """Process one closed bar after entry; returns exit record or None.
+                          fee_rate=0.0, slippage_rate=0.0,
+                          max_exit_time_ms=None):
+    """Process one fully closed native candle following entry.
 
-    Caller must provide only closed exchange-native bars. For a dual-hit
-    candle, finer bars must cover the full parent interval to disambiguate;
-    otherwise the conservative stop-first fallback applies.
+    The caller must not enter on the decision candle. The replay runner
+    must enforce that entry happens no earlier than the following candle.
     """
     o, h, l, c = _validate_candle(candle)
     p = account.position
@@ -52,52 +53,21 @@ def process_closed_candle(account: PaperAccount, candle: dict, *,
         return None
     if candle["open_time"] < p.entry_time_ms:
         raise ValueError("entry inside candle: cannot infer post-entry path")
-    decision = p.decision
-    hit = _trigger(decision, h, l)
-    ambiguous = hit == "AMBIGUOUS"
-    if ambiguous:
-        finer = sorted(lower_timeframe_candles, key=lambda x: x["open_time"])
-        covered = bool(finer) and finer[0]["open_time"] <= candle["open_time"] and finer[-1]["close_time"] >= candle["close_time"]
-        previous_close = None
-        for child in finer:
-            _validate_candle(child)
-            if child["open_time"] < candle["open_time"] or child["close_time"] > candle["close_time"]:
-                covered = False
-            if previous_close is not None and child["open_time"] > previous_close + 1:
-                covered = False
-            previous_close = child["close_time"]
-        if covered:
-            for child in finer:
-                candidate = _trigger(decision, child["high"], child["low"])
-                if candidate:
-                    hit = "SL" if candidate == "AMBIGUOUS" else candidate
-                    ambiguous = candidate == "AMBIGUOUS"
-                    break
-        if hit == "AMBIGUOUS":
-            hit = "SL"
-            ambiguous = True
-    # MAE must only use prices observed before the exit trigger. A parent
-    # candle's full high/low may include movement AFTER the position closed.
-    # With finer candles, only include candles through the first trigger.
-    if hit is not None and lower_timeframe_candles and 'covered' in locals() and covered:
-        for child in finer:
-            account.mark(child["low"], child["high"])
-            if _trigger(decision, child["high"], child["low"]):
-                break
-    elif hit is None:
-        account.mark(l, h)
-    else:
-        # Without a reliable intrabar path, use conservative parent extremes.
-        account.mark(l, h)
+    hit, ambiguous = _trigger(p.decision, h, l, c)
+    # OHLC cannot establish the intrabar pre-exit MAE. For now this is a
+    # conservative whole-bar bound, recorded explicitly in the trade.
+    account.mark(l, h)
     if hit is not None:
-        price = decision.stop_loss if hit == "SL" else decision.take_profit
+        price = p.decision.stop_loss if hit == "SL" else p.decision.take_profit
         result = account.exit(price, candle["close_time"], fee_rate=fee_rate,
                               slippage_rate=slippage_rate, reason=hit)
         result["ambiguous_fill"] = ambiguous
+        result["mae_estimated_from_full_bar"] = True
         return result
     if max_exit_time_ms is not None and candle["close_time"] >= max_exit_time_ms:
         result = account.exit(c, candle["close_time"], fee_rate=fee_rate,
                               slippage_rate=slippage_rate, reason="TIME_LIMIT")
         result["ambiguous_fill"] = False
+        result["mae_estimated_from_full_bar"] = False
         return result
     return None

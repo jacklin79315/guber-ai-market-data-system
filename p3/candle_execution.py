@@ -56,13 +56,22 @@ def process_closed_candle(account: PaperAccount, candle: dict, *,
     hit, ambiguous = _trigger(p.decision, h, l, c)
     # OHLC cannot establish the intrabar pre-exit MAE. For now this is a
     # conservative whole-bar bound, recorded explicitly in the trade.
-    account.mark(l, h)
+    # Once the simulated stop fills, prices beyond that stop cannot
+    # increase this trade's MAE. The full bar may include post-exit prices.
+    if hit == "SL":
+        if p.decision.action == "LONG":
+            account.mark(max(l, p.decision.stop_loss), h)
+        else:
+            account.mark(l, min(h, p.decision.stop_loss))
+    else:
+        account.mark(l, h)
     if hit is not None:
         price = p.decision.stop_loss if hit == "SL" else p.decision.take_profit
         result = account.exit(price, candle["close_time"], fee_rate=fee_rate,
                               slippage_rate=slippage_rate, reason=hit)
         result["ambiguous_fill"] = ambiguous
         result["mae_estimated_from_full_bar"] = True
+        result["mae_clipped_to_stop"] = hit == "SL"
         return result
     if max_exit_time_ms is not None and candle["close_time"] >= max_exit_time_ms:
         result = account.exit(c, candle["close_time"], fee_rate=fee_rate,

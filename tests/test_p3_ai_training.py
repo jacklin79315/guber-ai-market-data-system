@@ -14,6 +14,14 @@ class TestAiTraining(unittest.TestCase):
         self.assertEqual(w["holdout"][1], int(datetime(2026, 1, 1, tzinfo=timezone.utc).timestamp() * 1000))
         self.assertEqual(EMBARGO_MS, 30 * 86400000)
 
+    def test_two_year_default_windows(self):
+        from datetime import datetime, timezone
+        start = int(datetime(2024, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
+        w = chronological_windows(start)
+        self.assertEqual(w['train'][1], int(datetime(2025, 5, 1, tzinfo=timezone.utc).timestamp() * 1000))
+        self.assertEqual(w['validation'][1], int(datetime(2025, 9, 1, tzinfo=timezone.utc).timestamp() * 1000))
+        self.assertEqual(w['holdout'][1], int(datetime(2026, 1, 1, tzinfo=timezone.utc).timestamp() * 1000))
+
     def test_targets_use_only_future_bars(self):
         candles = []
         features = []

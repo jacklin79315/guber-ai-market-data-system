@@ -1,0 +1,31 @@
+name: P3B Native History Replay (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "Symbol to validate"
+        required: true
+        default: "BTCUSDT"
+        type: choice
+        options: [BTCUSDT, ETHUSDT]
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Validate Supabase credentials
+        run: |
+          test -n "$SUPABASE_URL" && test -n "$SUPABASE_SERVICE_ROLE_KEY" || {
+            echo "::error::Configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY repository secrets"
+            exit 1
+          }
+      - name: Execute native replay data pipeline
+        run: python -m p3.native_history_smoke

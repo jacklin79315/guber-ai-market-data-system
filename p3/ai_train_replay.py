@@ -50,8 +50,8 @@ def run_training(db, symbol, *, years=3, confidence_threshold=0.6):
                 for action in ("LONG", "SHORT", "WAIT")
             },
             "closed_trades": metrics["closed_trades"],
-            "realized_net_pnl": metrics["realized_net_pnl"],
-            "win_rate_percent": metrics["win_rate_percent"],
+            "realized_net_pnl": metrics.get("realized_net_pnl"),
+            "win_rate_percent": metrics.get("win_rate_percent"),
             "annualized_mark_to_market_return_percent": metrics.get(
                 "annualized_mark_to_market_return_percent"),
             "max_close_to_close_drawdown_percent": metrics.get(

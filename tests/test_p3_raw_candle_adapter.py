@@ -18,6 +18,16 @@ class TestRawCandleAdapter(unittest.TestCase):
                                       symbol="BTCUSDT", timeframe="15m")
         self.assertEqual(len(candles), 2)
 
+    def test_reject_missing_native_bar(self):
+        with self.assertRaisesRegex(ValueError, "missing"):
+            raw_rows_to_candles([row(0), row(1800000)], timeframe="15m")
+
+    def test_reject_invalid_native_duration(self):
+        invalid = row(0)
+        invalid["close_time"] = 900000
+        with self.assertRaisesRegex(ValueError, "duration"):
+            raw_rows_to_candles([invalid], timeframe="15m")
+
     def test_reject_duplicate_or_wrong_series(self):
         with self.assertRaises(ValueError):
             raw_rows_to_candles([row(0), row(0)])

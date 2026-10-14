@@ -1,6 +1,6 @@
 import unittest
 from p3.paper_engine import Decision
-from p3.replay_runner import replay
+from p3.replay_runner import replay, replay_with_metrics
 
 
 def bar(start, end, lo, hi, close=100, opening=100):
@@ -41,6 +41,28 @@ class TestReplayRunner(unittest.TestCase):
         account, events = replay(candles, {1000: Decision("WAIT", "BTCUSDT")})
         self.assertEqual(events, [])
         self.assertIsNone(account.position)
+
+    def test_open_position_mark_to_market(self):
+        candles = [bar(1, 1000, 99, 101),
+                   bar(1001, 2000, 99, 105, 104)]
+        d = Decision("LONG", "BTCUSDT", 100, 110, 95, .5)
+        result = replay_with_metrics(candles, {1000: d})
+        m = result["metrics"]
+        self.assertTrue(m["has_open_position"])
+        self.assertAlmostEqual(m["final_mark_to_market_equity"], 10200)
+        self.assertIsNone(m["annualized_return_percent"])
+        self.assertGreater(m["mean_capital_utilization_percent"], 0)
+        self.assertEqual(len(result["equity_curve"]), 2)
+
+    def test_completed_trade_metrics(self):
+        candles = [bar(1, 1000, 99, 101),
+                   bar(1001, 2000, 99, 101),
+                   bar(2001, 3000, 98, 111, 108)]
+        d = Decision("LONG", "BTCUSDT", 100, 110, 95, .5)
+        result = replay_with_metrics(candles, {1000: d})
+        self.assertEqual(result["metrics"]["closed_trades"], 1)
+        self.assertAlmostEqual(result["metrics"]["final_mark_to_market_equity"], 10500)
+        self.assertIsNotNone(result["metrics"]["annualized_return_percent"])
 
     def test_reject_overlapping_bars(self):
         with self.assertRaises(ValueError):

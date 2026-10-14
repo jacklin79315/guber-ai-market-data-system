@@ -50,6 +50,23 @@ class TestCandleExecution(unittest.TestCase):
         self.assertEqual(r["reason"], "SL")
         self.assertAlmostEqual(r["mae_percent"], 5)
 
+    def test_tp_exit_does_not_charge_unknown_post_exit_low(self):
+        self.a.mark(98, 104)
+        r = process_closed_candle(self.a, candle(1, 10, 80, 111, 108))
+        self.assertEqual(r["reason"], "TP")
+        self.assertAlmostEqual(r["net_pnl"], 500)
+        self.assertAlmostEqual(r["mae_percent"], 2)
+        self.assertTrue(r["exit_bar_mae_omitted"])
+
+    def test_short_tp_exit_does_not_charge_unknown_post_exit_high(self):
+        a = PaperAccount()
+        a.enter(Decision("SHORT", "ETHUSDT", 100, 90, 105, .5), 0)
+        a.mark(98, 102)
+        r = process_closed_candle(a, candle(1, 10, 89, 130, 91))
+        self.assertEqual(r["reason"], "TP")
+        self.assertAlmostEqual(r["net_pnl"], 500)
+        self.assertAlmostEqual(r["mae_percent"], 2)
+
     def test_time_limit(self):
         r = process_closed_candle(self.a, candle(1, 10, 98, 105),
                                   max_exit_time_ms=10)

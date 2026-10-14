@@ -63,6 +63,11 @@ def process_closed_candle(account: PaperAccount, candle: dict, *,
             account.mark(max(l, p.decision.stop_loss), h)
         else:
             account.mark(l, min(h, p.decision.stop_loss))
+    elif hit == "TP":
+        # The bar extreme can occur after the TP fill. Do not charge
+        # unknown post-exit adverse movement to this completed trade.
+        # Prior fully held candles have already contributed to MAE.
+        pass
     else:
         account.mark(l, h)
     if hit is not None:
@@ -72,6 +77,7 @@ def process_closed_candle(account: PaperAccount, candle: dict, *,
         result["ambiguous_fill"] = ambiguous
         result["mae_estimated_from_full_bar"] = True
         result["mae_clipped_to_stop"] = hit == "SL"
+        result["exit_bar_mae_omitted"] = hit == "TP"
         return result
     if max_exit_time_ms is not None and candle["close_time"] >= max_exit_time_ms:
         result = account.exit(c, candle["close_time"], fee_rate=fee_rate,

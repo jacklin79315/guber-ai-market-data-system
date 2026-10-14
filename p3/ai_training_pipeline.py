@@ -1,6 +1,6 @@
 """Point-in-time supervised training pipeline for four independent horizons.
 
-Strict chronological 24/6/6-month partitions for three-year histories, with
+Default chronological 16/4/4-month partitions for two-year histories, with
 30-day embargo before validation and holdout. Labels must end inside their
 own partition. The final holdout is never used to fit models.
 """
@@ -53,6 +53,8 @@ def train_horizon(features, candles, strategy, *, years=2):
     interval = {"15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000}[timeframe]
     horizon = HORIZON_BARS[strategy]
     end = int(candles[-1]["close_time"]) + 1
+    # Anchor at a complete UTC calendar day to avoid intraday boundary drift.
+    end = (end // DAY_MS) * DAY_MS
     start = _add_months(end, -12 * years)
     windows = chronological_windows(start, years=years)
     if int(candles[-1]["close_time"]) + 1 < windows["holdout"][1]:

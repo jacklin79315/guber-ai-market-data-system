@@ -11,7 +11,7 @@ from .ai_training_pipeline import train_horizon, EMBARGO_MS
 from .multi_model_replay import STRATEGY_TIMEFRAMES
 from .replay_runner import replay_with_metrics
 
-def run_training(db, symbol, *, years=3, confidence_threshold=0.6):
+def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     reports = {}
     for strategy, timeframe in STRATEGY_TIMEFRAMES.items():
         candles = load_native_candles(db, symbol, timeframe)

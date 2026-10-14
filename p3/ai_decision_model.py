@@ -89,6 +89,10 @@ class HorizonModel:
         down = max(0., float(self.downside.predict([_vector(row)])[0]))
         if not math.isfinite(entry) or entry <= 0 or not all(math.isfinite(x) for x in (up, down)):
             raise ValueError("invalid model output")
+        if not 0.5 < confidence_threshold < 1.0:
+            raise ValueError("confidence_threshold must be between 0.5 and 1")
+        if down >= 1.0:
+            return Decision("WAIT", symbol)
         if probability_up >= confidence_threshold and up > 0 and down > 0:
             decision = Decision("LONG", symbol, entry, entry * (1 + up), entry * (1 - down), allocation)
         elif probability_up <= 1 - confidence_threshold and up > 0 and down > 0:

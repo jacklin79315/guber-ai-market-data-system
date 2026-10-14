@@ -17,6 +17,8 @@ def raw_row_to_candle(row):
     _validate_candle(result)
     return result
 
+INTERVAL_MS = {"15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000}
+
 def raw_rows_to_candles(rows, *, symbol=None, timeframe=None):
     """Require one native series, strictly ordered and without duplicate bars."""
     output = []
@@ -27,7 +29,13 @@ def raw_rows_to_candles(rows, *, symbol=None, timeframe=None):
         if timeframe is not None and row["timeframe"] != timeframe:
             raise ValueError("unexpected timeframe")
         candle = raw_row_to_candle(row)
-        if previous is not None and candle["open_time"] <= previous["close_time"]:
+        if timeframe in INTERVAL_MS:
+            interval = INTERVAL_MS[timeframe]
+            if candle["close_time"] - candle["open_time"] + 1 != interval:
+                raise ValueError("invalid native candle duration")
+            if previous is not None and candle["open_time"] != previous["open_time"] + interval:
+                raise ValueError("missing or unordered native candle")
+        elif previous is not None and candle["open_time"] <= previous["close_time"]:
             raise ValueError("overlapping or unordered raw candles")
         output.append(candle)
         previous = candle

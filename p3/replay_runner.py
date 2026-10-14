@@ -12,7 +12,7 @@ from .candle_execution import process_closed_candle, _validate_candle
 
 
 def replay(candles, decisions_by_close, *, fee_rate=0.0,
-           slippage_rate=0.0, max_holding_ms=None):
+           slippage_rate=0.0, max_holding_ms=None, return_curve=False):
     """Replay ordered native candles, returning account and execution events.
 
     decisions_by_close maps the *closed* decision candle's close_time to a
@@ -63,19 +63,35 @@ def replay(candles, decisions_by_close, *, fee_rate=0.0,
         equity_curve.append({"time_ms": candle["close_time"],
                              "equity": equity, "exposure": exposure})
         previous = candle
-    return account, events
+    return (account, events, equity_curve) if return_curve else (account, events)
 
 
 def replay_with_metrics(candles, decisions_by_close, *, fee_rate=0.0,
                         slippage_rate=0.0, max_holding_ms=None, score_k=2.0):
     """Replay and report completed trades; open position remains explicitly open."""
     bars = list(candles)
-    account, events = replay(bars, decisions_by_close, fee_rate=fee_rate,
+    account, events, curve = replay(bars, decisions_by_close, fee_rate=fee_rate,
                              slippage_rate=slippage_rate,
-                             max_holding_ms=max_holding_ms)
+                             max_holding_ms=max_holding_ms, return_curve=True)
     elapsed = bars[-1]["close_time"] - bars[0]["open_time"] + 1 if bars else None
     metrics = summarize(account, elapsed_ms=elapsed, score_k=score_k)
-    # Equity curve is reconstructed from the event stream at bar-close only.
-    # Intrabar peak drawdown and utilization require a finer execution clock.
-    return {"account": account, "events": events, "metrics": metrics}
+    if curve:
+        peak = curve[0]["equity"]
+        drawdown = 0.0
+        for point in curve:
+            peak = max(peak, point["equity"])
+            if peak > 0:
+                drawdown = max(drawdown, 100 * (peak - point["equity"]) / peak)
+        metrics["final_mark_to_market_equity"] = curve[-1]["equity"]
+        metrics["max_close_to_close_drawdown_percent"] = drawdown
+        metrics["mean_capital_utilization_percent"] = (
+            100 * sum(p["exposure"] / p["equity"] for p in curve
+                      if p["equity"] > 0) / len(curve)
+        )
+    else:
+        metrics["final_mark_to_market_equity"] = None
+        metrics["max_close_to_close_drawdown_percent"] = None
+        metrics["mean_capital_utilization_percent"] = None
+    return {"account": account, "events": events, "equity_curve": curve,
+            "metrics": metrics}
 

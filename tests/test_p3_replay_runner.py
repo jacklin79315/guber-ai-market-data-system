@@ -28,6 +28,16 @@ class TestReplayRunner(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertIsNotNone(account.position)
 
+    def test_entry_bar_exit_uncertainty_is_reported(self):
+        candles = [bar(1, 1000, 99, 101),
+                   bar(1001, 2000, 94, 111, 108)]
+        d = Decision("LONG", "BTCUSDT", 100, 110, 95, .5)
+        result = replay_with_metrics(candles, {1000: d})
+        self.assertEqual(result["metrics"]["entry_bars_with_unresolved_exit"], 1)
+        self.assertTrue(result["metrics"]["execution_path_uncertain"])
+        self.assertTrue(result["events"][0]["entry_bar_exit_unresolved"])
+        self.assertTrue(result["metrics"]["has_open_position"])
+
     def test_no_fill(self):
         candles = [bar(1, 1000, 99, 101),
                    bar(1001, 2000, 101, 105, 103, 102)]

@@ -1,5 +1,6 @@
 """Read-only historical feature loader for supervised AI training."""
 from .native_history_replay import PAGE_SIZE
+from .ai_decision_model import FEATURE_COLUMNS
 
 def load_native_features(db, symbol, timeframe, *, start_ms=None, end_ms=None):
     if not symbol or timeframe not in ("15m", "1h", "4h", "1d"):
@@ -9,7 +10,7 @@ def load_native_features(db, symbol, timeframe, *, start_ms=None, end_ms=None):
     first_page = True
     while True:
         params = {
-            "select": "*",
+            "select": ",".join(("open_time", "close_time", "close_price") + FEATURE_COLUMNS),
             "source": "eq.BINANCE", "market": "eq.SPOT",
             "symbol": "eq." + symbol,
             "timeframe": "eq." + timeframe,

@@ -8,7 +8,7 @@ class TestAiTraining(unittest.TestCase):
     def test_three_year_windows_and_embargo(self):
         from datetime import datetime, timezone
         start = int(datetime(2023, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
-        w = chronological_windows(start)
+        w = chronological_windows(start, years=3)
         self.assertEqual(w["train"][1], w["validation"][0])
         self.assertEqual(w["validation"][1], w["holdout"][0])
         self.assertEqual(w["holdout"][1], int(datetime(2026, 1, 1, tzinfo=timezone.utc).timestamp() * 1000))

@@ -41,6 +41,8 @@ def load_native_candles(db, symbol, timeframe, *, start_ms=None, end_ms=None):
         first_page = False
         if len(batch) < PAGE_SIZE:
             break
+    if not rows:
+        raise ValueError(f"no native candles for {symbol} {timeframe}")
     return raw_rows_to_candles(rows, symbol=symbol, timeframe=timeframe)
 
 def replay_native_history(db, symbol, decisions_by_strategy, *,

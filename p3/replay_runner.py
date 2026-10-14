@@ -3,7 +3,7 @@
 Decisions must be generated only from information available at each decision
 close. This runner accepts decisions; it does not produce trading signals.
 A filled entry bar is NOT processed for exits because OHLC cannot determine
-whether TP/SL was hit before or after entry.
+whether TP/SL was hit before or after entry. This unresolved bar is flagged.
 """
 from .paper_engine import PaperAccount
 from .performance import summarize
@@ -49,7 +49,11 @@ def replay(candles, decisions_by_close, *, fee_rate=0.0,
                                    "side": decision.action,
                                    "time_ms": position.entry_time_ms,
                                    "price": position.entry_price,
-                                   "entry_time_estimated": True})
+                                   "entry_time_estimated": True,
+                                   "entry_bar_exit_unresolved": (
+                                       candle["low"] <= decision.stop_loss <= candle["high"]
+                                       or candle["low"] <= decision.take_profit <= candle["high"]
+                                   )})
         # Mark-to-market at the completed bar close, using only that bar's
         # close. Reserved collateral is restored when valuing an open position.
         p = account.position
@@ -76,6 +80,10 @@ def replay_with_metrics(candles, decisions_by_close, *, fee_rate=0.0,
                              max_holding_ms=max_holding_ms, return_curve=True)
     elapsed = bars[-1]["close_time"] - bars[0]["open_time"] + 1 if bars else None
     metrics = summarize(account, elapsed_ms=elapsed, score_k=score_k)
+    metrics["entry_bars_with_unresolved_exit"] = sum(
+        1 for e in events if e["type"] == "ENTRY" and e["entry_bar_exit_unresolved"]
+    )
+    metrics["execution_path_uncertain"] = metrics["entry_bars_with_unresolved_exit"] > 0
     if curve:
         peak = 10000.0
         drawdown = 0.0

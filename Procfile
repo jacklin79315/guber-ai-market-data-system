@@ -1,1 +1,1 @@
-worker: python collector.py
+worker: python worker.py

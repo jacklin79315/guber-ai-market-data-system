@@ -14,6 +14,7 @@ def load_native_candles(db, symbol, timeframe, *, start_ms=None, end_ms=None):
         raise ValueError("invalid symbol or timeframe")
     rows = []
     cursor = start_ms
+    first_page = True
     while True:
         params = {
             "select": "symbol,timeframe,open_time,close_time,open_price,high_price,low_price,close_price",
@@ -23,7 +24,7 @@ def load_native_candles(db, symbol, timeframe, *, start_ms=None, end_ms=None):
             "limit": str(PAGE_SIZE),
         }
         if cursor is not None:
-            params["open_time"] = "gte." + str(cursor) if not rows else "gt." + str(cursor)
+            params["open_time"] = ("gte." if first_page else "gt.") + str(cursor)
         if end_ms is not None:
             params["close_time"] = "lte." + str(end_ms)
         batch = db("GET", "raw_candles", params)
@@ -35,6 +36,7 @@ def load_native_candles(db, symbol, timeframe, *, start_ms=None, end_ms=None):
             raise ValueError("non-advancing raw candle page")
         rows.extend(batch)
         cursor = int(batch[-1]["open_time"])
+        first_page = False
         if len(batch) < PAGE_SIZE:
             break
     return raw_rows_to_candles(rows, symbol=symbol, timeframe=timeframe)

@@ -53,7 +53,7 @@ def train_horizon(features, candles, strategy, *, years=3):
     windows = chronological_windows(int(candles[0]["open_time"]), years=years)
     if int(candles[-1]["close_time"]) + 1 < windows["holdout"][1]:
         raise ValueError("insufficient full historical coverage")
-    X, y, up, down, times = build_supervised_examples(features, candles, horizon)
+    # Feature warm-up gaps are allowed only before the first usable sample.\n    # Report effective coverage rather than claiming the raw-candle span is fully trained.\n    X, y, up, down, times = build_supervised_examples(features, candles, horizon)\n    if not times:\n        raise ValueError("no aligned feature/candle training examples")
     partitions = {}
     for name, (begin, end) in windows.items():
         earliest = begin if name == "train" else begin + EMBARGO_MS
@@ -64,8 +64,8 @@ def train_horizon(features, candles, strategy, *, years=3):
             "y_up": up[indices], "y_down": down[indices],
             "decision_times": [times[i] for i in indices],
         }
-    training = partitions["train"]
+    training = partitions["train"]\n    coverage = {name: {"samples": len(part["decision_times"]),\n                       "first_decision_ms": part["decision_times"][0] if part["decision_times"] else None,\n                       "last_decision_ms": part["decision_times"][-1] if part["decision_times"] else None}\n                for name, part in partitions.items()}
     model = HorizonModel().fit(training["X"], training["y_direction"],
                                training["y_up"], training["y_down"])
     return {"model": model, "partitions": partitions, "windows": windows,
-            "strategy": strategy, "timeframe": timeframe}
+            "strategy": strategy, "timeframe": timeframe, "coverage": coverage}

@@ -17,7 +17,9 @@ def load_native_candles(db, symbol, timeframe, *, start_ms=None, end_ms=None):
     first_page = True
     while True:
         params = {
-            "select": "symbol,timeframe,open_time,close_time,open_price,high_price,low_price,close_price",
+            "select": "source,market,symbol,timeframe,open_time,close_time,open_price,high_price,low_price,close_price",
+            "source": "eq.BINANCE",
+            "market": "eq.SPOT",
             "symbol": "eq." + symbol,
             "timeframe": "eq." + timeframe,
             "order": "open_time.asc",

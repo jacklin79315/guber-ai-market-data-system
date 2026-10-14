@@ -3,9 +3,9 @@ from p3.paper_engine import Decision
 from p3.replay_runner import replay
 
 
-def bar(start, end, lo, hi, close=100):
+def bar(start, end, lo, hi, close=100, opening=100):
     return {"open_time": start, "close_time": end,
-            "open": 100, "high": hi, "low": lo, "close": close}
+            "open": opening, "high": hi, "low": lo, "close": close}
 
 
 class TestReplayRunner(unittest.TestCase):
@@ -30,7 +30,7 @@ class TestReplayRunner(unittest.TestCase):
 
     def test_no_fill(self):
         candles = [bar(1, 1000, 99, 101),
-                   bar(1001, 2000, 101, 105)]
+                   bar(1001, 2000, 101, 105, 103, 102)]
         d = Decision("LONG", "BTCUSDT", 100, 110, 95, .5)
         account, events = replay(candles, {1000: d})
         self.assertEqual(events, [])

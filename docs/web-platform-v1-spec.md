@@ -55,3 +55,16 @@ F. No schema changes until existing Supabase tables and RLS policies are inspect
 4. Responsive UI for admin and viewer.
 5. Model registry, experiment leaderboard, public publication workflow.
 6. Forward paper monitoring and notifications.
+
+## UI visual design specification — approved direction
+
+- Visual direction: dark-first, contemporary minimalist fintech dashboard. Shared design language across ADMIN and VIEWER experiences.
+- Primary canvas #0B1018; surfaces #141D2A; raised/selected surface #172231; border #273448; primary text #F3F6FC; muted text #91A0B6; accent blue #67A9FF.
+- Semantic profit/loss colors only when reflecting real positive/negative values. WAIT and neutral states must not look like trade recommendations. Never communicate performance by color alone.
+- Typography: modern sans-serif, compact but readable; tabular numerals for prices, percentages and metrics. Minimum 14px body on desktop where feasible; adequate contrast and focus states.
+- Layout: left navigation and compact top status bar on desktop; responsive navigation and single-column KPI cards on mobile. Spacious cards, subtle 1px borders, restrained rounded corners, no heavy gradients or decorative animations.
+- Main admin areas: Overview, Instruments, Training, Experiments, Paper Trading, Market State, Signals, System Health, Settings, Users. Viewer navigation excludes administrative sections entirely.
+- Distinguish TRAIN / VALIDATION / HOLDOUT / FORWARD_PAPER visually and textually. Every performance chart must show data source, evaluation dates, fees, sample size and whether values are simulated.
+- Always-visible PAPER / NO REAL ORDERS environment indicator. No order-entry or real-funds controls in V1.
+- Chart data must come from real stored metrics; sample charts and placeholder metrics must be visibly labeled as mock data.
+- Accessibility: keyboard navigation, visible focus, text alternatives for status icons, responsive tables, WCAG AA contrast target.

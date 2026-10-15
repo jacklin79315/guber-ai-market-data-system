@@ -21,6 +21,9 @@ class AnalogWalkForwardTests(unittest.TestCase):
         self.assertEqual(report["results"][0]["decision"], "CANDIDATE")
         self.assertEqual(report["candidate_count"], 6)
         self.assertTrue(report["research_only"])
+        self.assertEqual(report["realized_candidate_count"], 6)
+        self.assertGreater(report["realized_net_expectancy_r"], 0)
+        self.assertEqual(report["unresolved_candidate_count"], 0)
 
 
 if __name__ == "__main__":

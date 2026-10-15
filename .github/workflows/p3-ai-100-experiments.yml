@@ -1,6 +1,10 @@
 name: P3 AI 100 Experiment Batch
 
 on:
+  push:
+    branches: [feature/p3b-paper-engine]
+    paths:
+      - '.github/workflows/p3-ai-100-experiments.yml'
   schedule:
     - cron: '17 2 * * *'
   workflow_dispatch:

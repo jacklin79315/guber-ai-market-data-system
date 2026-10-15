@@ -46,6 +46,7 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
         max_holding_bars=max_holding_bars, fee_rate=fee_rate,
         slippage_rate=slippage_rate)
     selected = []
+    trade_records = []
     last_end = None
     skipped_overlapping_candidates = 0
     for t in candidate_times:
@@ -54,8 +55,22 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
         if last_end is not None and t < last_end:
             skipped_overlapping_candidates += 1
             continue
-        selected.append(realized[t]["net_r"])
-        last_end = realized[t]["label_end_ms"]
+        outcome = realized[t]
+        decision = next(o for o in outcomes if o["timestamp_ms"] == t)
+        selected.append(outcome["net_r"])
+        trade_records.append({
+            "signal_time_ms": t, "direction": direction,
+            "strict_decision": decision.get("strict_decision", decision["decision"]),
+            "historical_net_expectancy_r": decision.get("net_expectancy_r"),
+            "historical_lower_bound_r": decision.get("lower_bound_r"),
+            "historical_sample_count": decision.get("sample_count"),
+            "net_r": outcome["net_r"], "label_end_ms": outcome["label_end_ms"],
+            "entry_price": outcome["entry_price"],
+            "exit_price": outcome["exit_price"],
+            "exit_reason": outcome["exit_reason"],
+            "ambiguous_bar": outcome["ambiguous_bar"],
+        })
+        last_end = outcome["label_end_ms"]
     equity = 0.0
     peak = 0.0
     max_drawdown_r = 0.0
@@ -67,6 +82,7 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
     losses = -sum(v for v in selected if v < 0)
     return {"direction": direction, "research_only": True,
             "exploration_paper_only": exploration,
+            "trade_records": trade_records,
             "max_closed_trade_drawdown_r": max_drawdown_r if selected else None,
             "profit_factor": wins / losses if losses > 0 else None,
             "skipped_overlapping_candidates": skipped_overlapping_candidates,

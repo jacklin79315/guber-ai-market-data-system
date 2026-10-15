@@ -58,4 +58,4 @@ def test_registry_reads_supabase_history_and_blocks_duplicate():
     assert result["recorded"]
     assert result["history_rows"] == 1
     assert result["experiment_history"]["ONE_TO_THREE_DAYS"]["status"] == "DUPLICATE_PROPOSAL"
-    assert calls == [("POST", "ai_training_runs"), ("GET", "ai_training_runs")]
+    assert calls == [("GET", "ai_training_runs"), ("POST", "ai_training_runs")]

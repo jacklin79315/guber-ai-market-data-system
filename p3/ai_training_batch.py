@@ -76,6 +76,20 @@ def run_batch(db, *, symbol, strategy, years):
     end_ms = ((int(candles[-1]["close_time"]) + 1) // DAY_MS) * DAY_MS
     actual_window = chronological_windows(
         _add_months(end_ms, -12 * years), years=years)["validation"]
+    # Both baseline and subsequent generations must use a fully closed window.
+    from datetime import datetime, timezone
+    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    if actual_window[1] > now_ms:
+        raise ValueError("validation window is not fully closed")
+    if generation == 1:
+        previous_baseline = db("GET", "ai_training_generation_comparisons", {
+            "select": "id", "symbol": "eq." + symbol, "strategy": "eq." + strategy,
+            "generation": "eq.1",
+            "validation_start_ms": "eq." + str(actual_window[0]),
+            "validation_end_ms": "eq." + str(actual_window[1]), "limit": "1",
+        })
+        if previous_baseline:
+            return {"status": "WAIT", "reason": "verified_baseline_already_exists"}
     if generation > 1:
         from .generation_readiness import generation_readiness
         requested = json.loads(os.environ["TRAINING_CURRENT_VALIDATION_WINDOW"])

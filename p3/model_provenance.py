@@ -19,7 +19,7 @@ def fingerprint_rows(rows, fields):
         if any(value is None for value in values):
             raise ValueError("source fingerprint field missing")
         digest.update(json.dumps(values, separators=(",", ":"), ensure_ascii=True, default=str).encode())
-        digest.update(b"\\n")
+        digest.update(bytes([10]))
     return "sha256:" + digest.hexdigest()
 
 

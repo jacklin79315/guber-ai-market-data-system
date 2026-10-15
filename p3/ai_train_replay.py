@@ -14,6 +14,7 @@ from .fee_schedule import load_fee_rate
 from .execution_diagnostics import summarize_execution
 from .validation_selection import select_threshold
 from .training_settings import load_training_settings
+from .training_registry import record_training_reports
 
 def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     fee_rate = load_fee_rate(db)
@@ -88,6 +89,8 @@ def main():
     years = settings["years"]
     print(json.dumps({"status": "TRAINING_STARTED", "symbol": symbol}), flush=True)
     result = run_training(db, symbol, years=years)
+    registry = record_training_reports(db, symbol, years, result)
+    print(json.dumps({"status": "REGISTRY", **registry}), flush=True)
     print(json.dumps({"status": "COMPLETE", "symbol": symbol, "models": result},
                      sort_keys=True, allow_nan=False), flush=True)
 

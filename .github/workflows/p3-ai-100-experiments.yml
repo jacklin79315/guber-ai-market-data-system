@@ -50,7 +50,7 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - name: Validate experiment grid
-        run: python -m unittest tests.test_ai_training_batch tests.test_iterative_generation tests.test_generation_comparison tests.test_same_window_promotion tests.test_generation_evaluator tests.test_generation_readiness tests.test_training_data_quality tests.test_autonomous_generation_planner tests.test_research_lease_policy tests.test_research_job_guard
+        run: python -m unittest tests.test_indicator_interaction_learning tests.test_ai_training_batch tests.test_iterative_generation tests.test_generation_comparison tests.test_same_window_promotion tests.test_generation_evaluator tests.test_generation_readiness tests.test_training_data_quality tests.test_autonomous_generation_planner tests.test_research_lease_policy tests.test_research_job_guard
       - name: Run 25 validation-only training trials
         shell: bash
         run: |

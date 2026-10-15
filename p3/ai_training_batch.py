@@ -69,6 +69,37 @@ def run_batch(db, *, symbol, strategy, years):
     candles = load_native_candles(db, symbol, timeframe)
     features = load_native_features(db, symbol, timeframe)
     fee_rate = load_fee_rate(db)
+    generation = int(os.getenv("TRAINING_GENERATION", "1"))
+    if generation > 1:
+        from .ai_training_pipeline import _add_months, chronological_windows, DAY_MS
+        from .generation_readiness import generation_readiness
+        end_ms = ((int(candles[-1]["close_time"]) + 1) // DAY_MS) * DAY_MS
+        actual_window = chronological_windows(
+            _add_months(end_ms, -12 * years), years=years)["validation"]
+        requested = json.loads(os.environ["TRAINING_CURRENT_VALIDATION_WINDOW"])
+        if list(actual_window) != requested:
+            raise ValueError("native-candle validation window differs from requested window")
+        previous = json.loads(os.environ["TRAINING_PARENT_VALIDATION_WINDOW"])
+        existing = db("GET", "ai_training_generation_comparisons", {
+            "select": "id", "symbol": "eq." + symbol, "strategy": "eq." + strategy,
+            "validation_start_ms": "eq." + str(actual_window[0]),
+            "validation_end_ms": "eq." + str(actual_window[1]), "limit": "1",
+        })
+        parent_run = os.environ["TRAINING_PARENT_RUN_ID"]
+        parent_rows = db("GET", "ai_training_batch_trials", {
+            "select": "status,validation_eligible", "run_id": "eq." + parent_run,
+            "symbol": "eq." + symbol, "strategy": "eq." + strategy, "limit": "100",
+        })
+        readiness = generation_readiness(
+            latest_run_complete=(len(parent_rows) == 25 and
+                                 all(x["status"] == "COMPLETE" for x in parent_rows)),
+            current_window=list(actual_window), previous_window=previous,
+            parent_eligible=any(x.get("validation_eligible") is True for x in parent_rows),
+            already_evaluated=bool(existing), next_generation=generation)
+        if readiness["status"] != "READY":
+            print(json.dumps({"status": "GENERATION_WAIT", "strategy": strategy,
+                              "reason": readiness["reason"]}), flush=True)
+            return readiness
     params_grid = choose_generation_parameters(db, symbol, strategy)
     if not params_grid:
         return {'status': 'WAIT', 'reason': 'no_safe_next_generation'}
@@ -144,7 +175,9 @@ def run_batch(db, *, symbol, strategy, years):
        {"on_conflict": "run_id,strategy"}, [{
            "run_id": run_id, "parent_run_id": os.getenv("TRAINING_PARENT_RUN_ID"),
            "symbol": symbol, "strategy": strategy,
-           "generation": int(os.getenv("TRAINING_GENERATION", "1")),
+           "generation": generation,
+           "validation_start_ms": actual_window[0] if generation > 1 else None,
+           "validation_end_ms": actual_window[1] if generation > 1 else None,
            "status": comparison["status"], "reason": comparison.get("reason"),
            "comparison": comparison,
        }], {"Prefer": "resolution=merge-duplicates,return=minimal"})

@@ -4,6 +4,8 @@ Scores are descriptive and withheld until sufficient independent OOS trades.
 No annualization from R multiples or synthetic equity curves.
 """
 from math import isfinite
+from collections import defaultdict
+from datetime import datetime, timezone
 
 
 def score_paper_model(*, trades, total_net_r, max_drawdown_r,
@@ -62,3 +64,32 @@ if __name__ == "__main__":
     import json
     print(json.dumps(score_paper_model(trades=0, total_net_r=0,
         max_drawdown_r=0, profit_factor=None), sort_keys=True))
+
+
+def score_chronological_paper_decisions(decisions):
+    """Derive score inputs solely from selected, realized paper decisions.
+
+    Monthly aggregation uses signal timestamps in UTC, never model predictions
+    as realized returns. This is a closed-trade R-based score, not equity CAGR.
+    """
+    selected = [row for row in decisions.get("decisions", [])
+                if row.get("decision") in ("LONG", "SHORT")]
+    months = defaultdict(float)
+    for row in selected:
+        t, net_r = row.get("signal_time_ms"), row.get("realized_selected_net_r")
+        if not isinstance(t, int) or isinstance(net_r, bool) or not isinstance(net_r, (int, float)) or not isfinite(net_r):
+            raise ValueError("selected paper trade has invalid timestamp or realized R")
+        month = datetime.fromtimestamp(t / 1000, tz=timezone.utc).strftime("%Y-%m")
+        months[month] += float(net_r)
+    trades = len(selected)
+    if trades != decisions.get("realized_selected_count"):
+        raise ValueError("selected trade count mismatch")
+    total = sum(row["realized_selected_net_r"] for row in selected)
+    reported = decisions.get("realized_total_net_r")
+    if not isinstance(reported, (int, float)) or abs(total - reported) > 1e-8:
+        raise ValueError("selected trade PnL mismatch")
+    return score_paper_model(
+        trades=trades, total_net_r=total,
+        max_drawdown_r=decisions.get("max_closed_trade_drawdown_r") or 0.0,
+        profit_factor=decisions.get("profit_factor"),
+        monthly_net_r=[months[key] for key in sorted(months)])

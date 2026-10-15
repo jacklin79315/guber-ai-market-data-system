@@ -18,6 +18,7 @@ def _vector(record, feature_names):
 
 
 def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=10.0):
+
     """Return prequential predictions: train strictly on previously SETTLED trades.
 
     Rows are evaluated at signal time. Same-time LONG/SHORT decisions never
@@ -60,6 +61,7 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
                           "prediction_net_r": prediction,
                           "baseline_prediction_net_r": baseline_prediction,
                           "actual_net_r": row["net_r"],
+                          "label_end_ms": row["label_end_ms"],
                           "train_count": len(eligible),
                           "training_latest_label_end_ms": max(
                               prior["label_end_ms"] for prior in eligible)})
@@ -75,3 +77,41 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
             "mae_improvement_r": baseline_mae - model_mae if errors else None,
             "outperforms_baseline_mae": model_mae < baseline_mae if errors else None,
             "predictions": evaluated}
+
+
+def chronological_direction_decisions(predictions):
+    """Evaluate paper-only LONG/SHORT/WAIT choices using as-of predictions.
+
+    Decisions compare paired forecasts at the same timestamp. An unpaired
+    timestamp remains WAIT. The actual outcome is read only for post-hoc
+    scoring, never for direction selection. This is not an execution engine.
+    """
+    grouped = {}
+    for row in predictions:
+        grouped.setdefault(row["signal_time_ms"], {})[row["direction"]] = row
+    decisions = []
+    for t, pair in sorted(grouped.items()):
+        long, short = pair.get("LONG"), pair.get("SHORT")
+        if long is None or short is None:
+            decisions.append({"signal_time_ms": t, "decision": "WAIT",
+                              "reason": "missing_paired_prediction"})
+            continue
+        lv, sv = long["prediction_net_r"], short["prediction_net_r"]
+        direction = "LONG" if lv > 0 and lv > sv else (
+            "SHORT" if sv > 0 and sv > lv else "WAIT")
+        selected = pair.get(direction)
+        decisions.append({
+            "signal_time_ms": t, "decision": direction,
+            "predicted_long_net_r": lv, "predicted_short_net_r": sv,
+            "realized_selected_net_r": selected["actual_net_r"] if selected else None,
+            "reason": "positive_best_prediction" if selected else "nonpositive_or_tied",
+        })
+    trades = [x["realized_selected_net_r"] for x in decisions if x["decision"] != "WAIT"]
+    return {"research_only": True, "auto_trade_enabled": False,
+            "decision_count": len(decisions),
+            "long_count": sum(x["decision"] == "LONG" for x in decisions),
+            "short_count": sum(x["decision"] == "SHORT" for x in decisions),
+            "wait_count": sum(x["decision"] == "WAIT" for x in decisions),
+            "realized_selected_count": len(trades),
+            "realized_selected_mean_net_r": sum(trades) / len(trades) if trades else None,
+            "decisions": decisions}

@@ -29,7 +29,6 @@ def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
             "limit": str(page_size),
         }
         if last is not None:
-            params["close_time"] = "gt." + str(last) + ",lte." + str(asof_ms)
             # PostgREST multiple constraints on one field use and=...
             params.pop("close_time")
             params["and"] = "(close_time.gt." + str(last) + ",close_time.lte." + str(asof_ms) + ")"

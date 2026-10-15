@@ -60,6 +60,9 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     history.sort(key=lambda row: row["trial_index"])
     if [row["trial_index"] for row in history] != list(range(1, len(history) + 1)):
         raise RuntimeError("non-contiguous persisted training history; manual repair required")
+    for row in history[:iterations]:
+        print(json.dumps({"status": "ITERATION_RESULT", "strategy": strategy,
+                          "resumed": True, **row}, allow_nan=False), flush=True)
     # The existing 25-candidate grid is reused as the initial search space.
     # For longer runs, a new local grid is generated around the best candidate.
     candidates = list(PARAMETERS)

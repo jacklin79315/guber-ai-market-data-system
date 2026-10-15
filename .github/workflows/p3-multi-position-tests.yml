@@ -17,6 +17,8 @@ on:
       - 'tests/test_four_isolated_pools.py'
       - 'tests/test_multi_position_time_limit.py'
       - 'tests/test_training_selection_multi_position.py'
+      - 'p3/validation_selection.py'
+      - 'tests/test_training_selection_multi_position.py'
       - 'tests/test_validation_window_diagnostics.py'
       - '.github/workflows/p3-multi-position-tests.yml'
   workflow_dispatch:

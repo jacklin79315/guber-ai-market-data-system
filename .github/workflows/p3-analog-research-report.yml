@@ -6,6 +6,8 @@ on:
       - 'p3/analog_research_report.py'
       - 'p3/analog_walk_forward.py'
       - 'p3/paper_learning.py'
+      - 'tests/test_paper_direction.py'
+      - 'tests/test_paper_learning.py'
       - 'p3/four_strategy_analog.py'
       - 'p3/analog_data_loader.py'
       - '.github/workflows/p3-analog-research-report.yml'

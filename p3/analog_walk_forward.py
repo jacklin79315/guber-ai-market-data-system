@@ -11,7 +11,8 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
                                    horizon_ms, direction, stop_pct, target_pct,
                                    max_holding_bars, fee_rate, slippage_rate,
                                    embargo_ms=0, k=100, min_samples=30,
-                                   evaluation_start_ms=None, exploration=False):
+                                   evaluation_start_ms=None, evaluation_end_ms=None,
+                                   exploration=False):
     if not snapshots or not features:
         raise ValueError("empty research input")
     ordered = sorted(snapshots, key=lambda s: s["timestamp_ms"])
@@ -21,6 +22,8 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
     for i, current in enumerate(ordered):
         asof = current["timestamp_ms"]
         if evaluation_start_ms is not None and asof < evaluation_start_ms:
+            continue
+        if evaluation_end_ms is not None and asof > evaluation_end_ms:
             continue
         report = research_analog_plan(
             current, ordered[:i], candles, features,

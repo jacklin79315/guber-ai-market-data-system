@@ -41,14 +41,28 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
         slippage_rate=slippage_rate)
     selected = []
     last_end = None
+    skipped_overlapping_candidates = 0
     for t in candidate_times:
         if t not in realized:
             continue
         if last_end is not None and t < last_end:
+            skipped_overlapping_candidates += 1
             continue
         selected.append(realized[t]["net_r"])
         last_end = realized[t]["label_end_ms"]
+    equity = 0.0
+    peak = 0.0
+    max_drawdown_r = 0.0
+    for net_r in selected:
+        equity += net_r
+        peak = max(peak, equity)
+        max_drawdown_r = max(max_drawdown_r, peak - equity)
+    wins = sum(v for v in selected if v > 0)
+    losses = -sum(v for v in selected if v < 0)
     return {"direction": direction, "research_only": True,
+            "max_closed_trade_drawdown_r": max_drawdown_r if selected else None,
+            "profit_factor": wins / losses if losses > 0 else None,
+            "skipped_overlapping_candidates": skipped_overlapping_candidates,
             "realized_candidate_count": len(selected),
             "unresolved_candidate_count": len(candidate_times) - len(realized),
             "realized_net_expectancy_r": sum(selected) / len(selected) if selected else None,

@@ -15,6 +15,8 @@ class ReviewRegistryTests(unittest.TestCase):
         writes = []
         def db(method, table, params, payload=None, extra=None):
             if method == "GET":
+                if table == "ai_model_reviews":
+                    return []
                 return [row("c", 3) if params["run_key"] == "eq.c" else row("a")]
             writes.append((table, payload, extra))
             return []
@@ -22,10 +24,10 @@ class ReviewRegistryTests(unittest.TestCase):
         self.assertEqual(result["decision"], "REVIEW")
         self.assertFalse(result["promotion_authorized"])
         self.assertEqual(writes[0][0], "ai_model_reviews")
-        self.assertIn("ignore-duplicates", writes[0][2]["Prefer"])
+        self.assertEqual(writes[0][2]["Prefer"], "return=minimal")
     def test_reject_failed_holdout(self):
         def db(method, table, params, payload=None, extra=None):
-            return [row("c", accepted=False)] if method == "GET" else []
+            return ([row("c", accepted=False)] if table == "ai_training_runs" else []) if method == "GET" else []
         self.assertEqual(record_model_review(db, "c")["decision"], "REJECT")
     def test_missing_challenger_fails_closed(self):
         with self.assertRaises(ValueError):

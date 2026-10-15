@@ -1,0 +1,98 @@
+"""One bounded research batch: 25 distinct validation-only model experiments.
+
+Four strategy jobs yield 100 experiments. Final holdout is NEVER inspected.
+No model activation, order placement, or automatic promotion.
+"""
+import hashlib
+import itertools
+import json
+import os
+from .ai_training_pipeline import train_horizon
+from .ai_feature_history import load_native_features
+from .native_history_replay import load_native_candles
+from .multi_model_replay import STRATEGY_TIMEFRAMES
+from .validation_selection import select_threshold
+from .fee_schedule import load_fee_rate
+from .training_settings import load_training_settings
+
+PARAMETERS = tuple(
+    {"max_iter": iterations, "learning_rate": rate}
+    for iterations, rate in itertools.product(
+        (60, 100, 140, 180, 240),
+        (0.025, 0.05, 0.075, 0.10, 0.15))
+)
+assert len(PARAMETERS) == 25
+
+
+def rank_validation_trials(trials):
+    """Only independent validation scores determine research ranking."""
+    eligible = [t for t in trials if t.get("validation_eligible")]
+    return sorted(eligible, key=lambda t: (
+        -t["validation_score"], t["trial_index"]))
+
+
+def run_batch(db, *, symbol, strategy, years):
+    if strategy not in STRATEGY_TIMEFRAMES:
+        raise ValueError("unsupported training strategy")
+    timeframe = STRATEGY_TIMEFRAMES[strategy]
+    candles = load_native_candles(db, symbol, timeframe)
+    features = load_native_features(db, symbol, timeframe)
+    fee_rate = load_fee_rate(db)
+    trials = []
+    for i, params in enumerate(PARAMETERS, start=1):
+        trial_key = hashlib.sha256(json.dumps(
+            [symbol, strategy, years, params], sort_keys=True).encode()).hexdigest()
+        record = {"trial_index": i, "trial_key": trial_key,
+                  "strategy": strategy, "symbol": symbol,
+                  "lookback_years": years, "params": params,
+                  "research_only": True, "auto_promote": False}
+        print(json.dumps({"status": "TRIAL_STARTED", **record}), flush=True)
+        try:
+            trained = train_horizon(features, candles, strategy,
+                                    years=years, model_params=params)
+            selection = select_threshold(
+                candles, features, trained["model"], symbol,
+                trained["windows"]["validation"], fee_rate)
+            candidates = [c for c in selection["candidates"] if c["eligible"]]
+            winner = next((c for c in candidates
+                           if c["threshold"] == selection["selected_threshold"]), None)
+            record.update({
+                "status": "COMPLETE",
+                "validation_eligible": winner is not None,
+                "validation_score": (winner["return_percent"] - winner["drawdown_percent"])
+                                    if winner else None,
+                "selected_threshold": selection["selected_threshold"],
+                "validation_candidates": selection["candidates"],
+                "training_samples": trained["coverage"]["train"]["samples"],
+                "validation_samples": trained["coverage"]["validation"]["samples"],
+                "validation_window": trained["windows"]["validation"],
+                "holdout_evaluated": False,
+            })
+        except Exception as exc:
+            # An experiment failure is recorded; do not pretend it succeeded.
+            record.update({"status": "FAILED", "validation_eligible": False,
+                           "error": str(exc), "holdout_evaluated": False})
+        trials.append(record)
+        print(json.dumps({"status": "TRIAL_RESULT", **record}, allow_nan=False), flush=True)
+    ranking = rank_validation_trials(trials)
+    summary = {"status": "BATCH_COMPLETE", "symbol": symbol, "strategy": strategy,
+               "lookback_years": years, "requested_trials": len(PARAMETERS),
+               "completed_trials": sum(t["status"] == "COMPLETE" for t in trials),
+               "failed_trials": sum(t["status"] == "FAILED" for t in trials),
+               "eligible_trials": len(ranking),
+               "best_trial": ranking[0] if ranking else None,
+               "holdout_evaluated": False, "auto_promote": False}
+    print(json.dumps(summary, allow_nan=False), flush=True)
+    return summary
+
+
+def main():
+    from collector import db
+    settings = load_training_settings(db)
+    strategy = os.environ["TRAINING_BATCH_STRATEGY"]
+    run_batch(db, symbol=settings["symbol"], strategy=strategy,
+              years=settings["years"])
+
+
+if __name__ == "__main__":
+    main()

@@ -14,6 +14,8 @@ on:
       - 'tests/test_paper_evaluation_ledger.py'
       - 'p3/four_strategy_analog.py'
       - 'p3/analog_data_loader.py'
+      - 'p3/historical_similarity.py'
+      - 'tests/test_analog_ranking_parity.py'
       - '.github/workflows/p3-analog-research-report.yml'
   schedule:
     - cron: '20 3 * * *'
@@ -66,7 +68,7 @@ jobs:
             exit 1
           }
       - name: Unit test paper learner
-        run: python -m unittest tests.test_paper_learning tests.test_paper_direction tests.test_paper_outcome_memory tests.test_paper_evaluation_ledger
+        run: python -m unittest tests.test_paper_learning tests.test_paper_direction tests.test_paper_outcome_memory tests.test_paper_evaluation_ledger tests.test_analog_ranking_parity
       - name: Benchmark chronological Ridge CPU cost
         if: matrix.strategy == 'INTRADAY' && matrix.mode == 'STRICT'
         run: python -m tests.benchmark_paper_learning

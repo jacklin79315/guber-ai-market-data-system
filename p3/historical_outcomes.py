@@ -39,6 +39,14 @@ def label_fixed_plan(candles, *, signal_close_ms, direction, stop_pct,
     if len(eligible) < max_holding_bars:
         return None
     bars = eligible[:max_holding_bars]
+    # Never jump over missing native bars or delayed entries.
+    interval = bars[0]["close_time"] - bars[0]["open_time"] + 1
+    if interval < 1 or bars[0]["open_time"] != signal_close_ms + 1:
+        return None
+    if any(bar["close_time"] - bar["open_time"] + 1 != interval or
+           (i and bar["open_time"] != bars[i-1]["open_time"] + interval)
+           for i, bar in enumerate(bars)):
+        return None
     for i, candle in enumerate(bars):
         _validate_candle(candle)
         if i and bars[i-1]["close_time"] >= candle["open_time"]:

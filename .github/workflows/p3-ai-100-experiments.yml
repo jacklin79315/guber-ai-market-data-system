@@ -1,0 +1,42 @@
+name: P3 AI 100 Experiment Batch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  training-batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        strategy: [INTRADAY, ONE_TO_THREE_DAYS, ONE_WEEK, FIFTEEN_TO_THIRTY_DAYS]
+    env:
+      TRAINING_BATCH_STRATEGY: ${{ matrix.strategy }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Validate experiment grid
+        run: python -m unittest tests.test_ai_training_batch
+      - name: Run 25 validation-only training trials
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m p3.ai_training_batch | tee batch-results.jsonl
+      - name: Preserve every experiment result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-batch-${{ matrix.strategy }}-${{ github.run_id }}
+          path: batch-results.jsonl
+          retention-days: 90
+          if-no-files-found: ignore

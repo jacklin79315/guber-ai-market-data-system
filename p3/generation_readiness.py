@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 def generation_readiness(*, latest_run_complete, current_window,
                          previous_window, parent_eligible, already_evaluated,
-                         max_generations=10, next_generation=2):
+                         max_generations=100, next_generation=2):
     if not latest_run_complete:
         return {"status": "WAIT", "reason": "parent_run_incomplete"}
     if next_generation < 2 or next_generation > max_generations:

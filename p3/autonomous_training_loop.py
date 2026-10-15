@@ -160,6 +160,33 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                "error_reason": result["error"],
                "completed_at": datetime.now(timezone.utc).isoformat(),
            }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
+        # Diagnostic feedback compares validation errors only; it cannot
+        # override the established trading-performance qualification gates.
+        prior = next((h for h in reversed(history)
+                      if h.get("status") == "COMPLETE" and h.get("diagnostics")), None)
+        if prior and diagnostics and result["status"] == "COMPLETE":
+            keys = ("direction_accuracy_percent", "direction_brier_score",
+                    "upside_mae_percent", "downside_mae_percent")
+            changes = {
+                key: (diagnostics[key] - prior["diagnostics"][key]
+                      if diagnostics.get(key) is not None
+                      and prior["diagnostics"].get(key) is not None else None)
+                for key in keys
+            }
+            print(json.dumps({
+                "status": "MODEL_LAYER_FEEDBACK",
+                "strategy": strategy,
+                "previous_trial_index": prior["trial_index"],
+                "current_trial_index": result["trial_index"],
+                "direction_accuracy_change_pp": changes["direction_accuracy_percent"],
+                "direction_brier_change": changes["direction_brier_score"],
+                "upside_mae_change_pp": changes["upside_mae_percent"],
+                "downside_mae_change_pp": changes["downside_mae_percent"],
+                "interpretation": "negative error deltas indicate improvement",
+                "validation_only": True,
+                "causal_attribution": False,
+                "changes_selection_policy": False,
+            }, allow_nan=False), flush=True)
         history.append(result)
         print(json.dumps({"status": "ITERATION_RESULT", "strategy": strategy,
                           **result}, allow_nan=False), flush=True)

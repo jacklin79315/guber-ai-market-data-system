@@ -63,6 +63,31 @@ def load_schedule_from_supabase(db, symbol, *, years=2):
         end = ((int(candles[0]["close_time"]) + 1) // DAY_MS) * DAY_MS
         start = _add_months(end, -12 * years)
         windows[strategy] = list(chronological_windows(start, years=years)["validation"])
+    decisions = plan_next_experiment(rows, windows)
     return {"symbol": symbol, "lookback_years": years,
-            "history_rows": len(rows), "decisions": plan_next_experiment(rows, windows),
+            "history_rows": len(rows), "decisions": decisions,
             "validation_windows": windows}
+
+
+def eligible_candidate_trials(schedule):
+    """Return bounded, validation-only trials, without running them.
+
+    READY means the chronological window advanced; it is not proof that the
+    newly proposed parameters are profitable or that holdout may be inspected.
+    """
+    trials = []
+    for strategy, decision in sorted((schedule.get("decisions") or {}).items()):
+        if decision.get("status") != "READY":
+            continue
+        params = decision.get("params")
+        if not isinstance(params, dict) or set(params) != {"max_iter", "learning_rate"}:
+            continue
+        if (not isinstance(params["max_iter"], int) or
+                not 40 <= params["max_iter"] <= 300 or
+                not isinstance(params["learning_rate"], (int, float)) or
+                not 0.01 <= params["learning_rate"] <= 0.2):
+            continue
+        trials.append({"strategy": strategy, "params": dict(params),
+                       "validation_window": decision["current_validation_window"],
+                       "status": "READY", "auto_promote": False})
+    return trials

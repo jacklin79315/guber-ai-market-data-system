@@ -38,7 +38,7 @@ def chronological_windows(start_ms, *, years=2):
         "holdout": (val_end, test_end),
     }
 
-def train_horizon(features, candles, strategy, *, years=2, model_params=None):
+def train_horizon(features, candles, strategy, *, years=2, model_params=None, window_offset_days=0):
     """Fit on training only; return model and partitioned evaluation samples.
 
     Each label consumes up to horizon_bars * timeframe milliseconds AFTER
@@ -55,6 +55,9 @@ def train_horizon(features, candles, strategy, *, years=2, model_params=None):
     end = int(candles[-1]["close_time"]) + 1
     # Anchor at a complete UTC calendar day to avoid intraday boundary drift.
     end = (end // DAY_MS) * DAY_MS
+    if not isinstance(window_offset_days, int) or window_offset_days < 0:
+        raise ValueError("window_offset_days must be a nonnegative integer")
+    end -= window_offset_days * DAY_MS
     start = _add_months(end, -12 * years)
     windows = chronological_windows(start, years=years)
     if int(candles[-1]["close_time"]) + 1 < windows["holdout"][1]:

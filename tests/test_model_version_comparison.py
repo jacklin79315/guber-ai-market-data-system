@@ -23,6 +23,8 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(compare_versions(None, {**BASE, "validation_score": float("nan")})["decision"], "REJECT")
     def test_dataset_mismatch(self):
         self.assertEqual(compare_versions(BASE, {**BASE, "dataset_version": "v2"})["decision"], "INCOMPARABLE")
+    def test_code_version_mismatch(self):
+        self.assertEqual(compare_versions(BASE, {**BASE, "code_version": "git:other"})["decision"], "INCOMPARABLE")
     def test_holdout_does_not_affect_selection(self):
         a = compare_versions({**BASE, "holdout_return_percent": 100}, {**BASE, "validation_score": 3, "holdout_return_percent": -99})
         self.assertEqual(a["decision"], "REVIEW")

@@ -89,3 +89,14 @@ def finish_candidate_trial(db, symbol, trial, *, error=None):
     })
     if result is not True:
         raise RuntimeError("candidate claim not owned or already finalized")
+
+
+def expire_stale_claims(db, *, older_than_minutes=180):
+    """Mark abandoned claims FAILED; never automatically reclaim/retrain."""
+    if not isinstance(older_than_minutes, int) or not 60 <= older_than_minutes <= 10080:
+        raise ValueError("invalid claim expiry threshold")
+    count = db("POST", "rpc/expire_ai_candidate_claims",
+               payload={"p_older_than_minutes": older_than_minutes})
+    if not isinstance(count, int) or isinstance(count, bool):
+        raise RuntimeError("unexpected expiry RPC response")
+    return count

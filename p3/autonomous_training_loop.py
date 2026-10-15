@@ -159,6 +159,26 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         history.append(result)
         print(json.dumps({"status": "ITERATION_RESULT", "strategy": strategy,
                           **result}, allow_nan=False), flush=True)
+    # Report observed trading metrics even if no model passes the existing gates.
+    # This is display-only and does not alter model selection or qualification.
+    observed_trials = [h for h in history if h["status"] == "COMPLETE"
+                       and h.get("validation_return_percent") is not None
+                       and h.get("validation_drawdown_percent") is not None]
+    best_observed = max(
+        observed_trials,
+        key=lambda h: (h["validation_return_percent"] - h["validation_drawdown_percent"],
+                       h["validation_return_percent"]),
+        default=None,
+    )
+    observed_performance = ({
+        "trial_index": best_observed["trial_index"],
+        "annualized_return_percent": best_observed.get("validation_annualized_return_percent"),
+        "win_rate_percent": best_observed.get("validation_win_rate_percent"),
+        "strategy_score": best_observed.get("validation_mean_score_q"),
+        "closed_trades": best_observed.get("validation_trades"),
+        "validation_eligible": best_observed.get("validation_eligible") is True,
+        "ranking_basis": "existing_validation_return_minus_drawdown",
+    } if best_observed else None)
     successful = [h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None]
     best = max(successful, key=lambda h: h["validation_score"], default=None)
     if not successful:
@@ -167,7 +187,8 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 "iterations": len(history), "successful": 0,
                 "baseline_score": None, "best_score": None,
                 "improvement_vs_first_successful": None,
-                "best": None, "outer_validation_used": True,
+                "best": None, "best_observed_performance": observed_performance,
+                "outer_validation_used": True,
                 "holdout_used": False}
     baseline = successful[0]
     improvement = (float(best["validation_score"]) - float(baseline["validation_score"])
@@ -177,7 +198,8 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
             "baseline_score": baseline["validation_score"] if baseline else None,
             "best_score": best["validation_score"] if best else None,
             "improvement_vs_first_successful": improvement,
-            "best": best, "outer_validation_used": True, "holdout_used": False}
+            "best": best, "best_observed_performance": observed_performance,
+            "outer_validation_used": True, "holdout_used": False}
 
 
 def main():

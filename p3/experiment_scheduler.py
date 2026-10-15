@@ -5,7 +5,7 @@ from .experiment_history import authorize_next_validation
 def plan_next_experiment(history, current_validation_windows):
     """Return per-strategy WAIT/READY decisions using saved Supabase audits.
 
-    history: ai_training_runs rows sorted newest first, each with report JSON.
+    history: ai_training_runs rows sorted by trained_at DESC, id DESC.
     current_validation_windows: mapping strategy -> [start_ms, end_ms]
     READY only permits a future candidate trial, not model promotion.
     """
@@ -41,9 +41,9 @@ def load_schedule_from_supabase(db, symbol, *, years=2):
     offset = 0
     while True:
         page = db("GET", "ai_training_runs", {
-            "select": "run_key,symbol,strategy,timeframe,lookback_years,report",
+            "select": "id,trained_at,run_key,symbol,strategy,timeframe,lookback_years,report",
             "symbol": "eq." + symbol, "lookback_years": "eq." + str(years),
-            "order": "run_key.desc", "limit": "500", "offset": str(offset),
+            "order": "trained_at.desc,id.desc", "limit": "500", "offset": str(offset),
         })
         rows.extend(page)
         if len(page) < 500:

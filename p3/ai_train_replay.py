@@ -12,6 +12,7 @@ from .multi_model_replay import STRATEGY_TIMEFRAMES
 from .replay_runner import replay_with_metrics
 from .fee_schedule import load_fee_rate
 from .execution_diagnostics import summarize_execution
+from .validation_selection import select_threshold
 
 def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     fee_rate = load_fee_rate(db)
@@ -22,6 +23,9 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         features = load_native_features(db, symbol, timeframe)
         trained = train_horizon(features, candles, strategy, years=years)
         model = trained["model"]
+        selection = select_threshold(candles, features, model, symbol,
+                                     trained["windows"]["validation"], fee_rate)
+        selected_threshold = selection["selected_threshold"]
         holdout_start, holdout_end = trained["windows"]["holdout"]
         # Embargo is enforced on decisions as well as training examples.
         earliest = holdout_start + EMBARGO_MS
@@ -32,8 +36,9 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
             if earliest <= t < holdout_end and t in feature_by_close:
                 decisions[t] = model.decide(
                     symbol, feature_by_close[t],
-                    confidence_threshold=confidence_threshold,
+                    confidence_threshold=(selected_threshold if selected_threshold is not None else confidence_threshold),
                 )
+        # Holdout never influences candidate selection.
         # Include one pre-holdout bar only if it cannot cause an entry.
         holdout_candles = [
             c for c in candles if earliest <= int(c["open_time"])
@@ -45,6 +50,9 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         metrics = outcome["metrics"]
         reports[strategy] = {
             "timeframe": timeframe,
+            "validation_selection": selection,
+            "holdout_threshold": (selected_threshold if selected_threshold is not None else confidence_threshold),
+            "holdout_threshold_fallback": selected_threshold is None,
             "execution_diagnostics": summarize_execution(outcome["account"], outcome["events"]),
             "fee_rate_per_side": fee_rate,
             "training_samples": len(trained["partitions"]["train"]["X"]),

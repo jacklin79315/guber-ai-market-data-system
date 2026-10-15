@@ -15,7 +15,7 @@ from .execution_diagnostics import summarize_execution
 from .validation_selection import select_threshold
 from .training_settings import load_training_settings
 from .training_registry import record_training_reports
-from .experiment_scheduler import load_schedule_from_supabase
+from .experiment_scheduler import load_schedule_from_supabase, eligible_candidate_trials
 from .model_qualification import evaluate_model_gates
 from .model_provenance import fingerprint_rows, pinned_code_version, fee_fingerprint
 from .ai_decision_model import FEATURE_COLUMNS
@@ -173,6 +173,10 @@ def main():
     # evaluation protocol is approved. Baseline training remains unchanged.
     schedule = load_schedule_from_supabase(db, symbol, years=years)
     print(json.dumps({"status": "EXPERIMENT_SCHEDULE", **schedule},
+                     sort_keys=True, allow_nan=False), flush=True)
+    print(json.dumps({"status": "EXPERIMENT_TRIAL_MANIFEST",
+                      "trials": eligible_candidate_trials(schedule),
+                      "execution": "DISABLED_UNTIL_WINDOW_ISOLATION_VERIFIED"},
                      sort_keys=True, allow_nan=False), flush=True)
     print(json.dumps({"status": "TRAINING_STARTED", "symbol": symbol}), flush=True)
     result = run_training(db, symbol, years=years)

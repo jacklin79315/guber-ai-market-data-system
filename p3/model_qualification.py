@@ -7,6 +7,9 @@ import math
 
 MIN_HOLDOUT_TRADES = 5
 MAX_HOLDOUT_DRAWDOWN_PERCENT = 8.0
+MIN_ANNUALIZED_RETURN_PERCENT = 10.0
+MIN_WIN_RATE_PERCENT = 70.0
+MIN_MEAN_SCORE_Q = 65.0
 
 
 def evaluate_model_gates(selection, metrics):
@@ -14,12 +17,20 @@ def evaluate_model_gates(selection, metrics):
     trades = metrics.get("closed_trades")
     drawdown = metrics.get("max_close_to_close_drawdown_percent")
     equity = metrics.get("final_mark_to_market_equity")
+    annualized = metrics.get("annualized_return_percent")
+    win_rate = metrics.get("win_rate_percent")
+    mean_score = metrics.get("mean_score_q")
     finite = all(isinstance(v, (int, float)) and not isinstance(v, bool)
-                 and math.isfinite(v) for v in (trades, drawdown, equity))
+                 and math.isfinite(v) for v in (trades, drawdown, equity,
+                                                annualized, win_rate, mean_score))
     holdout_accepted = bool(
         validation_eligible and finite and trades >= MIN_HOLDOUT_TRADES
         and 0 <= drawdown <= MAX_HOLDOUT_DRAWDOWN_PERCENT
-        and equity > 0 and not metrics.get("execution_path_uncertain", True)
+        and equity > 0
+        and annualized >= MIN_ANNUALIZED_RETURN_PERCENT
+        and win_rate >= MIN_WIN_RATE_PERCENT
+        and mean_score >= MIN_MEAN_SCORE_Q
+        and not metrics.get("execution_path_uncertain", True)
     )
     # Independent acceptance does not itself authorize running paper orders.
     return {

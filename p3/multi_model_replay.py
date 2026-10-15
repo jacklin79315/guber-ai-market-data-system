@@ -1,9 +1,9 @@
-"""Run four independent horizon strategies without sharing capital or positions.
+"""Four independent multi-position strategy portfolios.
 
-The caller supplies native candles and already-generated, time-safe decisions.
-This is a replay coordinator, not an AI policy or training implementation.
+Each horizon uses its own initial 10,000 USDT and settlement-based 80%
+aggregate entry capacity. No shared cash and no live order placement.
 """
-from .replay_runner import replay_with_metrics
+from .multi_position_replay import replay_multi_positions
 
 STRATEGY_TIMEFRAMES = {
     "INTRADAY": "15m",
@@ -16,24 +16,30 @@ STRATEGY_TIMEFRAMES = {
 def replay_four_models(candles_by_timeframe, decisions_by_strategy, *,
                        fee_rate=0.0, slippage_rate=0.0,
                        max_holding_ms_by_strategy=None, score_k=2.0):
-    """Return independent replay results for all four model horizons.
+    """Replay each strategy independently with multiple concurrent lots.
 
-    Each strategy starts with 10,000 USDT. No position, equity or
-    decision state is shared between the four accounts.
+    Candle inputs are symbol-keyed mappings for each native timeframe.
+    Decisions are symbol-keyed mappings of prior-close timestamps.
+    Holding-time exits are not implemented by the multi-lot executor; reject
+    requested holding limits rather than silently ignoring them.
     """
-    horizons = max_holding_ms_by_strategy or {}
+    if max_holding_ms_by_strategy and any(
+        value is not None for value in max_holding_ms_by_strategy.values()
+    ):
+        raise NotImplementedError("multi-lot maximum holding-time exits are not implemented")
     results = {}
     for strategy, timeframe in STRATEGY_TIMEFRAMES.items():
         if timeframe not in candles_by_timeframe:
             raise ValueError(f"missing native candles: {timeframe}")
         if strategy not in decisions_by_strategy:
             raise ValueError(f"missing decisions: {strategy}")
-        results[strategy] = replay_with_metrics(
-            candles_by_timeframe[timeframe],
-            decisions_by_strategy[strategy],
-            fee_rate=fee_rate,
-            slippage_rate=slippage_rate,
-            max_holding_ms=horizons.get(strategy),
-            score_k=score_k,
+        candles = candles_by_timeframe[timeframe]
+        decisions = decisions_by_strategy[strategy]
+        if not isinstance(candles, dict) or not isinstance(decisions, dict):
+            raise TypeError("multi-lot replay expects symbol-keyed candle and decision mappings")
+        results[strategy] = replay_multi_positions(
+            candles, decisions, fee_rate=fee_rate, slippage_rate=slippage_rate
         )
+        results[strategy]["strategy"] = strategy
+        results[strategy]["timeframe"] = timeframe
     return results

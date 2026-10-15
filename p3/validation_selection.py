@@ -19,14 +19,51 @@ def evaluate_window(candles, features, model, symbol, window, threshold, fee_rat
     return replay_with_metrics(selected, decisions, fee_rate=fee_rate)
 
 
+def diagnose_decision_flow(candles, features, model, symbol, window, threshold):
+    """Read-only decision funnel; does not alter selection or replay."""
+    begin, end = window
+    earliest = begin + EMBARGO_MS
+    selected = [c for c in candles if earliest <= int(c["open_time"])
+                and int(c["close_time"]) < end]
+    rows = {int(row["close_time"]): row for row in features}
+    counts = {"validation_bars": len(selected), "feature_matched": 0,
+              "feature_missing": 0, "LONG": 0, "SHORT": 0, "WAIT": 0,
+              "direction_confidence_filtered": 0, "price_range_filtered": 0}
+    for candle in selected:
+        row = rows.get(int(candle["close_time"]))
+        if row is None:
+            counts["feature_missing"] += 1
+            continue
+        counts["feature_matched"] += 1
+        decision = model.decide(symbol, row, confidence_threshold=threshold)
+        counts[decision.action] += 1
+        if decision.action == "WAIT":
+            probability = model.analyze_direction(row)
+            if 1 - threshold < probability < threshold:
+                counts["direction_confidence_filtered"] += 1
+            else:
+                counts["price_range_filtered"] += 1
+    return counts
+
+
 def select_threshold(candles, features, model, symbol, validation_window, fee_rate):
     candidates = []
     for threshold in THRESHOLDS:
-        metrics = evaluate_window(candles, features, model, symbol, validation_window,
-                                  threshold, fee_rate)["metrics"]
+        replay_result = evaluate_window(candles, features, model, symbol, validation_window,
+                                        threshold, fee_rate)
+        metrics = replay_result["metrics"]
+        flow = diagnose_decision_flow(candles, features, model, symbol,
+                                      validation_window, threshold)
+        events = replay_result["events"]
+        flow["entries_filled"] = sum(e["type"] == "ENTRY" for e in events)
+        flow["exits_recorded"] = sum(e["type"] == "EXIT" for e in events)
+        flow["unfilled_or_position_blocked"] = (
+            flow["LONG"] + flow["SHORT"] - flow["entries_filled"])
+        flow["open_position_at_end"] = replay_result["account"].position is not None
         trades = metrics["closed_trades"]
         candidates.append({
             "threshold": threshold,
+            "decision_flow": flow,
             "closed_trades": trades,
             "eligible": trades >= MIN_TRADES and not metrics["execution_path_uncertain"] and metrics["max_close_to_close_drawdown_percent"] <= MAX_VALIDATION_DRAWDOWN_PERCENT,
             "return_percent": 100 * (metrics["final_mark_to_market_equity"] / 10000 - 1),

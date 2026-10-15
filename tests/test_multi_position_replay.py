@@ -32,7 +32,7 @@ class MultiPositionReplayTests(unittest.TestCase):
     def test_same_symbol_scale_in_without_averaging_lots(self):
         candles = {"BTCUSDT": bars([(99, 101, 100)] * 4)}
         decisions = {"BTCUSDT": {59999: long("BTCUSDT"),
-                                  179999: long("BTCUSDT")}}
+                                  119999: long("BTCUSDT")}}
         result = replay_multi_positions(candles, decisions)
         self.assertEqual(result["open_lots"], 2)
         self.assertEqual(sorted(result["account"].positions), [1, 2])

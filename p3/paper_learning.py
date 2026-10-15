@@ -114,9 +114,16 @@ def chronological_direction_decisions(predictions):
             "realized_selected_net_r": selected["actual_net_r"] if selected else None,
             "reason": reason,
         })
+    paired = [x for x in decisions if "predicted_long_net_r" in x]
+    positive = [x for x in paired if max(x["predicted_long_net_r"], x["predicted_short_net_r"]) > 0]
     trades = [x["realized_selected_net_r"] for x in decisions if x["decision"] != "WAIT"]
     return {"research_only": True, "auto_trade_enabled": False,
             "decision_count": len(decisions),
+            "paired_prediction_count": len(paired),
+            "positive_forecast_count": len(positive),
+            "max_predicted_net_r": max((max(x["predicted_long_net_r"], x["predicted_short_net_r"]) for x in paired), default=None),
+            "mean_best_predicted_net_r": sum(max(x["predicted_long_net_r"], x["predicted_short_net_r"]) for x in paired) / len(paired) if paired else None,
+            "wait_reason_counts": {reason: sum(x["decision"] == "WAIT" and x["reason"] == reason for x in decisions) for reason in ("missing_paired_prediction", "nonpositive_or_tied", "existing_paper_position")},
             "long_count": sum(x["decision"] == "LONG" for x in decisions),
             "short_count": sum(x["decision"] == "SHORT" for x in decisions),
             "wait_count": sum(x["decision"] == "WAIT" for x in decisions),

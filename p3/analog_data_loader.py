@@ -14,7 +14,7 @@ DEFAULT_FEATURES = (
 
 
 def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
-                 page_size=1000, max_pages=200):
+                 page_size=1000, max_pages=200, start_ms=None):
     if page_size < 1 or page_size > 1000 or max_pages < 1:
         raise ValueError("invalid pagination")
     rows = []
@@ -30,10 +30,11 @@ def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
             "order": "close_time.asc",
             "limit": str(page_size),
         }
-        if last is not None:
-            # PostgREST multiple constraints on one field use and=...
+        lower = last if last is not None else start_ms
+        if lower is not None:
+            op = "gt" if last is not None else "gte"
             params.pop("close_time")
-            params["and"] = "(close_time.gt." + str(last) + ",close_time.lte." + str(asof_ms) + ")"
+            params["and"] = "(close_time." + op + "." + str(lower) + ",close_time.lte." + str(asof_ms) + ")"
         page = db("GET", table, params)
         if not isinstance(page, list):
             raise ValueError("unexpected database response")
@@ -58,18 +59,18 @@ def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
 
 def load_research_history(db, symbol, timeframe, *, asof_ms,
                           features=DEFAULT_FEATURES, page_size=1000,
-                          max_pages=200):
+                          max_pages=200, start_ms=None):
     if not symbol or not timeframe or not isinstance(asof_ms, int) or isinstance(asof_ms, bool):
         raise ValueError("invalid research scope")
     feature_fields = ["source", "market", "symbol", "timeframe", "close_time", *features]
     feature_rows = _fetch_pages(
         db, "market_features", symbol, timeframe, asof_ms=asof_ms,
-        fields=feature_fields, page_size=page_size, max_pages=max_pages)
+        fields=feature_fields, page_size=page_size, max_pages=max_pages, start_ms=start_ms)
     candle_fields = ["source", "market", "symbol", "timeframe", "open_time", "close_time",
                      "open_price", "high_price", "low_price", "close_price"]
     candle_rows = _fetch_pages(
         db, "raw_candles", symbol, timeframe, asof_ms=asof_ms,
-        fields=candle_fields, page_size=page_size, max_pages=max_pages)
+        fields=candle_fields, page_size=page_size, max_pages=max_pages, start_ms=start_ms)
     candles = raw_rows_to_candles(candle_rows, symbol=symbol, timeframe=timeframe)
     snapshots = [{"timestamp_ms": row["close_time"],
                   **{name: row.get(name) for name in features}}

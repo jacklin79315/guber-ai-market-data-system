@@ -8,6 +8,8 @@ on:
       - 'p3/paper_learning.py'
       - 'tests/test_paper_direction.py'
       - 'tests/test_paper_learning.py'
+      - 'tests/test_paper_outcome_memory.py'
+      - 'p3/paper_outcome_memory.py'
       - 'p3/four_strategy_analog.py'
       - 'p3/analog_data_loader.py'
       - '.github/workflows/p3-analog-research-report.yml'
@@ -37,6 +39,7 @@ jobs:
       ANALOG_STRATEGY: ${{ matrix.strategy }}
       ANALOG_EXPLORATION: ${{ matrix.mode == 'EXPLORATION' }}
       ANALOG_EVALUATION_BARS: "40"
+      PAPER_OUTCOME_PERSIST: "true"
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
@@ -52,7 +55,7 @@ jobs:
             exit 1
           }
       - name: Unit test paper learner
-        run: python -m unittest tests.test_paper_learning tests.test_paper_direction
+        run: python -m unittest tests.test_paper_learning tests.test_paper_direction tests.test_paper_outcome_memory
       - name: Read-only chronological analog research
         shell: bash
         run: |

@@ -6,9 +6,9 @@ class PaperDirectionTests(unittest.TestCase):
     def test_choose_best_positive_forecast_not_actual_outcome(self):
         rows = [
             {"signal_time_ms": 10, "direction": "LONG",
-             "prediction_net_r": .3, "actual_net_r": -1},
+             "prediction_net_r": .3, "actual_net_r": -1, "label_end_ms": 15},
             {"signal_time_ms": 10, "direction": "SHORT",
-             "prediction_net_r": .2, "actual_net_r": 1},
+             "prediction_net_r": .2, "actual_net_r": 1, "label_end_ms": 15},
             {"signal_time_ms": 20, "direction": "LONG",
              "prediction_net_r": -.2, "actual_net_r": 1},
             {"signal_time_ms": 20, "direction": "SHORT",
@@ -19,6 +19,20 @@ class PaperDirectionTests(unittest.TestCase):
         self.assertEqual(result["short_count"], 0)
         self.assertEqual(result["wait_count"], 1)
         self.assertEqual(result["realized_selected_mean_net_r"], -1)
+
+    def test_opposite_direction_cannot_open_while_position_active(self):
+        rows = [
+            {"signal_time_ms": t, "direction": d,
+             "prediction_net_r": pred, "actual_net_r": 1,
+             "label_end_ms": t + 30}
+            for t, values in [(10, [(.5, "LONG"), (.1, "SHORT")]),
+                              (20, [(.1, "LONG"), (.5, "SHORT")])]
+            for pred, d in values
+        ]
+        result = chronological_direction_decisions(rows)
+        self.assertEqual(result["long_count"], 1)
+        self.assertEqual(result["short_count"], 0)
+        self.assertEqual(result["decisions"][1]["reason"], "existing_paper_position")
 
     def test_unpaired_forecast_waits(self):
         result = chronological_direction_decisions([

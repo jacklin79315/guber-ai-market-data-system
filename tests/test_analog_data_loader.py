@@ -20,6 +20,7 @@ class AnalogDataLoaderTests(unittest.TestCase):
                      "low_price": "90", "close_price": "105"}]
         result = load_research_history(db, "BTCUSDT", "1h", asof_ms=3599999,
                                        features=("rsi_12",))
+        self.assertTrue(all(params["source"] == "eq.BINANCE" and params["market"] == "eq.SPOT" for _, _, params in calls))
         self.assertEqual(result["feature_count"], 1)
         self.assertEqual(result["candle_count"], 1)
         self.assertTrue(all(method == "GET" for method, _, _ in calls))

@@ -1,0 +1,76 @@
+"""Opt-in multi-lot replay. Legacy single-position training is unchanged.
+
+One chronological native-candle stream per symbol. Multiple symbols may be
+merged by close time; only decisions known at the preceding close can fill.
+No same-entry-bar exits because intrabar sequence is unknowable.
+"""
+from .candle_execution import _trigger, _validate_candle
+from .multi_position_account import MultiPositionAccount
+
+
+def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
+                           fee_rate=0.0, slippage_rate=0.0):
+    account = MultiPositionAccount()
+    events = []
+    equity_curve = []
+    candles = []
+    for symbol, bars in candles_by_symbol.items():
+        previous = None
+        for bar in bars:
+            _validate_candle(bar)
+            if previous is not None and bar["open_time"] <= previous["close_time"]:
+                raise ValueError("overlapping or unordered candles")
+            candles.append((bar["close_time"], symbol, bar, previous))
+            previous = bar
+    candles.sort(key=lambda x: (x[0], x[1]))
+    prices = {}
+    for close_time, symbol, bar, previous in candles:
+        # First exit previously open lots on this symbol; entry-bar exits are
+        # intentionally deferred, consistent with the legacy OHLC assumption.
+        for lot_id, lot in list(account.positions.items()):
+            if lot.decision.symbol != symbol or bar["close_time"] <= lot.entry_time_ms:
+                continue
+            if bar["open_time"] < lot.entry_time_ms:
+                raise ValueError("entry inside candle")
+            hit, ambiguous = _trigger(lot.decision, bar["high"], bar["low"], bar["close"])
+            if hit == "SL":
+                if lot.decision.action == "LONG":
+                    account.mark(lot_id, min(bar["high"], max(bar["low"], lot.decision.stop_loss)), bar["high"])
+                else:
+                    account.mark(lot_id, bar["low"], max(bar["low"], min(bar["high"], lot.decision.stop_loss)))
+            elif hit is None:
+                account.mark(lot_id, bar["low"], bar["high"])
+            if hit:
+                level = lot.decision.stop_loss if hit == "SL" else lot.decision.take_profit
+                result = account.exit(lot_id, level, close_time,
+                                      fee_rate=fee_rate, slippage_rate=slippage_rate,
+                                      reason=hit)
+                events.append({"type": "EXIT", "ambiguous_fill": ambiguous, **result})
+        if previous is not None:
+            decision = decisions_by_symbol.get(symbol, {}).get(previous["close_time"])
+            if decision is not None and decision.action != "WAIT":
+                decision.validate()
+                if decision.symbol != symbol:
+                    raise ValueError("decision symbol mismatch")
+                if bar["open_time"] != previous["close_time"] + 1:
+                    raise ValueError("missing immediately following candle")
+                if bar["low"] <= decision.entry <= bar["high"]:
+                    filled = account.enter(decision, bar["open_time"],
+                                           decision_close_time_ms=previous["close_time"],
+                                           fee_rate=fee_rate, slippage_rate=slippage_rate)
+                    if filled is None:
+                        events.append({"type": "REJECTED", "reason": "INSUFFICIENT_CASH",
+                                       "symbol": symbol, "time_ms": bar["open_time"]})
+                    else:
+                        lot_id, lot = filled
+                        events.append({"type": "ENTRY", "lot_id": lot_id, "symbol": symbol,
+                                       "side": decision.action, "time_ms": lot.entry_time_ms,
+                                       "price": lot.entry_price, "entry_time_estimated": True,
+                                       "entry_bar_exit_unresolved": (
+                                           bar["low"] <= decision.stop_loss <= bar["high"]
+                                           or bar["low"] <= decision.take_profit <= bar["high"])})
+        prices[symbol] = bar["close"]
+        equity_curve.append({"time_ms": close_time, "equity": account.equity(prices),
+                             "cash": account.cash, "open_lots": len(account.positions)})
+    return {"account": account, "events": events, "equity_curve": equity_curve,
+            "open_lots": len(account.positions), "closed_trades": len(account.closed_trades)}

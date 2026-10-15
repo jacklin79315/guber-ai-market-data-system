@@ -4,7 +4,11 @@ Status: DESIGN ONLY. No database migration, authentication, UI, or runtime confi
 
 ## Product boundaries
 
-One web application with ADMIN and VIEWER roles. Scope: autonomous model research, evaluation, performance monitoring, and simulated execution.
+One web application with ADMIN and VIEWER roles. Scope: autonomous model research, self-evaluation, iterative improvement, performance monitoring, and paper simulation.
+
+## Autonomous training product goal
+
+The system independently collects data, validates data quality, generates research candidates, trains, evaluates out-of-sample, compares generations, retains the best eligible research champion, and waits for genuinely new data before the next cycle. Failed checks block only the affected job and are logged for diagnosis. Routine checks and generation decisions belong to the system, not to manual assistant approval. Training/evaluation metrics must be separated by TRAIN, VALIDATION, HOLDOUT and FORWARD_PAPER. The assistant's role is to build and repair the automation, not repeatedly assess each model by hand.
 
 ## Screens and data contracts
 
@@ -14,7 +18,7 @@ One web application with ADMIN and VIEWER roles. Scope: autonomous model researc
 4. Admin instruments: allowlist of exchange/symbol/timeframes, enable/disable signal generation and training separately. Validate supported native data coverage before activation.
 5. Admin training: frequency (hours), enabled, candidate budget, allowed training timeframes, min trades, experiment history, run-now, pause/resume. Display next due and last successful run.
 6. Admin paper trading: isolated account balance and risk limits; isolated from external execution systems.
-7. Admin system health: collector freshness, features lag, training runs, paper engine, notification status and errors.
+7. Admin system health: collector freshness, features lag, training runs, evaluation engine, paper engine, notification status and errors.
 8. Admin user access: VIEWER/ADMIN role management with audit trail; no self-promotion.
 
 ## Proposed database schema (new tables; names to verify against existing DB before migrations)

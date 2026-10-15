@@ -1,7 +1,7 @@
 """Acceptance test: AI learns conflicting indicator combinations, not consensus rules."""
 import unittest
 import numpy as np
-from p3.ai_decision_model import FEATURE_COLUMNS, HorizonModel
+from p3.ai_decision_model import FEATURE_COLUMNS, DIRECTION_INDICES, HorizonModel
 
 
 class IndicatorInteractionLearningTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class IndicatorInteractionLearningTests(unittest.TestCase):
         downside = np.where(labels == 0, 0.03, 0.01)
         model = HorizonModel(max_iter=120, learning_rate=0.1)
         model.fit(X[:1800], labels[:1800], upside[:1800], downside[:1800])
-        predicted = model.direction.predict(X[1800:])
+        predicted = model.direction.predict(X[1800:, list(DIRECTION_INDICES)])
         accuracy = float(np.mean(predicted == labels[1800:]))
         # Synthetic out-of-sample interaction test; not a claim about market returns.
         self.assertGreater(accuracy, 0.90)

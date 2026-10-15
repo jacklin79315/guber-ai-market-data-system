@@ -50,6 +50,7 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
         slippage_rate=slippage_rate)
     selected = []
     trade_records = []
+    snapshot_by_time = {s["timestamp_ms"]: s for s in ordered}
     last_end = None
     skipped_overlapping_candidates = 0
     for t in candidate_times:
@@ -63,6 +64,7 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
         selected.append(outcome["net_r"])
         trade_records.append({
             "signal_time_ms": t, "direction": direction,
+            "signal_features": {f: snapshot_by_time[t].get(f) for f in features},
             "strict_decision": decision.get("strict_decision", decision["decision"]),
             "historical_net_expectancy_r": decision.get("net_expectancy_r"),
             "historical_lower_bound_r": decision.get("lower_bound_r"),

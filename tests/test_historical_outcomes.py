@@ -38,7 +38,7 @@ class HistoricalOutcomeTests(unittest.TestCase):
         result = label_fixed_plan([bar(1, 100, 101, 99),
                                    bar(2, 95, 96, 94, 95)],
                                   signal_close_ms=9, direction="LONG",
-                                  stop_pct=.02, target_pct=.03, max_holding_bars=1)
+                                  stop_pct=.02, target_pct=.03, max_holding_bars=2)
         self.assertAlmostEqual(result["net_r"], -2.5)
 
     def test_incomplete_future_is_not_labeled(self):

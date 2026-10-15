@@ -3,7 +3,7 @@ from p3.champion_challenger import review_challenger
 
 BASE = dict(symbol="BTCUSDT", strategy="INTRADAY", timeframe="15m",
             lookback_years=2, validation_window=[1, 2], evaluation_version="v1",
-            dataset_version="native-v1", feature_version="v1", fee_version="v1",
+            dataset_version="native-v1", feature_version="v1", fee_version="v1", code_version="git:abc",
             validation_eligible=True, validation_score=2.0,
             qualification={"holdout_accepted": True, "paper_eligible": False})
 

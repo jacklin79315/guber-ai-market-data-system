@@ -46,6 +46,18 @@ class MultiPositionReplayTests(unittest.TestCase):
         self.assertEqual(result["open_lots"], 0)
         self.assertEqual(result["events"][-1]["reason"], "TP")
 
+    def test_signals_track_wait_unfilled_and_filled(self):
+        candles = {"BTCUSDT": bars([(99, 101, 100)] * 5)}
+        decisions = {"BTCUSDT": {
+            59999: Decision("WAIT", "BTCUSDT"),
+            119999: long("BTCUSDT", entry=95),
+            179999: long("BTCUSDT"),
+        }}
+        result = replay_multi_positions(candles, decisions)
+        self.assertEqual([s["outcome"] for s in result["signals"]],
+                         ["WAIT", "NOT_FILLED", "FILLED"])
+        self.assertEqual(result["open_lots"], 1)
+
     def test_insufficient_cash_rejects_without_leverage(self):
         candles = {s: bars([(99, 101, 100)] * 3) for s in ("BTCUSDT", "ETHUSDT")}
         decisions = {s: {59999: long(s, allocation=0.8)} for s in candles}

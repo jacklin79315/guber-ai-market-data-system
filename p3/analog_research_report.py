@@ -138,6 +138,8 @@ def main():
         "evaluation_start_ms": evaluation_start_ms,
         "evaluation_end_ms": evaluation_end_ms,
         "features": list(DEFAULT_FEATURES),
+        "training_persistence": "none_retrained_per_run",
+        "evaluation_window_bars": evaluation_bars,
         "fixed_plan": {"stop_pct": stop_pct, "target_pct": target_pct,
                        "max_holding_bars": holding, "fee_rate": fee_rate,
                        "slippage_rate": slippage_rate, "k": 100, "min_samples": 30},

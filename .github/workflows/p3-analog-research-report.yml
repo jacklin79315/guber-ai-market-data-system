@@ -67,6 +67,9 @@ jobs:
           }
       - name: Unit test paper learner
         run: python -m unittest tests.test_paper_learning tests.test_paper_direction tests.test_paper_outcome_memory tests.test_paper_evaluation_ledger
+      - name: Benchmark chronological Ridge CPU cost
+        if: matrix.strategy == 'INTRADAY' && matrix.mode == 'STRICT'
+        run: python -m tests.benchmark_paper_learning
       - name: Read-only chronological analog research
         shell: bash
         run: |

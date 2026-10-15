@@ -1,0 +1,52 @@
+name: P3 AI Training and Holdout Replay
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: Binance spot symbol
+        required: true
+        default: BTCUSDT
+        type: choice
+        options:
+          - BTCUSDT
+          - ETHUSDT
+
+permissions:
+  contents: read
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P3_SYMBOL: ${{ inputs.symbol }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/p3b-paper-engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install training dependencies
+        run: pip install -r requirements.txt
+      - name: Require configured Supabase credentials
+        run: |
+          test -n "$SUPABASE_URL" || { echo 'Missing SUPABASE_URL secret'; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'Missing SUPABASE_SERVICE_ROLE_KEY secret'; exit 1; }
+      - name: Train four models and replay untouched holdout
+        run: python -m p3.ai_train_replay > p3-training-report.jsonl
+      - name: Show non-secret model summary
+        if: success()
+        run: python -c 'import json; r=json.loads(open("p3-training-report.jsonl").read().splitlines()[-1]); print(json.dumps(r, indent=2))'
+      - name: Upload training report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3-training-${{ inputs.symbol }}-${{ github.run_id }}
+          path: p3-training-report.jsonl
+          if-no-files-found: ignore
+          retention-days: 30

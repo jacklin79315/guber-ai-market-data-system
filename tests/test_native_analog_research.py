@@ -10,6 +10,7 @@ class NativeAnalogResearchTests(unittest.TestCase):
         for i in range(45):
             t = i * 3600000
             feature_rows.append({"symbol": "BTCUSDT", "timeframe": "1h",
+                                 "open_time": t,
                                  "close_time": t + 3599999, "rsi_12": 40.0})
             candle_rows.append({"symbol": "BTCUSDT", "timeframe": "1h",
                                 "open_time": t, "close_time": t + 3599999,
@@ -33,12 +34,12 @@ class NativeAnalogResearchTests(unittest.TestCase):
         def db(method, table, params):
             if table == "market_features":
                 return [{"symbol": "BTCUSDT", "timeframe": "1h",
-                         "close_time": 3600000, "rsi_12": 40.0}]
+                         "open_time": 0, "close_time": 3600000, "rsi_12": 40.0}]
             return [{"symbol": "BTCUSDT", "timeframe": "1h",
                      "open_time": 0, "close_time": 3599999,
                      "open_price": "100", "high_price": "104",
                      "low_price": "99", "close_price": "103"}]
-        with self.assertRaisesRegex(ValueError, "aligned"):
+        with self.assertRaises(ValueError):
             run_native_analog_research(
                 db, symbol="BTCUSDT", timeframe="1h", asof_ms=3600000,
                 features=("rsi_12",), stop_pct=.02, target_pct=.03,

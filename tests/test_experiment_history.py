@@ -59,8 +59,15 @@ def test_next_validation_gate_rejects_same_or_backward_window():
 def test_next_validation_gate_only_allows_forward_window_without_promotion():
     audit = {"status": "NEW_VALIDATION_REQUIRED",
              "next_experiment": {"max_iter": 240}}
-    result = authorize_next_validation(audit, [100, 200], [110, 210])
+    from p3.ai_training_pipeline import EMBARGO_MS
+    result = authorize_next_validation(audit, [100, 200], [200 + EMBARGO_MS, 300 + EMBARGO_MS])
     assert result["authorized"]
     assert result["params"] == {"max_iter": 240}
     assert not result["auto_promote"]
     assert not result["allow_holdout_selection"]
+
+
+def test_shifted_validation_window_is_not_fresh():
+    audit = {"status": "NEW_VALIDATION_REQUIRED",
+             "next_experiment": {"max_iter": 240}}
+    assert authorize_next_validation(audit, [100, 200], [110, 210])["reason"] == "validation_overlap_or_embargo"

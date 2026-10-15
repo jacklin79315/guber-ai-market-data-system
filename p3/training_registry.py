@@ -37,9 +37,8 @@ def record_training_reports(db, symbol, years, reports):
             "report": {**report, "comparison_context": comparison_context,
                        "promotion_decision": "NOT_EVALUATED"},
         })
-    db("POST", "ai_training_runs", {"on_conflict": "run_key"}, rows,
-       {"Prefer": "resolution=ignore-duplicates,return=minimal"})
-    # Read back stored rows, including older runs, for a read-only audit.
+    # Read historical rows before insertion so the audit can be persisted
+    # atomically in each append-only training record.
     # Pagination avoids silently comparing against only the newest 1000 rows.
     history = []
     offset = 0
@@ -57,7 +56,11 @@ def record_training_reports(db, symbol, years, reports):
         offset += len(page)
     audits = {}
     for row in rows:
-        audits[row["strategy"]] = compare_experiment_history(row, history)
-    # This audit never changes a training record or activates a model.
+        audit = compare_experiment_history(row, history)
+        audits[row["strategy"]] = audit
+        row["report"]["experiment_history"] = audit
+    db("POST", "ai_training_runs", {"on_conflict": "run_key"}, rows,
+       {"Prefer": "resolution=ignore-duplicates,return=minimal"})
+    # Persisted audits are immutable; no model is activated.
     return {"recorded": True, "count": len(rows),
             "history_rows": len(history), "experiment_history": audits}

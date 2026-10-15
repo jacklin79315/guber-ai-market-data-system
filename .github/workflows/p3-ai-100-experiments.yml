@@ -93,10 +93,10 @@ jobs:
                               results.append(item)
                       except (ValueError, TypeError):
                           pass
-                  out.write('| Iteration | Status | Trading validation score | Return % | Drawdown % | Trades | Eligible | Parameters |\n')
-                  out.write('|---:|---|---:|---:|---:|---:|---|---|\n')
+                  out.write('| Iteration | Status | Trading validation score | Return % | Annualized MTM % | Win rate % | Mean trade score | Drawdown % | Trades | Eligible | Parameters |\n')
+                  out.write('|---:|---|---:|---:|---:|---:|---:|---:|---:|---|---|\n')
                   for item in results:
-                      out.write(f"| {item['trial_index']} | {item['status']} | {item.get('validation_score')} | {item.get('validation_return_percent')} | {item.get('validation_drawdown_percent')} | {item.get('validation_trades')} | {item.get('validation_eligible')} | `{json.dumps(item['params'])}` |\n")
+                      out.write(f"| {item['trial_index']} | {item['status']} | {item.get('validation_score')} | {item.get('validation_return_percent')} | {item.get('validation_annualized_mark_to_market_return_percent')} | {item.get('validation_win_rate_percent')} | {item.get('validation_mean_score_q')} | {item.get('validation_drawdown_percent')} | {item.get('validation_trades')} | {item.get('validation_eligible')} | `{json.dumps(item['params'])}` |\n")
                   if not results:
                       out.write('No completed iteration results were found; inspect the job log.\n')
                   else:

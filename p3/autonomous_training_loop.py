@@ -92,6 +92,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         # return minus drawdown rather than direction-classification Brier score.
         error = None
         winner = None
+        observed = None
         selected_threshold = None
         training_samples = None
         validation_samples = None
@@ -105,6 +106,13 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
             winner = next(
                 (c for c in selection["candidates"]
                  if c["threshold"] == selected_threshold), None)
+            # Keep the replay measurements even when no candidate qualifies.
+            # Eligibility and selection remain unchanged.
+            observed = winner if winner is not None else max(
+                selection["candidates"],
+                key=lambda c: (c["return_percent"] - c["drawdown_percent"],
+                               c["return_percent"], c["threshold"]),
+                default=None)
             training_samples = trained["coverage"]["train"]["samples"]
             validation_samples = trained["coverage"]["validation"]["samples"]
         except Exception as exc:
@@ -115,9 +123,9 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                   "status": "COMPLETE" if error is None else "FAILED",
                   "validation_eligible": winner is not None,
                   "validation_score": score,
-                  "validation_return_percent": winner["return_percent"] if winner else None,
-                  "validation_drawdown_percent": winner["drawdown_percent"] if winner else None,
-                  "validation_trades": winner["closed_trades"] if winner else None,
+                  "validation_return_percent": observed["return_percent"] if observed else None,
+                  "validation_drawdown_percent": observed["drawdown_percent"] if observed else None,
+                  "validation_trades": observed["closed_trades"] if observed else None,
                   "selected_threshold": selected_threshold,
                   "error": error}
         db("POST", "ai_training_batch_trials",

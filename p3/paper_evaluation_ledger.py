@@ -33,3 +33,29 @@ def save_paper_evaluation(db, *, symbol, strategy, timeframe,
     db("POST", "ai_paper_evaluations", params={"on_conflict": "run_key"},
        payload=[row], extra={"Prefer": "resolution=ignore-duplicates,return=minimal"})
     return run_key
+
+
+def compare_paper_evaluations(db, *, symbol, strategy, limit=20):
+    """Read versioned evaluations without treating repeated windows as new evidence."""
+    if not 1 <= limit <= 100:
+        raise ValueError("invalid evaluation history limit")
+    rows = db("GET", "ai_paper_evaluations", params={
+        "select": "run_key,model_name,plan_version,data_version,evaluation_start_ms,evaluation_end_ms,training_observations,prediction_count,selected_trades,total_net_r,model_mae_r,baseline_mae_r,created_at",
+        "symbol": "eq." + symbol, "strategy": "eq." + strategy,
+        "order": "created_at.desc", "limit": str(limit),
+    })
+    result = []
+    for row in rows:
+        comparable = (row["plan_version"] == PLAN_VERSION
+                      and row["data_version"] == DATA_VERSION)
+        mae = row["model_mae_r"]
+        baseline = row["baseline_mae_r"]
+        trades = row["selected_trades"]
+        result.append({**row,
+            "version_comparable": comparable,
+            "mae_beats_baseline": (float(mae) < float(baseline)
+                                   if mae is not None and baseline is not None else None),
+            "trading_evidence_sufficient": trades >= 30,
+            "eligible_for_promotion": False,
+            "warning": "historical research only; overlapping windows are not independent"})
+    return result

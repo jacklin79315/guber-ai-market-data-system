@@ -35,7 +35,7 @@ def replay_four_models(candles_by_timeframe, decisions_by_strategy, *,
             raise TypeError("multi-lot replay expects symbol-keyed candle and decision mappings")
         results[strategy] = replay_multi_positions(
             candles, decisions, fee_rate=fee_rate, slippage_rate=slippage_rate,
-            max_holding_ms=horizons.get(strategy)
+            max_holding_ms=horizons.get(strategy), score_k=score_k
         )
         results[strategy]["strategy"] = strategy
         results[strategy]["timeframe"] = timeframe

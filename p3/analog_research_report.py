@@ -12,6 +12,7 @@ from p3.raw_candle_adapter import INTERVAL_MS
 from p3.four_strategy_analog import STRATEGY_PLANS
 from p3.paper_learning import chronological_paper_learning, chronological_direction_decisions
 from p3.paper_outcome_memory import save_settled_outcomes, load_settled_outcomes
+from p3.paper_evaluation_ledger import save_paper_evaluation
 
 
 def main():
@@ -151,6 +152,15 @@ def main():
             records, DEFAULT_FEATURES, min_train=10,
             evaluation_start_ms=evaluation_start_ms)
         decisions = chronological_direction_decisions(learning["predictions"])
+        if os.getenv("PAPER_EVALUATION_PERSIST", "false").lower() == "true":
+            key = save_paper_evaluation(
+                db, symbol=symbol, strategy=strategy, timeframe=timeframe,
+                evaluation_start_ms=evaluation_start_ms,
+                evaluation_end_ms=evaluation_end_ms,
+                learning=learning, decisions=decisions)
+            print(json.dumps({"status": "PAPER_EVALUATION_SAVED",
+                "symbol": symbol, "strategy": strategy, "run_key": key,
+                "research_only": True}), flush=True)
         print(json.dumps({"status": "PAPER_MODEL_DECISIONS",
                           "symbol": symbol, "strategy": strategy,
                           **{k: v for k, v in decisions.items() if k != "decisions"}},

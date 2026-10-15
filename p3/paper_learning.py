@@ -49,20 +49,24 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
     # strictly AFTER its settlement time, never at or before it.
     by_settlement = sorted(valid, key=lambda v: v[0]["label_end_ms"])
     settlement_times = [v[0]["label_end_ms"] for v in by_settlement]
+    # Materialize each valid feature vector once, then use settlement-ordered
+    # array slices instead of rebuilding Python lists for every prediction.
+    settlement_x = np.asarray([v[1] for v in by_settlement], dtype=float)
+    settlement_y = np.asarray([v[2] for v in by_settlement], dtype=float)
+    settlement_signals = np.asarray(
+        [v[0]["signal_time_ms"] for v in by_settlement], dtype=np.int64)
     evaluated = []
-    # Only evaluation rows need model fitting; historical rows remain available
-    # as settled training observations.
     for row, x, _ in valid:
         t = row["signal_time_ms"]
         if evaluation_start_ms is not None and t < evaluation_start_ms:
             continue
         boundary = bisect_left(settlement_times, t)
-        eligible = [v for v in by_settlement[:boundary]
-                    if v[0]["signal_time_ms"] < t]
-        if len(eligible) < min_train:
+        # Protect against malformed label_end preceding its own signal.
+        eligible_indices = np.flatnonzero(settlement_signals[:boundary] < t)
+        if len(eligible_indices) < min_train:
             continue
-        xs = np.array([v[1] for v in eligible], dtype=float)
-        ys = np.array([v[2] for v in eligible], dtype=float)
+        xs = settlement_x[:boundary][eligible_indices]
+        ys = settlement_y[:boundary][eligible_indices]
         # Normalize using training-only statistics; no test-row fitting.
         mean, std = xs.mean(axis=0), xs.std(axis=0)
         std[std == 0] = 1.0
@@ -74,9 +78,9 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
                           "baseline_prediction_net_r": baseline_prediction,
                           "actual_net_r": row["net_r"],
                           "label_end_ms": row["label_end_ms"],
-                          "train_count": len(eligible),
-                          "training_latest_label_end_ms": max(
-                              v[0]["label_end_ms"] for v in eligible)})
+                          "train_count": len(eligible_indices),
+                          "training_latest_label_end_ms": int(
+                              max(settlement_times[i] for i in eligible_indices))})
     errors = [v["prediction_net_r"] - v["actual_net_r"] for v in evaluated]
     baseline_errors = [v["baseline_prediction_net_r"] - v["actual_net_r"] for v in evaluated]
     model_mae = sum(abs(e) for e in errors) / len(errors) if errors else None

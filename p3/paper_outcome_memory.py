@@ -31,3 +31,21 @@ def save_settled_outcomes(db, *, symbol, strategy, timeframe, records, asof_ms):
         db("POST", "ai_paper_outcomes", payload=rows[start:start + 200],
            extra={"Prefer": "resolution=ignore-duplicates,return=minimal"})
     return len(rows)
+
+
+def load_settled_outcomes(db, *, symbol, strategy, timeframe, asof_ms,
+                          limit=10000):
+    """Read only labels settled strictly before the training decision time."""
+    if not 1 <= limit <= 10000:
+        raise ValueError("invalid outcome read limit")
+    rows = db("GET", "ai_paper_outcomes", params={
+        "select": "signal_time_ms,label_end_ms,direction,net_r,signal_features",
+        "symbol": "eq." + symbol, "strategy": "eq." + strategy,
+        "timeframe": "eq." + timeframe,
+        "model_plan_version": "eq." + PLAN_VERSION,
+        "source_data_version": "eq." + DATA_VERSION,
+        "label_end_ms": "lt." + str(asof_ms),
+        "order": "signal_time_ms.asc,direction.asc",
+        "limit": str(limit),
+    })
+    return sorted(rows, key=lambda x: (x["signal_time_ms"], x["direction"]))

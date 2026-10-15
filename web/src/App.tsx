@@ -10,9 +10,9 @@ const navigation = [
 ];
 const cards = [
   {label:'系統環境',value:'PAPER',detail:'無真實資金交易'},
-  {label:'目前訓練排程',value:'6 小時',detail:'GitHub Actions 暫行排程'},
-  {label:'訓練標的',value:'2',detail:'BTCUSDT · ETHUSDT'},
-  {label:'策略週期',value:'4',detail:'15m · 1h · 4h · 1d'}
+  {label:'目前訓練排程',value:'尚未連線',detail:'GitHub Actions 暫行排程'},
+  {label:'訓練標的',value:'尚未連線',detail:'BTCUSDT · ETHUSDT'},
+  {label:'策略週期',value:'尚未連線',detail:'15m · 1h · 4h · 1d'}
 ];
 export function App(){
   const [page,setPage]=useState('總覽');

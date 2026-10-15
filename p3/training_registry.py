@@ -1,5 +1,6 @@
 """Append-only training audit records. Holdout metrics are audit-only, never promotion criteria."""
 import os
+from .model_version_comparison import compare_versions
 
 def record_training_reports(db, symbol, years, reports):
     run_id = os.getenv("GITHUB_RUN_ID")
@@ -11,6 +12,13 @@ def record_training_reports(db, symbol, years, reports):
         threshold = selection["selected_threshold"]
         candidates = selection["candidates"]
         winner = next((c for c in candidates if c["threshold"] == threshold), None)
+        comparison_context = {
+            "validation_window": report.get("validation_window"),
+            "evaluation_version": "p3-validation-v1",
+            "dataset_version": None,  # Requires reproducible native data fingerprint.
+            "feature_version": None,  # Requires pinned feature computation version.
+            "fee_version": None,  # Requires a pinned fee schedule identifier.
+        }
         rows.append({
             "run_key": f"{run_id}:{symbol}:{strategy}",
             "symbol": symbol, "strategy": strategy,
@@ -24,7 +32,8 @@ def record_training_reports(db, symbol, years, reports):
             "holdout_trades": report["closed_trades"],
             "holdout_uncertain": report["execution_path_uncertain"],
             "paper_eligible": report["model_eligible_for_paper"],
-            "report": report,
+            "report": {**report, "comparison_context": comparison_context,
+                       "promotion_decision": "NOT_EVALUATED"},
         })
     db("POST", "ai_training_runs", {"on_conflict": "run_key"}, rows,
        {"Prefer": "resolution=ignore-duplicates,return=minimal"})

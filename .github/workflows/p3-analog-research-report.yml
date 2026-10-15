@@ -1,5 +1,10 @@
 name: P3 Analog Research Report (manual)
 on:
+  push:
+    branches: [feature/p3b-paper-engine]
+    paths:
+      - 'p3/analog_research_report.py'
+      - '.github/workflows/p3-analog-research-report.yml'
   workflow_dispatch:
     inputs:
       symbol:
@@ -21,8 +26,8 @@ jobs:
     permissions:
       contents: read
     env:
-      ANALOG_SYMBOL: ${{ inputs.symbol }}
-      ANALOG_TIMEFRAME: ${{ inputs.timeframe }}
+      ANALOG_SYMBOL: ${{ inputs.symbol || 'BTCUSDT' }}
+      ANALOG_TIMEFRAME: ${{ inputs.timeframe || '1d' }}
       ANALOG_EVALUATION_BARS: "90"
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

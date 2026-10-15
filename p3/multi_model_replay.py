@@ -15,14 +15,13 @@ STRATEGY_TIMEFRAMES = {
 
 def replay_four_models(candles_by_timeframe, decisions_by_strategy, *,
                        fee_rate=0.0, slippage_rate=0.0,
-                       max_holding_ms_by_strategy=None, score_k=2.0):
+                       score_k=2.0):
     """Replay each strategy independently with multiple concurrent lots.
 
     Candle inputs are symbol-keyed mappings for each native timeframe.
     Decisions are symbol-keyed mappings of prior-close timestamps.
-    Each lot observes its strategy-specific maximum holding time, if supplied.
+    Strategy horizon is not a forced liquidation deadline.
     """
-    horizons = max_holding_ms_by_strategy or {}
     results = {}
     for strategy, timeframe in STRATEGY_TIMEFRAMES.items():
         if timeframe not in candles_by_timeframe:
@@ -35,7 +34,7 @@ def replay_four_models(candles_by_timeframe, decisions_by_strategy, *,
             raise TypeError("multi-lot replay expects symbol-keyed candle and decision mappings")
         results[strategy] = replay_multi_positions(
             candles, decisions, fee_rate=fee_rate, slippage_rate=slippage_rate,
-            max_holding_ms=horizons.get(strategy), score_k=score_k
+            score_k=score_k
         )
         results[strategy]["strategy"] = strategy
         results[strategy]["timeframe"] = timeframe

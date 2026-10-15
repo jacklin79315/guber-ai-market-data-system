@@ -5,6 +5,7 @@ database writes, or model promotion. Output is descriptive research only.
 """
 import json
 import os
+from time import perf_counter
 from collections import Counter
 from p3.analog_data_loader import load_research_history, DEFAULT_FEATURES
 from p3.analog_walk_forward import walk_forward_analog_evaluation
@@ -42,8 +43,10 @@ def main():
         raise SystemExit("ANALOG_HISTORY_MODE must be RECENT or FULL")
     start_ms = (asof_ms - 2510 * INTERVAL_MS[timeframe]
                 if history_mode == "RECENT" else None)
+    history_load_started = perf_counter()
     history = load_research_history(db, symbol, timeframe, asof_ms=asof_ms,
                                     start_ms=start_ms)
+    history_load_seconds = perf_counter() - history_load_started
     snapshots, candles = history["snapshots"], history["candles"]
     if history_mode == "RECENT":
         snapshots = snapshots[-2500:]
@@ -67,7 +70,9 @@ def main():
                       "research_only": True, "auto_trade_enabled": False}), flush=True)
     reports = {}
     exploration = os.getenv("ANALOG_EXPLORATION", "false").lower() == "true"
+    analog_direction_seconds = {}
     for direction in ("LONG", "SHORT"):
+        direction_started = perf_counter()
         report = walk_forward_analog_evaluation(
             snapshots, candles, DEFAULT_FEATURES,
             horizon_ms=INTERVAL_MS[timeframe] * holding,
@@ -76,6 +81,7 @@ def main():
             slippage_rate=slippage_rate, k=100, min_samples=30,
             evaluation_start_ms=evaluation_start_ms,
             evaluation_end_ms=evaluation_end_ms, exploration=exploration)
+        analog_direction_seconds[direction] = round(perf_counter() - direction_started, 4)
         reports[direction] = {
             key: report[key] for key in (
                 "evaluations", "candidate_count", "wait_count",
@@ -129,6 +135,7 @@ def main():
                               "research_only": True,
                               "auto_trade_enabled": False},
                              sort_keys=True), flush=True)
+    paper_learning_seconds = None
     if exploration:
         records = [r for direction in ("LONG", "SHORT")
                    for r in reports[direction].get("_training_records", [])]
@@ -157,10 +164,12 @@ def main():
                 "symbol": symbol, "strategy": strategy,
                 "unique_training_observations": len(records),
                 "research_only": True}), flush=True)
+        learning_started = perf_counter()
         learning = chronological_paper_learning(
             records, DEFAULT_FEATURES, min_train=10,
             evaluation_start_ms=evaluation_start_ms)
         decisions = chronological_direction_decisions(learning["predictions"])
+        paper_learning_seconds = round(perf_counter() - learning_started, 4)
         if os.getenv("PAPER_EVALUATION_PERSIST", "false").lower() == "true":
             key = save_paper_evaluation(
                 db, symbol=symbol, strategy=strategy, timeframe=timeframe,
@@ -186,6 +195,9 @@ def main():
         "evaluation_end_ms": evaluation_end_ms,
         "features": list(DEFAULT_FEATURES),
         "training_persistence": "none_retrained_per_run",
+        "performance_seconds": {"history_load": round(history_load_seconds, 4),
+                                "analog_by_direction": analog_direction_seconds,
+                                "paper_learning": paper_learning_seconds},
         "evaluation_window_bars": evaluation_bars,
         "fixed_plan": {"stop_pct": stop_pct, "target_pct": target_pct,
                        "max_holding_bars": holding, "fee_rate": fee_rate,

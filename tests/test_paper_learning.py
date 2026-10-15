@@ -61,6 +61,38 @@ class PaperLearningTests(unittest.TestCase):
         self.assertTrue(all(x["training_latest_label_end_ms"] <
                             x["signal_time_ms"] for x in result["predictions"]))
 
+    def test_settlement_boundary_and_out_of_order_labels(self):
+        # Later signals can settle earlier; only genuinely matured labels count.
+        rows = [
+            {"signal_time_ms": 100, "label_end_ms": 900, "direction": "LONG",
+             "signal_features": {"x": 1.0}, "net_r": 1.0},
+            {"signal_time_ms": 200, "label_end_ms": 300, "direction": "SHORT",
+             "signal_features": {"x": 2.0}, "net_r": -1.0},
+            {"signal_time_ms": 350, "label_end_ms": 400, "direction": "LONG",
+             "signal_features": {"x": 3.0}, "net_r": 0.5},
+            {"signal_time_ms": 400, "label_end_ms": 450, "direction": "SHORT",
+             "signal_features": {"x": 4.0}, "net_r": -0.5},
+            {"signal_time_ms": 500, "label_end_ms": 550, "direction": "LONG",
+             "signal_features": {"x": 5.0}, "net_r": 0.2},
+        ]
+        result = chronological_paper_learning(rows, ["x"], min_train=2)
+        predictions = result["predictions"]
+        self.assertEqual([p["signal_time_ms"] for p in predictions], [500])
+        self.assertEqual(predictions[0]["train_count"], 3)
+        self.assertEqual(predictions[0]["training_latest_label_end_ms"], 450)
+        self.assertLess(predictions[0]["training_latest_label_end_ms"], 500)
+
+    def test_unsettled_or_invalid_outcomes_cannot_train(self):
+        rows = [
+            {"signal_time_ms": i * 100, "label_end_ms": i * 100 + 20,
+             "direction": "LONG", "signal_features": {"x": float(i)},
+             "net_r": float("nan") if i == 1 else 0.1}
+            for i in range(5)
+        ]
+        result = chronological_paper_learning(rows, ["x"], min_train=2)
+        self.assertEqual(result["prediction_count"], 2)
+        self.assertTrue(all(p["train_count"] >= 2 for p in result["predictions"]))
+
     def test_duplicate_rejected(self):
         row = {"signal_time_ms": 1, "label_end_ms": 2, "direction": "LONG",
                "signal_features": {"x": 1.0}, "net_r": 0.1}

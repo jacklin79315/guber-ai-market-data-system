@@ -11,6 +11,7 @@ from .ai_training_pipeline import train_horizon, EMBARGO_MS
 from .multi_model_replay import STRATEGY_TIMEFRAMES
 from .replay_runner import replay_with_metrics
 from .fee_schedule import load_fee_rate
+from .execution_diagnostics import summarize_execution
 
 def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     fee_rate = load_fee_rate(db)
@@ -44,6 +45,7 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         metrics = outcome["metrics"]
         reports[strategy] = {
             "timeframe": timeframe,
+            "execution_diagnostics": summarize_execution(outcome["account"], outcome["events"]),
             "fee_rate_per_side": fee_rate,
             "training_samples": len(trained["partitions"]["train"]["X"]),
             "validation_samples": len(trained["partitions"]["validation"]["X"]),

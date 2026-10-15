@@ -1,0 +1,25 @@
+name: P3 Model Safety Tests
+on:
+  push:
+    branches: [main, feature/p3b-paper-engine]
+    paths:
+      - 'p3/**'
+      - 'tests/test_model_*.py'
+      - '.github/workflows/p3-model-safety-tests.yml'
+  pull_request:
+    paths:
+      - 'p3/**'
+      - 'tests/test_model_*.py'
+  workflow_dispatch:
+jobs:
+  safety-unit-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run model safety regression tests
+        run: python -m unittest discover -s tests -p 'test_model_*.py' -v

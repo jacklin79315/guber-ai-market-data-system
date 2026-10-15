@@ -5,6 +5,7 @@ on:
     paths:
       - 'p3/**'
       - 'tests/test_model_*.py'
+      - 'tests/test_training_registry.py'
       - '.github/workflows/p3-model-safety-tests.yml'
   pull_request:
     paths:
@@ -22,4 +23,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Run model safety regression tests
-        run: python -m unittest discover -s tests -p 'test_model_*.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_model_*.py' -v
+          python -m unittest discover -s tests -p 'test_champion_challenger.py' -v
+          python -m unittest discover -s tests -p 'test_training_registry.py' -v

@@ -46,6 +46,16 @@ class HistoricalOutcomeTests(unittest.TestCase):
                          direction="LONG", stop_pct=.02, target_pct=.03,
                          max_holding_bars=2))
 
+    def test_missing_entry_bar_returns_none(self):
+        self.assertIsNone(label_fixed_plan([bar(2)], signal_close_ms=9,
+                         direction="LONG", stop_pct=.02, target_pct=.03,
+                         max_holding_bars=1))
+
+    def test_missing_middle_bar_returns_none(self):
+        self.assertIsNone(label_fixed_plan([bar(1), bar(3)], signal_close_ms=9,
+                         direction="LONG", stop_pct=.02, target_pct=.03,
+                         max_holding_bars=2))
+
     def test_batch(self):
         result = build_historical_outcomes(
             [{"timestamp_ms": 9}], [bar(1)], direction="LONG",

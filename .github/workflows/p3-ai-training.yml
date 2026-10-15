@@ -4,15 +4,6 @@ on:
   schedule:
     - cron: '17 2 * * 0'
   workflow_dispatch:
-    inputs:
-      symbol:
-        description: Binance spot symbol
-        required: true
-        default: BTCUSDT
-        type: choice
-        options:
-          - BTCUSDT
-          - ETHUSDT
 
 permissions:
   contents: read
@@ -31,7 +22,7 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      P3_SYMBOL: ${{ github.event_name == 'workflow_dispatch' && inputs.symbol || matrix.symbol }}
+      P3_SYMBOL: ${{ matrix.symbol }}
     steps:
       - uses: actions/checkout@v4
         with:

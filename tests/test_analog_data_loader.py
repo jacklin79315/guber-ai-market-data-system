@@ -1,8 +1,12 @@
 import unittest
-from p3.analog_data_loader import load_research_history
+from p3.analog_data_loader import load_research_history, DEFAULT_FEATURES
 
 
 class AnalogDataLoaderTests(unittest.TestCase):
+    def test_default_features_match_real_database_schema(self):
+        self.assertIn("macd_histogram_change", DEFAULT_FEATURES)
+        self.assertNotIn("macd_hist_change", DEFAULT_FEATURES)
+
     def test_read_only_and_scoped(self):
         calls = []
         def db(method, table, params):

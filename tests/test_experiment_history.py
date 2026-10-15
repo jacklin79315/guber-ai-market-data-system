@@ -1,4 +1,4 @@
-from p3.experiment_history import compare_experiment_history
+from p3.experiment_history import compare_experiment_history, authorize_next_validation
 
 
 def row(run_key, params, *, window=None, proposed=None):
@@ -45,3 +45,22 @@ def test_missing_context_fails_closed():
     result = compare_experiment_history(current, [])
     assert result["status"] == "NO_COMPARABLE_CONTEXT"
     assert result["next_experiment"] is None
+
+
+def test_next_validation_gate_rejects_same_or_backward_window():
+    audit = {"status": "NEW_VALIDATION_REQUIRED",
+             "next_experiment": {"max_iter": 240}}
+    assert not authorize_next_validation(audit, [100, 200], [100, 200])["authorized"]
+    assert not authorize_next_validation(audit, [100, 200], [90, 220])["authorized"]
+    assert not authorize_next_validation(audit, [100, 200], [120, 190])["authorized"]
+    assert not authorize_next_validation(audit, [100, 200], None)["authorized"]
+
+
+def test_next_validation_gate_only_allows_forward_window_without_promotion():
+    audit = {"status": "NEW_VALIDATION_REQUIRED",
+             "next_experiment": {"max_iter": 240}}
+    result = authorize_next_validation(audit, [100, 200], [110, 210])
+    assert result["authorized"]
+    assert result["params"] == {"max_iter": 240}
+    assert not result["auto_promote"]
+    assert not result["allow_holdout_selection"]

@@ -9,7 +9,10 @@ from .multi_position_account import MultiPositionAccount
 
 
 def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
-                           fee_rate=0.0, slippage_rate=0.0):
+                           fee_rate=0.0, slippage_rate=0.0,
+                           max_holding_ms=None):
+    if max_holding_ms is not None and (not isinstance(max_holding_ms, int) or isinstance(max_holding_ms, bool) or max_holding_ms <= 0):
+        raise ValueError("max_holding_ms must be positive integer milliseconds")
     account = MultiPositionAccount()
     events = []
     equity_curve = []
@@ -51,6 +54,11 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
                                       fee_rate=fee_rate, slippage_rate=slippage_rate,
                                       reason=hit)
                 events.append({"type": "EXIT", "ambiguous_fill": ambiguous, **result})
+            elif max_holding_ms is not None and close_time >= lot.entry_time_ms + max_holding_ms:
+                result = account.exit(lot_id, bar["close"], close_time,
+                                      fee_rate=fee_rate, slippage_rate=slippage_rate,
+                                      reason="TIME_LIMIT")
+                events.append({"type": "EXIT", "ambiguous_fill": False, **result})
         if previous is not None:
             decision = decisions_by_symbol.get(symbol, {}).get(previous["close_time"])
             if decision is not None:

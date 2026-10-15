@@ -64,10 +64,20 @@ def build_supervised_examples(features, candles, horizon_bars):
     return np.asarray(X), np.asarray(y_direction), np.asarray(y_up), np.asarray(y_down), timestamps
 
 class HorizonModel:
-    def __init__(self, *, max_iter=120, learning_rate=0.1):
-        self.direction = HistGradientBoostingClassifier(max_iter=max_iter, learning_rate=learning_rate, random_state=42)
-        self.upside = HistGradientBoostingRegressor(max_iter=max_iter, learning_rate=learning_rate, random_state=42)
-        self.downside = HistGradientBoostingRegressor(max_iter=max_iter, learning_rate=learning_rate, random_state=42)
+    def __init__(self, *, max_iter=120, learning_rate=0.1,
+                 direction_max_iter=None, direction_learning_rate=None,
+                 structure_max_iter=None, structure_learning_rate=None):
+        # Legacy shared parameters remain supported for existing trials.
+        direction_iter = max_iter if direction_max_iter is None else direction_max_iter
+        direction_rate = learning_rate if direction_learning_rate is None else direction_learning_rate
+        structure_iter = max_iter if structure_max_iter is None else structure_max_iter
+        structure_rate = learning_rate if structure_learning_rate is None else structure_learning_rate
+        self.direction = HistGradientBoostingClassifier(
+            max_iter=direction_iter, learning_rate=direction_rate, random_state=42)
+        self.upside = HistGradientBoostingRegressor(
+            max_iter=structure_iter, learning_rate=structure_rate, random_state=42)
+        self.downside = HistGradientBoostingRegressor(
+            max_iter=structure_iter, learning_rate=structure_rate, random_state=42)
         self.fitted = False
 
     def fit(self, X, y_direction, y_up, y_down):

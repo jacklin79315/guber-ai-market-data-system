@@ -190,6 +190,34 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 "selection_policy_unchanged": True,
             }, allow_nan=False), flush=True)
         previous_complete = trial
+    # Explain baseline-to-best progress using the unchanged validation score.
+    qualified = [h for h in history if h["status"] == "COMPLETE"
+                 and h.get("validation_eligible") is True
+                 and h.get("validation_score") is not None]
+    if qualified:
+        baseline_trial = qualified[0]
+        champion_trial = max(qualified, key=lambda h: h["validation_score"])
+        compare_fields = {
+            "annualized_return_percent": "validation_annualized_return_percent",
+            "win_rate_percent": "validation_win_rate_percent",
+            "strategy_score": "validation_mean_score_q",
+            "drawdown_percent": "validation_drawdown_percent",
+            "closed_trades": "validation_trades",
+        }
+        differences = {}
+        for name, field in compare_fields.items():
+            a, b = baseline_trial.get(field), champion_trial.get(field)
+            differences[name] = float(b) - float(a) if a is not None and b is not None else None
+        print(json.dumps({
+            "status": "BASELINE_VS_BEST",
+            "strategy": strategy,
+            "baseline_trial_index": baseline_trial["trial_index"],
+            "best_trial_index": champion_trial["trial_index"],
+            "metric_deltas": differences,
+            "selection_basis": "existing_validation_score",
+            "cause_of_improvement": "not_established",
+            "holdout_used": False,
+        }, allow_nan=False), flush=True)
     # Report observed trading metrics even if no model passes the existing gates.
     # This is display-only and does not alter model selection or qualification.
     observed_trials = [h for h in history if h["status"] == "COMPLETE"

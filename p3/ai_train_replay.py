@@ -34,12 +34,12 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         decisions = {}
         for candle in candles:
             t = int(candle["close_time"])
-            if earliest <= t < holdout_end and t in feature_by_close:
+            if selected_threshold is not None and earliest <= t < holdout_end and t in feature_by_close:
                 decisions[t] = model.decide(
                     symbol, feature_by_close[t],
-                    confidence_threshold=(selected_threshold if selected_threshold is not None else confidence_threshold),
+                    confidence_threshold=selected_threshold,
                 )
-        # Holdout never influences candidate selection.
+        # No validated threshold means WAIT, not a silent default threshold.\n        # Holdout never influences candidate selection.
         # Include one pre-holdout bar only if it cannot cause an entry.
         holdout_candles = [
             c for c in candles if earliest <= int(c["open_time"])
@@ -52,7 +52,7 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         reports[strategy] = {
             "timeframe": timeframe,
             "validation_selection": selection,
-            "holdout_threshold": (selected_threshold if selected_threshold is not None else confidence_threshold),
+            "holdout_threshold": selected_threshold,\n            "model_eligible_for_paper": (selected_threshold is not None and not metrics["execution_path_uncertain"] and metrics["closed_trades"] >= 5),
             "holdout_threshold_fallback": selected_threshold is None,
             "execution_diagnostics": summarize_execution(outcome["account"], outcome["events"]),
             "fee_rate_per_side": fee_rate,

@@ -50,7 +50,7 @@ jobs:
             exit 1
           }
       - name: Unit test paper learner
-        run: python -m unittest tests.test_paper_learning
+        run: python -m unittest tests.test_paper_learning tests.test_paper_direction
       - name: Read-only chronological analog research
         run: python -m p3.analog_research_report | tee paper-research.jsonl
       - name: Archive research and learning results

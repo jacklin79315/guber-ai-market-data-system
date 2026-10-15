@@ -15,7 +15,7 @@ def comparable(a, b):
     """Require identical evaluation context before ranking."""
     keys = ("symbol", "strategy", "timeframe", "lookback_years",
             "validation_window", "evaluation_version", "dataset_version",
-            "feature_version", "fee_version")
+            "feature_version", "fee_version", "code_version")
     return all(a.get(k) == b.get(k) for k in keys) and all(
         a.get(k) is not None for k in keys
     )

@@ -45,7 +45,14 @@ def validate_training_history(candles, features, timeframe, *, required_start_ms
         if any(row.get(k) is None or not math.isfinite(float(row[k])) for k in FEATURE_COLUMNS):
             raise ValueError("missing or non-finite model feature")
         matched += 1
-    expected = sum(1 for c in candles if int(c["close_time"]) >= required_start_ms)
+    # Technical indicators need a warm-up period. Accept a contiguous prefix
+    # without features, but never accept a gap after the first feature row.
+    usable = [int(row["close_time"]) for row in features if int(row["close_time"]) >= required_start_ms]
+    if not usable:
+        raise ValueError("no usable features inside training horizon")
+    first = usable[0]
+    expected = sum(1 for c in candles if int(c["close_time"]) >= first)
     if matched != expected:
         raise ValueError("missing feature rows inside training horizon")
-    return {"status": "PASS", "matched": matched, "timeframe": timeframe}
+    return {"status": "PASS", "matched": matched, "timeframe": timeframe,
+            "first_usable_feature_ms": first}

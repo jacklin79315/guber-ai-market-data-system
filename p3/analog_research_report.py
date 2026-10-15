@@ -11,6 +11,7 @@ from p3.analog_walk_forward import walk_forward_analog_evaluation
 from p3.raw_candle_adapter import INTERVAL_MS
 from p3.four_strategy_analog import STRATEGY_PLANS
 from p3.paper_learning import chronological_paper_learning, chronological_direction_decisions
+from p3.paper_outcome_memory import save_settled_outcomes
 
 
 def main():
@@ -121,6 +122,12 @@ def main():
     if exploration:
         records = [r for direction in ("LONG", "SHORT")
                    for r in reports[direction].get("_training_records", [])]
+        if os.getenv("PAPER_OUTCOME_PERSIST", "false").lower() == "true":
+            persisted = save_settled_outcomes(db, symbol=symbol, strategy=strategy,
+                timeframe=timeframe, records=records, asof_ms=asof_ms)
+            print(json.dumps({"status": "PAPER_MEMORY_SAVED", "symbol": symbol,
+                "strategy": strategy, "settled_observations_submitted": persisted,
+                "research_only": True}), flush=True)
         learning = chronological_paper_learning(records, DEFAULT_FEATURES, min_train=10)
         decisions = chronological_direction_decisions(learning["predictions"])
         print(json.dumps({"status": "PAPER_MODEL_DECISIONS",

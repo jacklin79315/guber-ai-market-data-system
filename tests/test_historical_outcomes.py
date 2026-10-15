@@ -35,7 +35,8 @@ class HistoricalOutcomeTests(unittest.TestCase):
         self.assertLess(result["net_r"], -1)
 
     def test_gap_through_stop(self):
-        result = label_fixed_plan([bar(1, 100, 101, 99),\n                                   bar(2, 95, 96, 94, 95)],
+        result = label_fixed_plan([bar(1, 100, 101, 99),
+                                   bar(2, 95, 96, 94, 95)],
                                   signal_close_ms=9, direction="LONG",
                                   stop_pct=.02, target_pct=.03, max_holding_bars=1)
         self.assertAlmostEqual(result["net_r"], -2.5)

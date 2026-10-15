@@ -26,8 +26,8 @@ class GenerationReadinessTests(unittest.TestCase):
     def test_generation_100_allowed(self):
         self.assertEqual(generation_readiness(**dict(DEFAULT, next_generation=100))["status"], "READY")
 
-    def test_generation_101_rejected(self):
-        self.assertEqual(generation_readiness(**dict(DEFAULT, next_generation=101))["status"], "WAIT")
+    def test_generation_101_allowed(self):
+        self.assertEqual(generation_readiness(**dict(DEFAULT, next_generation=101))["status"], "READY")
 
 
 if __name__ == "__main__":

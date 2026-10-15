@@ -13,7 +13,7 @@ class AnalogDataLoaderTests(unittest.TestCase):
             calls.append((method, table, params))
             if table == "market_features":
                 return [{"symbol": "BTCUSDT", "timeframe": "1h",
-                         "close_time": 3599999, "rsi_12": 35}]
+                         "open_time": 0, "close_time": 3599999, "rsi_12": 35}]
             return [{"symbol": "BTCUSDT", "timeframe": "1h",
                      "open_time": 0, "close_time": 3599999,
                      "open_price": "100", "high_price": "110",
@@ -33,7 +33,7 @@ class AnalogDataLoaderTests(unittest.TestCase):
             if table == "market_features":
                 if "and" not in params:
                     return [{"symbol": "BTCUSDT", "timeframe": "1h",
-                             "close_time": 3599999, "rsi_12": 35}]
+                             "open_time": 0, "close_time": 3599999, "rsi_12": 35}]
                 return []
             if "and" not in params:
                 return [{"symbol": "BTCUSDT", "timeframe": "1h",
@@ -49,14 +49,14 @@ class AnalogDataLoaderTests(unittest.TestCase):
         for _, params in calls:
             if "and" in params:
                 self.assertEqual(params["and"],
-                                 "(close_time.gt.3599999,close_time.lte.3599999)")
-                self.assertNotIn("close_time", params)
+                                 "(open_time.gt.0,open_time.lte.0)")
+                self.assertNotIn("open_time", params)
 
     def test_rejects_missing_matching_native_candle(self):
         def db(method, table, params):
             if table == "market_features":
                 return [{"symbol": "BTCUSDT", "timeframe": "1h",
-                         "close_time": 7199999, "rsi_12": 35}]
+                         "open_time": 3600000, "close_time": 7199999, "rsi_12": 35}]
             return [{"symbol": "BTCUSDT", "timeframe": "1h",
                      "open_time": 0, "close_time": 3599999,
                      "open_price": "100", "high_price": "110",
@@ -68,7 +68,7 @@ class AnalogDataLoaderTests(unittest.TestCase):
     def test_rejects_future_rows(self):
         def db(method, table, params):
             return [{"symbol": "BTCUSDT", "timeframe": "1h",
-                     "close_time": 5000, "rsi_12": 35}]
+                     "open_time": 0, "close_time": 5000, "rsi_12": 35}]
         with self.assertRaises(ValueError):
             load_research_history(db, "BTCUSDT", "1h", asof_ms=100,
                                   features=("rsi_12",))

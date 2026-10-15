@@ -1,6 +1,8 @@
 name: P3 AI 100 Experiment Batch
 
 on:
+  schedule:
+    - cron: '17 2 * * *'
   workflow_dispatch:
     inputs:
       generation:
@@ -33,7 +35,7 @@ jobs:
       matrix:
         strategy: [INTRADAY, ONE_TO_THREE_DAYS, ONE_WEEK, FIFTEEN_TO_THIRTY_DAYS]
     env:
-      TRAINING_GENERATION: ${{ inputs.generation }}
+      TRAINING_GENERATION: ${{ inputs.generation || '1' }}
       TRAINING_PARENT_RUN_ID: ${{ inputs.parent_run_id }}
       TRAINING_PARENT_VALIDATION_WINDOW: ${{ inputs.previous_validation_window }}
       TRAINING_CURRENT_VALIDATION_WINDOW: ${{ inputs.current_validation_window }}

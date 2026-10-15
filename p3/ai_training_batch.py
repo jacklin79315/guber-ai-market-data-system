@@ -197,6 +197,8 @@ def run_batch(db, *, symbol, strategy, years):
         trials.append(record)
         print(json.dumps({"status": "TRIAL_RESULT", **record}, allow_nan=False), flush=True)
     ranking = rank_validation_trials(trials)
+    if not ranking:
+        raise RuntimeError("no eligible validation candidates; cannot record a successful iteration")
     comparison = compare_current_generation(db, symbol=symbol, strategy=strategy,
         years=years, candles=candles, features=features, fee_rate=fee_rate,
         ranking=ranking)

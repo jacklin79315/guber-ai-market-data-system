@@ -10,7 +10,7 @@ from .multi_position_account import MultiPositionAccount
 
 def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
                            fee_rate=0.0, slippage_rate=0.0,
-                           score_k=2.0):
+                           score_k=2.0, settle_at_end=False):
     account = MultiPositionAccount()
     events = []
     equity_curve = []
@@ -88,6 +88,14 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
         prices[symbol] = bar["close"]
         equity_curve.append({"time_ms": close_time, "equity": account.equity(prices),
                              "cash": account.cash, "open_lots": len(account.positions)})
+    if settle_at_end and account.positions:
+        end_time = equity_curve[-1]["time_ms"]
+        for lot_id in list(account.positions):
+            record = account.settle_backtest_end(lot_id, end_time, fee_rate=fee_rate)
+            events.append({"type": "BACKTEST_END_SETTLEMENT", **record})
+        # Boundary settlement is accounting only, not a market-price mark.
+        equity_curve.append({"time_ms": end_time, "equity": account.equity(),
+                             "cash": account.cash, "open_lots": 0})
     result = {"account": account, "events": events, "signals": signal_events,
               "equity_curve": equity_curve,
               "open_lots": len(account.positions), "closed_trades": len(account.closed_trades),

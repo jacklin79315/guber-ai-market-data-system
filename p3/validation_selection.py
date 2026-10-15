@@ -4,6 +4,7 @@ from .replay_runner import replay_with_metrics
 
 THRESHOLDS = (0.55, 0.60, 0.65, 0.70)
 MIN_TRADES = 5
+MAX_VALIDATION_DRAWDOWN_PERCENT = 8.0
 
 
 def evaluate_window(candles, features, model, symbol, window, threshold, fee_rate):
@@ -27,7 +28,7 @@ def select_threshold(candles, features, model, symbol, validation_window, fee_ra
         candidates.append({
             "threshold": threshold,
             "closed_trades": trades,
-            "eligible": trades >= MIN_TRADES,
+            "eligible": trades >= MIN_TRADES and not metrics["execution_path_uncertain"] and metrics["max_close_to_close_drawdown_percent"] <= MAX_VALIDATION_DRAWDOWN_PERCENT,
             "return_percent": 100 * (metrics["final_mark_to_market_equity"] / 10000 - 1),
             "drawdown_percent": metrics["max_close_to_close_drawdown_percent"],
             "execution_path_uncertain": metrics["execution_path_uncertain"],

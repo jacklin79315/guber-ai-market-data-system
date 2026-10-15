@@ -22,6 +22,11 @@ class AutonomousPlannerTests(unittest.TestCase):
         self.kw["parent_generation"] = 99
         self.assertEqual(plan_next_generation(**self.kw)["generation"], 100)
 
+    def test_explicit_run_limit_still_works(self):
+        self.kw["parent_generation"] = 100
+        result = plan_next_generation(**self.kw, maximum_generations=100)
+        self.assertEqual(result["reason"], "generation_limit")
+
     def test_generation_101_allowed(self):
         self.kw["parent_generation"] = 100
         self.assertEqual(plan_next_generation(**self.kw)["generation"], 101)

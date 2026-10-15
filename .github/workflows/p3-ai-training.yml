@@ -22,7 +22,6 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      P3_SYMBOL: ${{ inputs.symbol }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,6 +34,8 @@ jobs:
         run: |
           test -n "$SUPABASE_URL" || { echo 'Missing SUPABASE_URL secret'; exit 1; }
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'Missing SUPABASE_SERVICE_ROLE_KEY secret'; exit 1; }
+      - name: Confirm selected symbol matches web training settings
+        run: python -m p3.verify_training_symbol "${{ inputs.symbol }}"
       - name: Train four models and replay untouched holdout
         run: python -m p3.ai_train_replay > p3-training-report.jsonl
       - name: Show non-secret model summary

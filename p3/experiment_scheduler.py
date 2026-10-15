@@ -64,6 +64,24 @@ def load_schedule_from_supabase(db, symbol, *, years=2):
         start = _add_months(end, -12 * years)
         windows[strategy] = list(chronological_windows(start, years=years)["validation"])
     decisions = plan_next_experiment(rows, windows)
+    # Never rerun a validation interval that already has a candidate audit.
+    # DB unique index provides a second layer against duplicate persistence.
+    for strategy, decision in decisions.items():
+        if decision["status"] != "READY":
+            continue
+        begin, end = decision["current_validation_window"]
+        existing = db("GET", "ai_candidate_trials", {
+            "select": "trial_key",
+            "symbol": "eq." + symbol,
+            "strategy": "eq." + strategy,
+            "lookback_years": "eq." + str(years),
+            "validation_start_ms": "eq." + str(begin),
+            "validation_end_ms": "eq." + str(end),
+            "limit": "1",
+        })
+        if existing:
+            decision.update({"status": "WAIT", "reason": "validation_already_evaluated",
+                             "params": None})
     return {"symbol": symbol, "lookback_years": years,
             "history_rows": len(rows), "decisions": decisions,
             "validation_windows": windows}

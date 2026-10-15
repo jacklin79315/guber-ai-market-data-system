@@ -38,7 +38,7 @@ def chronological_windows(start_ms, *, years=2):
         "holdout": (val_end, test_end),
     }
 
-def train_horizon(features, candles, strategy, *, years=2):
+def train_horizon(features, candles, strategy, *, years=2, model_params=None):
     """Fit on training only; return model and partitioned evaluation samples.
 
     Each label consumes up to horizon_bars * timeframe milliseconds AFTER
@@ -79,7 +79,7 @@ def train_horizon(features, candles, strategy, *, years=2):
                        "first_decision_ms": part["decision_times"][0] if part["decision_times"] else None,
                        "last_decision_ms": part["decision_times"][-1] if part["decision_times"] else None}
                 for name, part in partitions.items()}
-    model = HorizonModel().fit(training["X"], training["y_direction"],
+    model = HorizonModel(**(model_params or {})).fit(training["X"], training["y_direction"],
                                training["y_up"], training["y_down"])
     return {"model": model, "partitions": partitions, "windows": windows,
             "strategy": strategy, "timeframe": timeframe, "coverage": coverage}

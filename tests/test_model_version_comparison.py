@@ -4,7 +4,7 @@ from p3.model_version_comparison import compare_versions
 BASE = dict(symbol="BTCUSDT", strategy="INTRADAY", timeframe="15m",
             lookback_years=1, validation_window="2026-01/2026-03",
             evaluation_version="v1", dataset_version="native-v1",
-            feature_version="v1", fee_version="v1", code_version="git:abc", code_version="git:abc", validation_eligible=True, validation_score=2.0)
+            feature_version="v1", fee_version="v1", code_version="git:abc", validation_eligible=True, validation_score=2.0)
 
 class ComparisonTests(unittest.TestCase):
     def test_reject_ineligible(self):

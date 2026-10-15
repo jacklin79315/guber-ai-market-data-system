@@ -80,6 +80,19 @@ def main():
             "best_historical_lower_bound_r": max(valid_bounds) if valid_bounds else None,
             "missing_historical_outcome_estimates": len(counts) - len(valid_means),
         }
+        # Summarize rejection causes without relaxing the frozen trade gate.
+        reasons = Counter(x["reason"] for x in report["results"]
+                          if x["decision"] == "WAIT")
+        reports[direction]["wait_reason_rates"] = {
+            reason: count / report["evaluations"]
+            for reason, count in sorted(reasons.items())
+        } if report["evaluations"] else {}
+        reports[direction]["positive_historical_mean_count"] = sum(
+            x.get("net_expectancy_r") is not None and x["net_expectancy_r"] > 0
+            for x in report["results"])
+        reports[direction]["positive_conservative_bound_count"] = sum(
+            x.get("lower_bound_r") is not None and x["lower_bound_r"] > 0
+            for x in report["results"])
         reports[direction]["wait_reasons"] = dict(Counter(
             x["reason"] for x in report["results"] if x["decision"] == "WAIT"))
     print(json.dumps({

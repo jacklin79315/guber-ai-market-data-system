@@ -1,5 +1,5 @@
 """Read-only audit of intended validation windows versus actual replay candles."""
-from .ai_training_pipeline import EMBARGO_MS
+EMBARGO_MS = 30 * 86400000  # Mirrors the existing 30-day validation embargo.
 
 
 def audit_validation_window(candles, features, validation_window):

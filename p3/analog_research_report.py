@@ -10,6 +10,7 @@ from p3.analog_data_loader import load_research_history, DEFAULT_FEATURES
 from p3.analog_walk_forward import walk_forward_analog_evaluation
 from p3.raw_candle_adapter import INTERVAL_MS
 from p3.four_strategy_analog import STRATEGY_PLANS
+from p3.paper_learning import chronological_paper_learning
 
 
 def main():
@@ -108,6 +109,7 @@ def main():
         reports[direction]["ambiguous_bar_count"] = sum(
             x["ambiguous_bar"] for x in report["trade_records"])
         if exploration:
+            reports[direction]["_training_records"] = report["trade_records"]
             print(json.dumps({"status": "PAPER_EXPLORATION_TRADES",
                               "strategy": strategy, "symbol": symbol,
                               "direction": direction,
@@ -115,6 +117,16 @@ def main():
                               "research_only": True,
                               "auto_trade_enabled": False},
                              sort_keys=True), flush=True)
+    if exploration:
+        records = [r for direction in ("LONG", "SHORT")
+                   for r in reports[direction].get("_training_records", [])]
+        learning = chronological_paper_learning(records, DEFAULT_FEATURES, min_train=10)
+        print(json.dumps({"status": "PAPER_LEARNING_REPORT",
+                          "symbol": symbol, "strategy": strategy,
+                          **{k: v for k, v in learning.items() if k != "predictions"}},
+                         sort_keys=True), flush=True)
+    for direction in ("LONG", "SHORT"):
+        reports[direction].pop("_training_records", None)
     print(json.dumps({
         "status": "RESEARCH_COMPLETE", "symbol": symbol, "strategy": strategy, "timeframe": timeframe,
         "evaluation_start_ms": evaluation_start_ms,

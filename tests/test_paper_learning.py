@@ -15,6 +15,9 @@ class PaperLearningTests(unittest.TestCase):
         for row in result["predictions"]:
             self.assertLess(row["training_latest_label_end_ms"],
                             row["signal_time_ms"])
+        self.assertIsNotNone(result["baseline_mean_absolute_error_r"])
+        self.assertIsInstance(result["outperforms_baseline_mae"], bool)
+        self.assertAlmostEqual(result["mae_improvement_r"], result["baseline_mean_absolute_error_r"] - result["mean_absolute_error_r"])
         self.assertTrue(result["research_only"])
         self.assertFalse(result["auto_trade_enabled"])
 

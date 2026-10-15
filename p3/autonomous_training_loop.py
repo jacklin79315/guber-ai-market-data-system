@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from .ai_training_pipeline import _add_months, chronological_windows, DAY_MS, train_horizon
 from .validation_selection import select_threshold
 from .fee_schedule import load_fee_rate
-from .adaptive_trial_selection import next_candidate
+from .adaptive_trial_selection import next_candidate, next_layer_candidate
 from .ai_training_batch import PARAMETERS
 from .ai_feature_history import load_native_features
 from .native_history_replay import load_native_candles
@@ -70,7 +70,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         for rate in range(15, 186, 10))
     fee_rate = load_fee_rate(db)
     for index in range(len(history), iterations):
-        params = next_candidate(candidates, history)
+        params = next_layer_candidate(history) or next_candidate(candidates, history)
         if params is None:
             best = max((h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None),
                        key=lambda h: h["validation_score"], default=None)

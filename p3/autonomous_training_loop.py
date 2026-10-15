@@ -16,6 +16,7 @@ from .ai_feature_history import load_native_features
 from .native_history_replay import load_native_candles
 from .multi_model_replay import STRATEGY_TIMEFRAMES
 from .training_settings import load_training_settings
+from .model_diagnostics import diagnose_validation
 
 
 def run_iterations(db, *, symbol, strategy, years, iterations=5):
@@ -97,6 +98,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         winner = None
         observed = None
         selected_threshold = None
+        diagnostics = None
         training_samples = None
         validation_samples = None
         try:
@@ -105,6 +107,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
             selection = select_threshold(
                 candles, features, trained["model"], symbol,
                 trained["windows"]["validation"], fee_rate)
+            diagnostics = diagnose_validation(trained["model"], trained["partitions"]["validation"])
             selected_threshold = selection["selected_threshold"]
             winner = next(
                 (c for c in selection["candidates"]
@@ -134,6 +137,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                   "validation_annualized_return_percent": observed["annualized_return_percent"] if observed else None,
                   "validation_annualized_mark_to_market_return_percent": observed["annualized_mark_to_market_return_percent"] if observed else None,
                   "selected_threshold": selected_threshold,
+                  "diagnostics": diagnostics,
                   "error": error}
         db("POST", "ai_training_batch_trials",
            {"on_conflict": "run_id,strategy,trial_index"}, [{

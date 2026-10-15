@@ -10,9 +10,9 @@ class PaperDirectionTests(unittest.TestCase):
             {"signal_time_ms": 10, "direction": "SHORT",
              "prediction_net_r": .2, "actual_net_r": 1, "label_end_ms": 15},
             {"signal_time_ms": 20, "direction": "LONG",
-             "prediction_net_r": -.2, "actual_net_r": 1},
+             "prediction_net_r": -.2, "actual_net_r": 1, "label_end_ms": 25},
             {"signal_time_ms": 20, "direction": "SHORT",
-             "prediction_net_r": -.1, "actual_net_r": 1},
+             "prediction_net_r": -.1, "actual_net_r": 1, "label_end_ms": 25},
         ]
         result = chronological_direction_decisions(rows)
         self.assertEqual(result["long_count"], 1)

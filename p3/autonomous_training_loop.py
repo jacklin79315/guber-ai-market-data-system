@@ -35,7 +35,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                              timeframe, train_begin, train_end], separators=(",", ":"))
     run_id = "autonomous-v3-" + hashlib.sha256(experiment.encode()).hexdigest()[:24]
     previous = db("GET", "ai_training_batch_trials", {
-        "select": "trial_index,status,validation_eligible,validation_score,params,error_reason,validation_return_percent,validation_drawdown_percent,validation_trades,selected_threshold,validation_annualized_return_percent,validation_win_rate_percent,validation_mean_score_q",
+        "select": "trial_index,status,validation_eligible,validation_score,params,error_reason,validation_return_percent,validation_drawdown_percent,validation_trades,selected_threshold,validation_annualized_return_percent,validation_win_rate_percent,validation_mean_score_q,diagnostics",
         "run_id": "eq." + run_id, "strategy": "eq." + strategy,
         "order": "trial_index.asc", "limit": "100",
     })
@@ -51,7 +51,8 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 "validation_annualized_return_percent": row.get("validation_annualized_return_percent"),
                 "validation_win_rate_percent": row.get("validation_win_rate_percent"),
                 "validation_mean_score_q": row.get("validation_mean_score_q"),
-                "selected_threshold": row.get("selected_threshold")}
+                "selected_threshold": row.get("selected_threshold"),
+                "diagnostics": row.get("diagnostics")}
                for row in previous if row["status"] in ("COMPLETE", "FAILED")]
     history.sort(key=lambda row: row["trial_index"])
     if [row["trial_index"] for row in history] != list(range(1, len(history) + 1)):
@@ -157,6 +158,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                "selected_threshold": result["selected_threshold"],
                "training_samples": training_samples,
                "validation_samples": validation_samples,
+               "diagnostics": result["diagnostics"],
                "error_reason": result["error"],
                "completed_at": datetime.now(timezone.utc).isoformat(),
            }], {"Prefer": "resolution=merge-duplicates,return=minimal"})

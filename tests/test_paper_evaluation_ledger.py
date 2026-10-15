@@ -1,8 +1,26 @@
 import unittest
-from p3.paper_evaluation_ledger import save_paper_evaluation
+from p3.paper_evaluation_ledger import save_paper_evaluation, compare_paper_evaluations
+from p3.paper_outcome_memory import PLAN_VERSION, DATA_VERSION
 
 
 class EvaluationLedgerTests(unittest.TestCase):
+    def test_comparison_flags_small_sample_and_version_mismatch(self):
+        def db(*args, **kwargs):
+            return [{"run_key": "x", "plan_version": PLAN_VERSION,
+                     "data_version": DATA_VERSION,
+                     "model_mae_r": 0.5, "baseline_mae_r": 1.0,
+                     "selected_trades": 2},
+                    {"run_key": "y", "plan_version": "old",
+                     "data_version": DATA_VERSION,
+                     "model_mae_r": 2.0, "baseline_mae_r": 1.0,
+                     "selected_trades": 100}]
+        rows = compare_paper_evaluations(db, symbol="BTCUSDT",
+                                         strategy="INTRADAY")
+        self.assertTrue(rows[0]["mae_beats_baseline"])
+        self.assertFalse(rows[0]["trading_evidence_sufficient"])
+        self.assertFalse(rows[1]["version_comparable"])
+        self.assertFalse(any(x["eligible_for_promotion"] for x in rows))
+
     def test_deterministic_key_and_research_only(self):
         calls = []
         def db(*args, **kwargs):

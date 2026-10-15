@@ -11,6 +11,7 @@ on:
       - 'tests/test_multi_lot_accounting.py'
       - 'tests/test_multi_position_validation.py'
       - 'tests/test_multi_position_audit.py'
+      - 'tests/test_multi_position_capacity.py'
       - 'tests/test_validation_window_diagnostics.py'
       - '.github/workflows/p3-multi-position-tests.yml'
   workflow_dispatch:
@@ -26,4 +27,4 @@ jobs:
         with:
           python-version: '3.11'
       - name: Run isolated multi-position tests
-        run: python -m unittest -v tests.test_multi_position_replay tests.test_multi_lot_accounting tests.test_validation_window_diagnostics tests.test_multi_position_validation tests.test_multi_position_audit
+        run: python -m unittest -v tests.test_multi_position_replay tests.test_multi_lot_accounting tests.test_validation_window_diagnostics tests.test_multi_position_validation tests.test_multi_position_audit tests.test_multi_position_capacity

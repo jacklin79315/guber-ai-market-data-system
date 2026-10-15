@@ -55,7 +55,7 @@ def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
 def load_research_history(db, symbol, timeframe, *, asof_ms,
                           features=DEFAULT_FEATURES, page_size=1000,
                           max_pages=200):
-    if not symbol or not timeframe or not isinstance(asof_ms, int):
+    if not symbol or not timeframe or not isinstance(asof_ms, int) or isinstance(asof_ms, bool):
         raise ValueError("invalid research scope")
     feature_fields = ["symbol", "timeframe", "close_time", *features]
     feature_rows = _fetch_pages(
@@ -70,5 +70,5 @@ def load_research_history(db, symbol, timeframe, *, asof_ms,
     snapshots = [{"timestamp_ms": row["close_time"],
                   **{name: row.get(name) for name in features}}
                  for row in feature_rows]
-    return {"snapshots": snapshots, "candles": candles,
+    # Each feature snapshot must correspond to an original closed native bar.\n    native_times = {c["close_time"] for c in candles}\n    if any(s["timestamp_ms"] not in native_times for s in snapshots):\n        raise ValueError("feature/native candle timestamps are not aligned")\n    return {"snapshots": snapshots, "candles": candles,
             "feature_count": len(snapshots), "candle_count": len(candles)}

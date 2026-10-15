@@ -53,6 +53,8 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         metrics = outcome["metrics"]
         reports[strategy] = {
             "timeframe": timeframe,
+            "validation_window": list(trained["windows"]["validation"]),
+            "holdout_window": list(trained["windows"]["holdout"]),
             "validation_selection": selection,
             "holdout_threshold": selected_threshold,
             "model_eligible_for_paper": (selected_threshold is not None and not metrics["execution_path_uncertain"] and metrics["closed_trades"] >= 5),

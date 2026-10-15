@@ -74,6 +74,31 @@ class HorizonModel:
         self.fitted = True
         return self
 
+    def analyze_direction(self, row):
+        """Direction layer: predict up probability using only known features."""
+        if not self.fitted:
+            raise ValueError("model not trained")
+        probabilities = self.direction.predict_proba([_vector(row)])[0]
+        probability_up = float(probabilities[list(self.direction.classes_).index(1)])
+        if not math.isfinite(probability_up):
+            raise ValueError("invalid direction prediction")
+        return probability_up
+
+    def analyze_price_structure(self, row):
+        """Price-structure layer: learned reachable upside/downside magnitudes.
+
+        This is the existing learned price-range prediction, not yet an
+        independently validated support/resistance detection model.
+        """
+        if not self.fitted:
+            raise ValueError("model not trained")
+        entry = float(row["close_price"])
+        up = max(0., float(self.upside.predict([_vector(row)])[0]))
+        down = max(0., float(self.downside.predict([_vector(row)])[0]))
+        if not math.isfinite(entry) or entry <= 0 or not all(math.isfinite(x) for x in (up, down)):
+            raise ValueError("invalid model output")
+        return entry, up, down
+
     def decide(self, symbol, row, *, confidence_threshold=0.6, allocation=0.5):
         """Return model-generated direction and price targets or explicit WAIT.
 
@@ -82,13 +107,8 @@ class HorizonModel:
         """
         if not self.fitted:
             raise ValueError("model not trained")
-        probabilities = self.direction.predict_proba([_vector(row)])[0]
-        probability_up = float(probabilities[list(self.direction.classes_).index(1)])
-        entry = float(row["close_price"])
-        up = max(0., float(self.upside.predict([_vector(row)])[0]))
-        down = max(0., float(self.downside.predict([_vector(row)])[0]))
-        if not math.isfinite(entry) or entry <= 0 or not all(math.isfinite(x) for x in (up, down)):
-            raise ValueError("invalid model output")
+        probability_up = self.analyze_direction(row)
+        entry, up, down = self.analyze_price_structure(row)
         if not 0.5 < confidence_threshold < 1.0:
             raise ValueError("confidence_threshold must be between 0.5 and 1")
         if down >= 1.0:

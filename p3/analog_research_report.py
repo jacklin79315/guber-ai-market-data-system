@@ -33,7 +33,10 @@ def main():
     fee_rate, slippage_rate = 0.001, 0.001
     from datetime import datetime, timezone
     asof_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
-    history = load_research_history(db, symbol, timeframe, asof_ms=asof_ms)
+    # Read a bounded native interval, not 100k+ rows for every job.
+    start_ms = asof_ms - 2510 * INTERVAL_MS[timeframe]
+    history = load_research_history(db, symbol, timeframe, asof_ms=asof_ms,
+                                    start_ms=start_ms)
     # Bound computation for large 15m history without introducing look-ahead.
     snapshots, candles = history["snapshots"][-2500:], history["candles"]
     first_time = snapshots[0]["timestamp_ms"]

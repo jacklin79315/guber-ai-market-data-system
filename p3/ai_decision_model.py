@@ -59,10 +59,10 @@ def build_supervised_examples(features, candles, horizon_bars):
     return np.asarray(X), np.asarray(y_direction), np.asarray(y_up), np.asarray(y_down), timestamps
 
 class HorizonModel:
-    def __init__(self):
-        self.direction = HistGradientBoostingClassifier(max_iter=120, random_state=42)
-        self.upside = HistGradientBoostingRegressor(max_iter=120, random_state=42)
-        self.downside = HistGradientBoostingRegressor(max_iter=120, random_state=42)
+    def __init__(self, *, max_iter=120, learning_rate=0.1):
+        self.direction = HistGradientBoostingClassifier(max_iter=max_iter, learning_rate=learning_rate, random_state=42)
+        self.upside = HistGradientBoostingRegressor(max_iter=max_iter, learning_rate=learning_rate, random_state=42)
+        self.downside = HistGradientBoostingRegressor(max_iter=max_iter, learning_rate=learning_rate, random_state=42)
         self.fitted = False
 
     def fit(self, X, y_direction, y_up, y_down):

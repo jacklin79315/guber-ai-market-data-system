@@ -48,9 +48,24 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
                              if row["threshold"] == threshold), None)
             score = (selected["return_percent"] - selected["drawdown_percent"]
                      if selected is not None else None)
+            candidate_rows = candidate_selection["candidates"]
+            if score is not None:
+                failure_reason = None
+            elif any(row["execution_path_uncertain"] for row in candidate_rows):
+                failure_reason = "execution_path_uncertain"
+            elif all(row["closed_trades"] == 0 for row in candidate_rows):
+                failure_reason = "no_closed_trades"
+            elif all(row["closed_trades"] < 5 for row in candidate_rows):
+                failure_reason = "insufficient_closed_trades"
+            elif all(row["drawdown_percent"] > 8.0 for row in candidate_rows):
+                failure_reason = "validation_drawdown_exceeded"
+            else:
+                failure_reason = "no_eligible_validation_threshold"
             experiments.append({"params": params, "validation_score": score,
                                 "validation_eligible": score is not None,
-                                "selected_threshold": threshold})
+                                "selected_threshold": threshold,
+                                "failure_reason": failure_reason,
+                                "validation_candidates": candidate_rows})
             if score is not None and (winner is None or score > winner[0]):
                 winner = (score, candidate, candidate_selection, params)
         if winner is None:

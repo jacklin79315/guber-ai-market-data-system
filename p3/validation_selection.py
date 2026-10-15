@@ -46,7 +46,7 @@ def diagnose_decision_flow(candles, features, model, symbol, window, threshold):
     return counts
 
 
-def select_threshold(candles, features, model, symbol, validation_window, fee_rate, *, max_holding_ms=None):
+def select_threshold(candles, features, model, symbol, validation_window, fee_rate):
     candidates = []
     for threshold in THRESHOLDS:
         replay_result = evaluate_window(candles, features, model, symbol, validation_window,

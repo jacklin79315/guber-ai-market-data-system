@@ -20,13 +20,9 @@ def replay_four_models(candles_by_timeframe, decisions_by_strategy, *,
 
     Candle inputs are symbol-keyed mappings for each native timeframe.
     Decisions are symbol-keyed mappings of prior-close timestamps.
-    Holding-time exits are not implemented by the multi-lot executor; reject
-    requested holding limits rather than silently ignoring them.
+    Each lot observes its strategy-specific maximum holding time, if supplied.
     """
-    if max_holding_ms_by_strategy and any(
-        value is not None for value in max_holding_ms_by_strategy.values()
-    ):
-        raise NotImplementedError("multi-lot maximum holding-time exits are not implemented")
+    horizons = max_holding_ms_by_strategy or {}
     results = {}
     for strategy, timeframe in STRATEGY_TIMEFRAMES.items():
         if timeframe not in candles_by_timeframe:
@@ -38,7 +34,8 @@ def replay_four_models(candles_by_timeframe, decisions_by_strategy, *,
         if not isinstance(candles, dict) or not isinstance(decisions, dict):
             raise TypeError("multi-lot replay expects symbol-keyed candle and decision mappings")
         results[strategy] = replay_multi_positions(
-            candles, decisions, fee_rate=fee_rate, slippage_rate=slippage_rate
+            candles, decisions, fee_rate=fee_rate, slippage_rate=slippage_rate,
+            max_holding_ms=horizons.get(strategy)
         )
         results[strategy]["strategy"] = strategy
         results[strategy]["timeframe"] = timeframe

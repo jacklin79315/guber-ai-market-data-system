@@ -70,5 +70,9 @@ def load_research_history(db, symbol, timeframe, *, asof_ms,
     snapshots = [{"timestamp_ms": row["close_time"],
                   **{name: row.get(name) for name in features}}
                  for row in feature_rows]
-    # Each feature snapshot must correspond to an original closed native bar.\n    native_times = {c["close_time"] for c in candles}\n    if any(s["timestamp_ms"] not in native_times for s in snapshots):\n        raise ValueError("feature/native candle timestamps are not aligned")\n    return {"snapshots": snapshots, "candles": candles,
+    # Each feature snapshot must correspond to an original closed native bar.
+    native_times = {c["close_time"] for c in candles}
+    if any(s["timestamp_ms"] not in native_times for s in snapshots):
+        raise ValueError("feature/native candle timestamps are not aligned")
+    return {"snapshots": snapshots, "candles": candles,
             "feature_count": len(snapshots), "candle_count": len(candles)}

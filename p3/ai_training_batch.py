@@ -39,6 +39,7 @@ def run_batch(db, *, symbol, strategy, years):
     features = load_native_features(db, symbol, timeframe)
     fee_rate = load_fee_rate(db)
     trials = []
+    run_id = os.getenv("GITHUB_RUN_ID", "local-research")
     for i, params in enumerate(PARAMETERS, start=1):
         trial_key = hashlib.sha256(json.dumps(
             [symbol, strategy, years, params], sort_keys=True).encode()).hexdigest()
@@ -46,6 +47,11 @@ def run_batch(db, *, symbol, strategy, years):
                   "strategy": strategy, "symbol": symbol,
                   "lookback_years": years, "params": params,
                   "research_only": True, "auto_promote": False}
+        db("POST", "ai_training_batch_trials", {"on_conflict": "run_id,strategy,trial_index"}, [{
+            "run_id": run_id, "symbol": symbol, "strategy": strategy,
+            "timeframe": timeframe, "lookback_years": years,
+            "trial_index": i, "status": "RUNNING", "params": params,
+        }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
         print(json.dumps({"status": "TRIAL_STARTED", **record}), flush=True)
         try:
             trained = train_horizon(features, candles, strategy,
@@ -72,6 +78,22 @@ def run_batch(db, *, symbol, strategy, years):
             # An experiment failure is recorded; do not pretend it succeeded.
             record.update({"status": "FAILED", "validation_eligible": False,
                            "error": str(exc), "holdout_evaluated": False})
+        winner = winner if record["status"] == "COMPLETE" else None
+        db("POST", "ai_training_batch_trials", {"on_conflict": "run_id,strategy,trial_index"}, [{
+            "run_id": run_id, "symbol": symbol, "strategy": strategy,
+            "timeframe": timeframe, "lookback_years": years,
+            "trial_index": i, "status": record["status"], "params": params,
+            "validation_eligible": record["validation_eligible"],
+            "validation_score": record.get("validation_score"),
+            "validation_return_percent": winner["return_percent"] if winner else None,
+            "validation_drawdown_percent": winner["drawdown_percent"] if winner else None,
+            "validation_trades": winner["closed_trades"] if winner else None,
+            "selected_threshold": record.get("selected_threshold"),
+            "training_samples": record.get("training_samples"),
+            "validation_samples": record.get("validation_samples"),
+            "error_reason": record.get("error"),
+            "completed_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
         trials.append(record)
         print(json.dumps({"status": "TRIAL_RESULT", **record}, allow_nan=False), flush=True)
     ranking = rank_validation_trials(trials)

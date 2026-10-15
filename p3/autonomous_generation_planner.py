@@ -26,7 +26,7 @@ def plan_next_generation(*, parent_run_id, parent_generation, parent_trials,
         current_window=current_window,
         previous_window=previous_window,
         parent_eligible=any(row.get("validation_eligible") is True for row in parent_trials),
-        already_evaluated=tuple(current_window) in {tuple(w) for w in existing_windows},
+        already_evaluated=(isinstance(current_window, (tuple, list)) and\n                           tuple(current_window) in {tuple(w) for w in existing_windows}),
         max_generations=maximum_generations,
         next_generation=next_generation,
     )

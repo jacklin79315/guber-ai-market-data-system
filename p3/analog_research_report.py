@@ -53,6 +53,21 @@ def main():
                 "realized_net_expectancy_r", "realized_win_rate",
                 "realized_total_net_r")
         }
+        # Diagnostic distributions explain WHY conservative selection rejected trades.
+        # They are descriptive, not validation or a basis for tuning on test data.
+        valid_means = [x["net_expectancy_r"] for x in report["results"]
+                       if x.get("net_expectancy_r") is not None]
+        valid_bounds = [x["lower_bound_r"] for x in report["results"]
+                        if x.get("lower_bound_r") is not None]
+        counts = [x["sample_count"] for x in report["results"]]
+        reports[direction]["diagnostics"] = {
+            "sample_count_min": min(counts) if counts else None,
+            "sample_count_max": max(counts) if counts else None,
+            "average_sample_count": sum(counts) / len(counts) if counts else None,
+            "average_historical_net_expectancy_r": sum(valid_means) / len(valid_means) if valid_means else None,
+            "best_historical_lower_bound_r": max(valid_bounds) if valid_bounds else None,
+            "missing_historical_outcome_estimates": len(counts) - len(valid_means),
+        }
         reports[direction]["wait_reasons"] = dict(Counter(
             x["reason"] for x in report["results"] if x["decision"] == "WAIT"))
     print(json.dumps({

@@ -50,19 +50,18 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
         slippage_rate=slippage_rate)
     selected = []
     trade_records = []
+    # All labeled candidate snapshots are training observations, not executed positions.
+    # Position overlap is enforced separately when evaluating a selected policy.
     snapshot_by_time = {s["timestamp_ms"]: s for s in ordered}
     last_end = None
     skipped_overlapping_candidates = 0
+    training_records = []
     for t in candidate_times:
         if t not in realized:
             continue
-        if last_end is not None and t < last_end:
-            skipped_overlapping_candidates += 1
-            continue
         outcome = realized[t]
         decision = next(o for o in outcomes if o["timestamp_ms"] == t)
-        selected.append(outcome["net_r"])
-        trade_records.append({
+        training_records.append({
             "signal_time_ms": t, "direction": direction,
             "signal_features": {f: snapshot_by_time[t].get(f) for f in features},
             "strict_decision": decision.get("strict_decision", decision["decision"]),
@@ -75,7 +74,13 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
             "exit_reason": outcome["exit_reason"],
             "ambiguous_bar": outcome["ambiguous_bar"],
         })
-        last_end = outcome["label_end_ms"]
+    for record in training_records:
+        if last_end is not None and record["signal_time_ms"] < last_end:
+            skipped_overlapping_candidates += 1
+            continue
+        trade_records.append(record)
+        selected.append(record["net_r"])
+        last_end = record["label_end_ms"]
     equity = 0.0
     peak = 0.0
     max_drawdown_r = 0.0
@@ -88,6 +93,7 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
     return {"direction": direction, "research_only": True,
             "exploration_paper_only": exploration,
             "trade_records": trade_records,
+            "training_records": training_records,
             "max_closed_trade_drawdown_r": max_drawdown_r if selected else None,
             "profit_factor": wins / losses if losses > 0 else None,
             "skipped_overlapping_candidates": skipped_overlapping_candidates,

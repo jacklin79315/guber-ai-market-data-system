@@ -19,10 +19,22 @@ def research_analog_plan(current, history, candles, features, *,
     Labeling requires full historical candles; selection uses ONLY features.
     Do not optimize on the same observations then call this out-of-sample.
     """
+    if not isinstance(asof_ms, int) or horizon_ms <= 0 or embargo_ms < 0:
+        raise ValueError("invalid research timestamps")
+    # Label horizons are upper bounds, not outcomes. A label is eligible only
+    # when its complete planned observation window is already in the past.
+    prepared = []
+    for row in history:
+        t = row.get("timestamp_ms")
+        if not isinstance(t, int) or t >= asof_ms:
+            continue
+        if "label_end_ms" not in row:
+            row = {**row, "label_end_ms": t + horizon_ms}
+        prepared.append(row)
     neighbors = search_historical_analogs(
-        current, history, features, asof_ms=asof_ms,
+        current, prepared, features, asof_ms=asof_ms,
         horizon_ms=horizon_ms, embargo_ms=embargo_ms, k=k)
-    by_time = {row["timestamp_ms"]: row for row in history}
+    by_time = {row["timestamp_ms"]: row for row in prepared}
     selected = [by_time[n["timestamp_ms"]] for n in neighbors]
     outcomes = build_historical_outcomes(
         selected, candles, direction=direction, stop_pct=stop_pct,

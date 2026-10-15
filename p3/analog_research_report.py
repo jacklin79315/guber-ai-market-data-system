@@ -9,6 +9,7 @@ from time import perf_counter
 from collections import Counter
 from p3.analog_data_loader import load_research_history, DEFAULT_FEATURES
 from p3.analog_walk_forward import walk_forward_analog_evaluation
+from p3.historical_evaluation_window import historical_evaluation_window
 from p3.raw_candle_adapter import INTERVAL_MS
 from p3.four_strategy_analog import STRATEGY_PLANS
 from p3.paper_learning import chronological_paper_learning, chronological_direction_decisions
@@ -67,10 +68,12 @@ def main():
     evaluation_offset_bars = int(os.getenv("ANALOG_EVALUATION_OFFSET_BARS", "0"))
     if evaluation_offset_bars < 0:
         raise SystemExit("Evaluation offset must be nonnegative")
-    if len(snapshots) < evaluation_bars + holding + evaluation_offset_bars + 100:
-        raise SystemExit("Insufficient history for requested backfill window")
-    evaluation_start_ms = snapshots[-(evaluation_bars + holding + evaluation_offset_bars)]["timestamp_ms"]
-    evaluation_end_ms = snapshots[-(holding + evaluation_offset_bars + 1)]["timestamp_ms"]
+    try:
+        evaluation_start_ms, evaluation_end_ms = historical_evaluation_window(
+            snapshots, evaluation_bars=evaluation_bars, holding_bars=holding,
+            offset_bars=evaluation_offset_bars)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     print(json.dumps({"status": "STARTED", "symbol": symbol, "strategy": strategy, "timeframe": timeframe,
                       "feature_rows": len(snapshots), "native_candles": len(candles),
                       "history_mode": history_mode, "first_feature_time_ms": snapshots[0]["timestamp_ms"],

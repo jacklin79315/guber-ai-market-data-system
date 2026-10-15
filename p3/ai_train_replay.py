@@ -177,7 +177,7 @@ def main():
                      sort_keys=True, allow_nan=False), flush=True)
     print(json.dumps({"status": "EXPERIMENT_TRIAL_MANIFEST",
                       "trials": eligible_candidate_trials(schedule),
-                      "execution": "DISABLED_UNTIL_WINDOW_ISOLATION_VERIFIED"},
+                      "execution": "VALIDATION_ONLY_WHEN_READY"},
                      sort_keys=True, allow_nan=False), flush=True)
     # Candidate execution is deliberately separate from baseline and is
     # validation-only; it cannot change the selected production model.

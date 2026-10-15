@@ -28,7 +28,8 @@ def evaluate_analog_outcomes(neighbors, outcomes, *, min_samples=30,
         if not isinstance(t, int) or not isinstance(end, int) or end <= t:
             continue
         item = outcomes.get(t)
-        if (not isinstance(item, dict) or not isinstance(item.get("label_end_ms"), int)\n                or not t < item["label_end_ms"] <= end):
+        if (not isinstance(item, dict) or not isinstance(item.get("label_end_ms"), int)
+                or not t < item["label_end_ms"] <= end):
             continue
         net_r = item.get("net_r")
         if isinstance(net_r, bool) or not isinstance(net_r, (int, float)) or not isfinite(net_r):

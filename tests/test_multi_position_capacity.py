@@ -31,11 +31,11 @@ class SettledCapacityTests(unittest.TestCase):
 
     def test_loss_can_leave_open_lots_over_limit_without_forcing_exit(self):
         a = MultiPositionAccount()
-        first, _ = a.enter(long(.2), 1)
+        first, _ = a.enter(Decision("SHORT", "BTCUSDT", 100, 90, 110, .2), 1)
         second, _ = a.enter(long(.6, "ETHUSDT"), 2)
-        a.exit(first, 50, 3, reason="EXIT")
-        self.assertAlmostEqual(a.settled_equity, 9000)
-        self.assertAlmostEqual(a.capacity_limit, 7200)
+        a.exit(first, 240, 3, reason="EXIT")
+        self.assertAlmostEqual(a.settled_equity, 7200)
+        self.assertAlmostEqual(a.capacity_limit, 5760)
         self.assertIn(second, a.positions)
         self.assertIsNone(a.enter(long(.1, "SOLUSDT"), 4))
         self.assertIn(second, a.positions)

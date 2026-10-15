@@ -11,7 +11,7 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
                                    horizon_ms, direction, stop_pct, target_pct,
                                    max_holding_bars, fee_rate, slippage_rate,
                                    embargo_ms=0, k=100, min_samples=30,
-                                   evaluation_start_ms=None):
+                                   evaluation_start_ms=None, exploration=False):
     if not snapshots or not features:
         raise ValueError("empty research input")
     ordered = sorted(snapshots, key=lambda s: s["timestamp_ms"])
@@ -29,6 +29,12 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
             max_holding_bars=max_holding_bars, fee_rate=fee_rate,
             slippage_rate=slippage_rate, embargo_ms=embargo_ms,
             k=k, min_samples=min_samples)
+        # Exploration records a paper hypothesis regardless of the strict gate.
+        # This is NOT a trained model update or live execution.
+        if exploration:
+            report = {**report, "strict_decision": report["decision"],
+                      "decision": "CANDIDATE",
+                      "reason": "exploration_paper_only"}
         outcomes.append({"timestamp_ms": asof, **report})
     # Realized labels are computed only AFTER each chronological decision.
     # Do not use these labels to choose or tune the decision itself.
@@ -60,6 +66,7 @@ def walk_forward_analog_evaluation(snapshots, candles, features, *,
     wins = sum(v for v in selected if v > 0)
     losses = -sum(v for v in selected if v < 0)
     return {"direction": direction, "research_only": True,
+            "exploration_paper_only": exploration,
             "max_closed_trade_drawdown_r": max_drawdown_r if selected else None,
             "profit_factor": wins / losses if losses > 0 else None,
             "skipped_overlapping_candidates": skipped_overlapping_candidates,

@@ -50,6 +50,8 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
     by_settlement = sorted(valid, key=lambda v: v[0]["label_end_ms"])
     settlement_times = [v[0]["label_end_ms"] for v in by_settlement]
     evaluated = []
+    # Only evaluation rows need model fitting; historical rows remain available
+    # as settled training observations.
     for row, x, _ in valid:
         t = row["signal_time_ms"]
         if evaluation_start_ms is not None and t < evaluation_start_ms:

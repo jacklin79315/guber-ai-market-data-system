@@ -1,6 +1,5 @@
 """Append-only training audit records. Holdout metrics are audit-only, never promotion criteria."""
 import os
-from .model_version_comparison import compare_versions
 
 def record_training_reports(db, symbol, years, reports):
     run_id = os.getenv("GITHUB_RUN_ID")

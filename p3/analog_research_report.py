@@ -62,7 +62,8 @@ def main():
                 "evaluations", "candidate_count", "wait_count",
                 "realized_candidate_count", "unresolved_candidate_count",
                 "realized_net_expectancy_r", "realized_win_rate",
-                "realized_total_net_r")
+                "realized_total_net_r", "max_closed_trade_drawdown_r",
+                "profit_factor", "skipped_overlapping_candidates")
         }
         # Diagnostic distributions explain WHY conservative selection rejected trades.
         # They are descriptive, not validation or a basis for tuning on test data.

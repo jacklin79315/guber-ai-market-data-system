@@ -14,14 +14,17 @@ def _vector(record, feature_names):
     if any(isinstance(v, bool) or not isinstance(v, (int, float))
            or not isfinite(v) for v in values):
         return None
-    return [float(v) for v in values]
+    direction = record.get("direction")
+    if direction not in ("LONG", "SHORT"):
+        return None
+    return [float(v) for v in values] + [1.0 if direction == "LONG" else -1.0]
 
 
 def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=10.0):
 
     """Return prequential predictions: train strictly on previously SETTLED trades.
 
-    Rows are evaluated at signal time. Same-time LONG/SHORT decisions never
+    Direction is an explicit input feature, allowing different LONG/SHORT forecasts.\n    Rows are evaluated at signal time. Same-time LONG/SHORT decisions never
     see each other's labels. Metrics describe predictions, not trading returns.
     """
     if not feature_names or min_train < 2 or alpha <= 0:

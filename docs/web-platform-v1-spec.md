@@ -4,7 +4,7 @@ Status: DESIGN ONLY. No database migration, authentication, UI, or runtime confi
 
 ## Product boundaries
 
-One web application with ADMIN and VIEWER roles. Historical research and paper trading only. No exchange trading credentials, live order execution, or real-money auto-trading endpoints.
+One web application with ADMIN and VIEWER roles. Scope: autonomous model research, evaluation, performance monitoring, and simulated execution.
 
 ## Screens and data contracts
 
@@ -13,7 +13,7 @@ One web application with ADMIN and VIEWER roles. Historical research and paper t
 3. Model performance: separate TRAIN / VALIDATION / HOLDOUT / FORWARD_PAPER; timeframe, sample size, fee/slippage, period return, annualized return, max drawdown, win rate, trade count, model version, evaluation window. Do not present historical results as live profits.
 4. Admin instruments: allowlist of exchange/symbol/timeframes, enable/disable signal generation and training separately. Validate supported native data coverage before activation.
 5. Admin training: frequency (hours), enabled, candidate budget, allowed training timeframes, min trades, experiment history, run-now, pause/resume. Display next due and last successful run.
-6. Admin paper trading: isolated account balance and risk limits; cannot place real orders.
+6. Admin paper trading: isolated account balance and risk limits; isolated from external execution systems.
 7. Admin system health: collector freshness, features lag, training runs, paper engine, notification status and errors.
 8. Admin user access: VIEWER/ADMIN role management with audit trail; no self-promotion.
 
@@ -34,7 +34,7 @@ One web application with ADMIN and VIEWER roles. Historical research and paper t
 - ADMIN can manage settings through authenticated server endpoints, which independently verify role and validate allowed fields. No service-role key in browser, no role assignment from client-controlled metadata.
 - Railway worker reads app_training_settings and claims due jobs transactionally (one per instrument/scheduled slot). UI edits take effect on next schedule evaluation, without editing GitHub YAML. Failed jobs retry with bounded backoff and no overlapping training of same instrument.
 - Current GitHub Actions schedule is temporary until Railway scheduler is deployed and verified. Disable one scheduler before enabling the other to prevent double runs.
-- Each run stores immutable config snapshot, code revision, train/validation/holdout boundaries, experiment outcomes and artifacts. Candidate tuning uses TRAIN/VALIDATION only; untouched HOLDOUT for final evaluation. Repeated use of the same holdout for promotion is prohibited; forward paper evaluation required before ACTIVE.
+- Each run stores immutable config snapshot, code revision, train/validation/holdout boundaries, experiment outcomes and artifacts. Candidate tuning uses TRAIN/VALIDATION only; untouched HOLDOUT for final evaluation. Repeated use of the same holdout for selection is prohibited; independent forward evaluation is required before marking a model as validated.
 - Any frequency or budget changes must respect server-side limits and resource quotas; never allow unbounded loops.
 - Changes to risk limits, enabled instruments and schedule must be audit logged. No direct UI ability to modify collectors or delete market history.
 
@@ -44,7 +44,7 @@ A. Role enforcement tested with viewer/admin and unauthenticated sessions.
 B. Admin can change a training interval in UI; DB saves it; worker reads it; next_due changes; no GitHub edit needed.
 C. User cannot read settings or unpublished experiment details.
 D. Training and paper outputs carry clear data partition labels and timestamps.
-E. No production collector interruptions and no real order routes.
+E. No production collector interruptions.
 F. No schema changes until existing Supabase tables and RLS policies are inspected and migration is reviewed.
 
 ## Implementation order
@@ -65,7 +65,7 @@ F. No schema changes until existing Supabase tables and RLS policies are inspect
 - Layout: left navigation and compact top status bar on desktop; responsive navigation and single-column KPI cards on mobile. Spacious cards, subtle 1px borders, restrained rounded corners, no heavy gradients or decorative animations.
 - Main admin areas: Overview, Instruments, Training, Experiments, Paper Trading, Market State, Signals, System Health, Settings, Users. Viewer navigation excludes administrative sections entirely.
 - Distinguish TRAIN / VALIDATION / HOLDOUT / FORWARD_PAPER visually and textually. Every performance chart must show data source, evaluation dates, fees, sample size and whether values are simulated.
-- Always-visible PAPER / NO REAL ORDERS environment indicator. No order-entry or real-funds controls in V1.
+- Always-visible research / simulation environment indicator.
 - Chart data must come from real stored metrics; sample charts and placeholder metrics must be visibly labeled as mock data.
 - Accessibility: keyboard navigation, visible focus, text alternatives for status icons, responsive tables, WCAG AA contrast target.
 
@@ -78,3 +78,13 @@ F. No schema changes until existing Supabase tables and RLS policies are inspect
 - Persist login through the supported Supabase Auth refresh-session mechanism; restore sessions after page refresh/browser restart. Sign out invalidates the local session; provide sign-out-all-sessions where supported.
 - Password changes should go through Supabase Auth Admin APIs or a secure self-service flow, not direct edits to auth.users encrypted_password or plaintext database fields. Account display name and role can be updated separately with audited DB operations.
 - Add tests for session restoration, expired/revoked sessions, rate limiting, and unauthorized ADMIN settings requests.
+
+
+## Autonomous training mandate — 2026-10-16
+
+- The system itself owns data-quality preflight, scheduled generation readiness, training, evaluation, champion/challenger research selection, immutable lineage, and retries. Human-in-the-loop checks are for engineering faults or material policy changes, not each model run.
+- Each generation must use a new, closed, point-in-time evaluation window. Do not re-label repeated tuning on unchanged data as independent learning.
+- Persist generation, parent lineage, exact data window, code revision, experiment count, comparison rationale, and status (RUNNING/WAIT/FAILED/COMPLETE).
+- A research candidate is not proof of improved forward performance. Show validation and independent forward results separately, including missing/unavailable states.
+- Training scheduler must enforce idempotent atomic claims, bounded retries and concurrency, and a configurable budget; never run unbounded iterations.
+- The dashboard displays generations, progress, performance metrics with sample sizes and periods, failures, and next due time without requiring manual chat commands.

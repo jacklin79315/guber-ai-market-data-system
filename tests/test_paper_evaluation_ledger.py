@@ -9,16 +9,20 @@ class EvaluationLedgerTests(unittest.TestCase):
             return [{"run_key": "x", "plan_version": PLAN_VERSION,
                      "data_version": DATA_VERSION,
                      "model_mae_r": 0.5, "baseline_mae_r": 1.0,
-                     "selected_trades": 2},
+                     "selected_trades": 2,
+                     "evaluation_start_ms": 100, "evaluation_end_ms": 200},
                     {"run_key": "y", "plan_version": "old",
                      "data_version": DATA_VERSION,
                      "model_mae_r": 2.0, "baseline_mae_r": 1.0,
-                     "selected_trades": 100}]
+                     "selected_trades": 100,
+                     "evaluation_start_ms": 150, "evaluation_end_ms": 250}]
         rows = compare_paper_evaluations(db, symbol="BTCUSDT",
                                          strategy="INTRADAY")
         self.assertTrue(rows[0]["mae_beats_baseline"])
         self.assertFalse(rows[0]["trading_evidence_sufficient"])
         self.assertFalse(rows[1]["version_comparable"])
+        self.assertTrue(rows[0]["independent_evaluation_window"])
+        self.assertFalse(rows[1]["independent_evaluation_window"])
         self.assertFalse(any(x["eligible_for_promotion"] for x in rows))
 
     def test_deterministic_key_and_research_only(self):

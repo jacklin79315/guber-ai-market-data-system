@@ -1,19 +1,23 @@
 """Pure, fail-closed model version comparison. Never optimize using holdout."""
-from datetime import datetime
+import math
 
 def _score(row):
     value = row.get("validation_score")
-    return float(value) if value is not None else None
+    if value is None:
+        return None
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return None
+    return score if math.isfinite(score) else None
 
 def comparable(a, b):
     """Require identical evaluation context before ranking."""
-    keys = ("symbol", "strategy", "timeframe", "lookback_years")
+    keys = ("symbol", "strategy", "timeframe", "lookback_years",
+            "validation_window", "evaluation_version", "dataset_version",
+            "feature_version", "fee_version")
     return all(a.get(k) == b.get(k) for k in keys) and all(
         a.get(k) is not None for k in keys
-    ) and a.get("validation_window") is not None and (
-        a.get("validation_window") == b.get("validation_window")
-    ) and a.get("evaluation_version") is not None and (
-        a.get("evaluation_version") == b.get("evaluation_version")
     )
 
 def compare_versions(champion, challenger):

@@ -55,14 +55,23 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
         std[std == 0] = 1.0
         model = Ridge(alpha=alpha).fit((xs - mean) / std, ys)
         prediction = float(model.predict((np.array([x]) - mean) / std)[0])
+        baseline_prediction = float(ys.mean())
         evaluated.append({"signal_time_ms": t, "direction": row["direction"],
-                          "prediction_net_r": prediction, "actual_net_r": row["net_r"],
+                          "prediction_net_r": prediction,
+                          "baseline_prediction_net_r": baseline_prediction,
+                          "actual_net_r": row["net_r"],
                           "train_count": len(eligible),
                           "training_latest_label_end_ms": max(
                               prior["label_end_ms"] for prior in eligible)})
     errors = [v["prediction_net_r"] - v["actual_net_r"] for v in evaluated]
+    baseline_errors = [v["baseline_prediction_net_r"] - v["actual_net_r"] for v in evaluated]
+    model_mae = sum(abs(e) for e in errors) / len(errors) if errors else None
+    baseline_mae = sum(abs(e) for e in baseline_errors) / len(baseline_errors) if baseline_errors else None
     return {"research_only": True, "auto_trade_enabled": False,
             "model": "ridge_baseline_v1", "min_train": min_train,
             "prediction_count": len(evaluated),
-            "mean_absolute_error_r": sum(abs(e) for e in errors) / len(errors) if errors else None,
+            "mean_absolute_error_r": model_mae,
+            "baseline_mean_absolute_error_r": baseline_mae,
+            "mae_improvement_r": baseline_mae - model_mae if errors else None,
+            "outperforms_baseline_mae": model_mae < baseline_mae if errors else None,
             "predictions": evaluated}

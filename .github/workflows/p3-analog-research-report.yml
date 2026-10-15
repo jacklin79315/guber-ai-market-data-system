@@ -40,6 +40,7 @@ jobs:
       ANALOG_EXPLORATION: ${{ matrix.mode == 'EXPLORATION' }}
       ANALOG_EVALUATION_BARS: "40"
       PAPER_OUTCOME_PERSIST: "true"
+      PAPER_MEMORY_READ: "true"
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:

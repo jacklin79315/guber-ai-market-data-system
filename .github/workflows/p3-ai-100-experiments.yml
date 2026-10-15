@@ -2,6 +2,20 @@ name: P3 AI 100 Experiment Batch
 
 on:
   workflow_dispatch:
+    inputs:
+      generation:
+        description: 'Generation number (1 for baseline)'
+        required: true
+        default: '1'
+      parent_run_id:
+        description: 'Previous generation GitHub run ID; required for generation 2+'
+        required: false
+      previous_validation_window:
+        description: 'Previous validation [start_ms,end_ms] JSON'
+        required: false
+      current_validation_window:
+        description: 'New validation [start_ms,end_ms] JSON'
+        required: false
 
 permissions:
   contents: read
@@ -15,6 +29,10 @@ jobs:
       matrix:
         strategy: [INTRADAY, ONE_TO_THREE_DAYS, ONE_WEEK, FIFTEEN_TO_THIRTY_DAYS]
     env:
+      TRAINING_GENERATION: ${{ inputs.generation }}
+      TRAINING_PARENT_RUN_ID: ${{ inputs.parent_run_id }}
+      TRAINING_PARENT_VALIDATION_WINDOW: ${{ inputs.previous_validation_window }}
+      TRAINING_CURRENT_VALIDATION_WINDOW: ${{ inputs.current_validation_window }}
       TRAINING_BATCH_STRATEGY: ${{ matrix.strategy }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -26,7 +44,7 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - name: Validate experiment grid
-        run: python -m unittest tests.test_ai_training_batch
+        run: python -m unittest tests.test_ai_training_batch tests.test_iterative_generation
       - name: Run 25 validation-only training trials
         shell: bash
         run: |

@@ -45,6 +45,7 @@ jobs:
           test -n "$SUPABASE_URL" || { echo 'Missing SUPABASE_URL secret'; exit 1; }
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'Missing SUPABASE_SERVICE_ROLE_KEY secret'; exit 1; }
       - name: Train four models and replay untouched holdout
+        timeout-minutes: 170
         shell: bash
         run: |
           set -o pipefail

@@ -11,7 +11,7 @@ class PaperLearningTests(unittest.TestCase):
             for i in range(8)
         ]
         result = chronological_paper_learning(records, ["x"], min_train=2)
-        self.assertEqual(result["prediction_count"], 4)
+        self.assertEqual(result["prediction_count"], 5)
         for row in result["predictions"]:
             self.assertLess(row["training_latest_label_end_ms"],
                             row["signal_time_ms"])

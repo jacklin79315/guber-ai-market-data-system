@@ -32,10 +32,36 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
             "code_version": pinned_code_version(),
             "fee_version": fee_fingerprint(fee_rate),
         }
-        trained = train_horizon(features, candles, strategy, years=years)
+        # Explore candidates on training data; rank ONLY by validation results.
+        # Holdout is evaluated once after the candidate has been selected.
+        experiments = []
+        winner = None
+        for params in ({"max_iter": 120, "learning_rate": 0.1},
+                       {"max_iter": 180, "learning_rate": 0.05}):
+            candidate = train_horizon(features, candles, strategy, years=years,
+                                      model_params=params)
+            candidate_selection = select_threshold(
+                candles, features, candidate["model"], symbol,
+                candidate["windows"]["validation"], fee_rate)
+            threshold = candidate_selection["selected_threshold"]
+            selected = next((row for row in candidate_selection["candidates"]
+                             if row["threshold"] == threshold), None)
+            score = (selected["return_percent"] - selected["drawdown_percent"]
+                     if selected is not None else None)
+            experiments.append({"params": params, "validation_score": score,
+                                "validation_eligible": score is not None,
+                                "selected_threshold": threshold})
+            if score is not None and (winner is None or score > winner[0]):
+                winner = (score, candidate, candidate_selection, params)
+        if winner is None:
+            # No eligible candidate: retain a reportable baseline, never trade.
+            trained = candidate
+            selection = candidate_selection
+            chosen_params = None
+            selection = {**selection, "selected_threshold": None}
+        else:
+            _, trained, selection, chosen_params = winner
         model = trained["model"]
-        selection = select_threshold(candles, features, model, symbol,
-                                     trained["windows"]["validation"], fee_rate)
         selected_threshold = selection["selected_threshold"]
         holdout_start, holdout_end = trained["windows"]["holdout"]
         # Embargo is enforced on decisions as well as training examples.
@@ -63,6 +89,9 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         qualification = evaluate_model_gates(selection, metrics)
         reports[strategy] = {
             "qualification": qualification,
+            "optimization": {"selection_source": "validation_only",
+                             "experiments": experiments,
+                             "selected_params": chosen_params},
             "provenance": provenance,
             "timeframe": timeframe,
             "validation_window": list(trained["windows"]["validation"]),

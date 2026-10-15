@@ -36,14 +36,22 @@ def main():
     fee_rate, slippage_rate = 0.001, 0.001
     from datetime import datetime, timezone
     asof_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
-    # Read a bounded native interval, not 100k+ rows for every job.
-    start_ms = asof_ms - 2510 * INTERVAL_MS[timeframe]
+    # Full history is opt-in: 15m spans >100k bars and is computationally heavy.
+    history_mode = os.getenv("ANALOG_HISTORY_MODE", "RECENT").upper()
+    if history_mode not in ("RECENT", "FULL"):
+        raise SystemExit("ANALOG_HISTORY_MODE must be RECENT or FULL")
+    start_ms = (asof_ms - 2510 * INTERVAL_MS[timeframe]
+                if history_mode == "RECENT" else None)
     history = load_research_history(db, symbol, timeframe, asof_ms=asof_ms,
                                     start_ms=start_ms)
-    # Bound computation for large 15m history without introducing look-ahead.
-    snapshots, candles = history["snapshots"][-2500:], history["candles"]
-    first_time = snapshots[0]["timestamp_ms"]
-    candles = [c for c in candles if c["close_time"] >= first_time]
+    snapshots, candles = history["snapshots"], history["candles"]
+    if history_mode == "RECENT":
+        snapshots = snapshots[-2500:]
+        if snapshots:
+            first_time = snapshots[0]["timestamp_ms"]
+            candles = [c for c in candles if c["close_time"] >= first_time]
+    if not snapshots:
+        raise SystemExit("No usable indicator snapshots")
     if len(snapshots) < evaluation_bars + 100:
         raise SystemExit("Insufficient historical research snapshots")
     # Reserve the entire holding horizon AFTER each evaluation snapshot.
@@ -54,6 +62,7 @@ def main():
     evaluation_end_ms = snapshots[-(holding + 1)]["timestamp_ms"]
     print(json.dumps({"status": "STARTED", "symbol": symbol, "strategy": strategy, "timeframe": timeframe,
                       "feature_rows": len(snapshots), "native_candles": len(candles),
+                      "history_mode": history_mode, "first_feature_time_ms": snapshots[0]["timestamp_ms"],
                       "evaluation_bars": evaluation_bars,
                       "research_only": True, "auto_trade_enabled": False}), flush=True)
     reports = {}

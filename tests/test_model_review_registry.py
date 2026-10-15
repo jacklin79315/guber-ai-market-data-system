@@ -29,6 +29,19 @@ class ReviewRegistryTests(unittest.TestCase):
         def db(method, table, params, payload=None, extra=None):
             return ([row("c", accepted=False)] if table == "ai_training_runs" else []) if method == "GET" else []
         self.assertEqual(record_model_review(db, "c")["decision"], "REJECT")
+    def test_existing_review_is_idempotent(self):
+        writes = []
+        def db(method, table, params, payload=None, extra=None):
+            if method == "GET" and table == "ai_model_reviews":
+                return [{"id": 1, "decision": "REJECT", "reason": "previous_audit"}]
+            if method == "GET":
+                return [row("c")]
+            writes.append(table)
+            return []
+        result = record_model_review(db, "c")
+        self.assertTrue(result["already_recorded"])
+        self.assertEqual(result["reason"], "previous_audit")
+        self.assertEqual(writes, [])
     def test_missing_challenger_fails_closed(self):
         with self.assertRaises(ValueError):
             record_model_review(lambda *args, **kwargs: [], "missing")

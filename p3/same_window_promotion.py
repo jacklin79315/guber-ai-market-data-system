@@ -11,8 +11,7 @@ from .model_qualification import (MIN_ANNUALIZED_RETURN_PERCENT,
 
 def decide_generation_promotion(champion, challenger, *,
                                 same_validation_window, min_trades=5,
-                                max_drawdown_percent=8.0,
-                                min_score_improvement=0.25):
+                                max_drawdown_percent=8.0):
     """Research promotion only; no production activation or trading."""
     if not same_validation_window:
         return {"status": "WAIT", "reason": "different_evaluation_windows",
@@ -42,15 +41,21 @@ def decide_generation_promotion(champion, challenger, *,
     if not eligible(challenger):
         return {"status": "REJECT", "reason": "challenger_not_eligible",
                 "research_promoted": False}
-    old_score = champion["return_percent"] - champion["drawdown_percent"]
-    new_score = challenger["return_percent"] - challenger["drawdown_percent"]
-    delta = new_score - old_score
-    if delta < min_score_improvement:
-        return {"status": "REJECT", "reason": "insufficient_improvement",
-                "score_delta": delta, "research_promoted": False}
+    # Compare qualified models lexicographically: annualized return first,
+    # then win rate, then mean trade score. Each promoted champion raises the
+    # strategy-specific benchmark; the absolute floors never decrease.
+    priority = ("annualized_return_percent", "win_rate_percent", "mean_score_q")
+    old_rank = tuple(champion[k] for k in priority)
+    new_rank = tuple(challenger[k] for k in priority)
+    if new_rank <= old_rank:
+        return {"status": "REJECT", "reason": "no_priority_order_improvement",
+                "champion_rank": old_rank, "challenger_rank": new_rank,
+                "research_promoted": False}
     if challenger["drawdown_percent"] > champion["drawdown_percent"]:
         return {"status": "REJECT", "reason": "drawdown_worsened",
-                "score_delta": delta, "research_promoted": False}
+                "champion_rank": old_rank, "challenger_rank": new_rank,
+                "research_promoted": False}
     return {"status": "RESEARCH_CANDIDATE", "reason": "same_window_improvement",
-            "score_delta": delta, "research_promoted": True,
+            "champion_rank": old_rank, "challenger_rank": new_rank,
+            "research_promoted": True,
             "live_promoted": False, "paper_promoted": False}

@@ -30,7 +30,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     validation_begin, validation_end = windows["validation"]
     # A stable dataset-scoped ID resumes the same experiment without mixing
     # incompatible historical windows or the original 200 batch trials.
-    experiment = json.dumps(["autonomous-v2-trade-replay", symbol, strategy, years,
+    experiment = json.dumps(["autonomous-v3-dual-feature-layers", symbol, strategy, years,
                              timeframe, train_begin, train_end], separators=(",", ":"))
     run_id = "autonomous-v2-" + hashlib.sha256(experiment.encode()).hexdigest()[:24]
     previous = db("GET", "ai_training_batch_trials", {

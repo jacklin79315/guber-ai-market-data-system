@@ -16,6 +16,7 @@ from .validation_selection import select_threshold
 from .training_settings import load_training_settings
 from .training_registry import record_training_reports
 from .experiment_scheduler import load_schedule_from_supabase, eligible_candidate_trials
+from .candidate_trial_runner import evaluate_candidate_trials
 from .model_qualification import evaluate_model_gates
 from .model_provenance import fingerprint_rows, pinned_code_version, fee_fingerprint
 from .ai_decision_model import FEATURE_COLUMNS
@@ -178,6 +179,22 @@ def main():
                       "trials": eligible_candidate_trials(schedule),
                       "execution": "DISABLED_UNTIL_WINDOW_ISOLATION_VERIFIED"},
                      sort_keys=True, allow_nan=False), flush=True)
+    # Candidate execution is deliberately separate from baseline and is
+    # validation-only; it cannot change the selected production model.
+    trials = eligible_candidate_trials(schedule)
+    if trials:
+        fee_rate = load_fee_rate(db)
+        required = {STRATEGY_TIMEFRAMES[t["strategy"]] for t in trials}
+        candles_by_timeframe = {tf: load_native_candles(db, symbol, tf) for tf in required}
+        features_by_timeframe = {tf: load_native_features(db, symbol, tf) for tf in required}
+        candidate_results = evaluate_candidate_trials(
+            schedule, symbol=symbol, years=years,
+            candles_by_timeframe=candles_by_timeframe,
+            features_by_timeframe=features_by_timeframe, fee_rate=fee_rate)
+        print(json.dumps({"status": "CANDIDATE_VALIDATION_RESULTS",
+                          "results": candidate_results,
+                          "promotion": "DISABLED"},
+                         sort_keys=True, allow_nan=False), flush=True)
     print(json.dumps({"status": "TRAINING_STARTED", "symbol": symbol}), flush=True)
     result = run_training(db, symbol, years=years)
     registry = record_training_reports(db, symbol, years, result)

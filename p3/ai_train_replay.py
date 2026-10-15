@@ -17,6 +17,7 @@ from .training_settings import load_training_settings
 from .training_registry import record_training_reports
 from .experiment_scheduler import load_schedule_from_supabase, eligible_candidate_trials
 from .candidate_trial_runner import evaluate_candidate_trials
+from .candidate_trial_registry import record_candidate_trials
 from .model_qualification import evaluate_model_gates
 from .model_provenance import fingerprint_rows, pinned_code_version, fee_fingerprint
 from .ai_decision_model import FEATURE_COLUMNS
@@ -191,6 +192,9 @@ def main():
             schedule, symbol=symbol, years=years,
             candles_by_timeframe=candles_by_timeframe,
             features_by_timeframe=features_by_timeframe, fee_rate=fee_rate)
+        trial_registry = record_candidate_trials(db, symbol, years, candidate_results)
+        print(json.dumps({"status": "CANDIDATE_TRIAL_REGISTRY", **trial_registry},
+                         sort_keys=True), flush=True)
         print(json.dumps({"status": "CANDIDATE_VALIDATION_RESULTS",
                           "results": candidate_results,
                           "promotion": "DISABLED"},

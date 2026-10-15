@@ -126,6 +126,10 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                   "validation_return_percent": observed["return_percent"] if observed else None,
                   "validation_drawdown_percent": observed["drawdown_percent"] if observed else None,
                   "validation_trades": observed["closed_trades"] if observed else None,
+                  "validation_win_rate_percent": observed["win_rate_percent"] if observed else None,
+                  "validation_mean_score_q": observed["mean_score_q"] if observed else None,
+                  "validation_annualized_return_percent": observed["annualized_return_percent"] if observed else None,
+                  "validation_annualized_mark_to_market_return_percent": observed["annualized_mark_to_market_return_percent"] if observed else None,
                   "selected_threshold": selected_threshold,
                   "error": error}
         db("POST", "ai_training_batch_trials",

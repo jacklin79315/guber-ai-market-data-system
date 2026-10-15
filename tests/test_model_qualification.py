@@ -3,7 +3,9 @@ from p3.model_qualification import evaluate_model_gates
 
 SEL = {"selected_threshold": 0.6}
 MET = {"closed_trades": 8, "max_close_to_close_drawdown_percent": 4.0,
-       "final_mark_to_market_equity": 11000.0, "execution_path_uncertain": False}
+       "final_mark_to_market_equity": 11000.0, "execution_path_uncertain": False,
+       "annualized_return_percent": 12.0, "win_rate_percent": 75.0,
+       "mean_score_q": 68.0}
 
 class QualificationTests(unittest.TestCase):
     def test_acceptance_not_activation(self):
@@ -20,6 +22,18 @@ class QualificationTests(unittest.TestCase):
         self.assertFalse(evaluate_model_gates(SEL, {**MET, "max_close_to_close_drawdown_percent": 9})["holdout_accepted"])
     def test_uncertain_execution(self):
         self.assertFalse(evaluate_model_gates(SEL, {**MET, "execution_path_uncertain": True})["holdout_accepted"])
+    def test_performance_gates(self):
+        for key, value in (("annualized_return_percent", 9.99),
+                           ("win_rate_percent", 69.99),
+                           ("mean_score_q", 64.99)):
+            with self.subTest(metric=key):
+                self.assertFalse(evaluate_model_gates(SEL, {**MET, key: value})["holdout_accepted"])
+        for key in ("annualized_return_percent", "win_rate_percent", "mean_score_q"):
+            with self.subTest(missing=key):
+                missing = dict(MET)
+                del missing[key]
+                self.assertFalse(evaluate_model_gates(SEL, missing)["holdout_accepted"])
+
     def test_missing_or_nan_metrics(self):
         self.assertFalse(evaluate_model_gates(SEL, {**MET, "final_mark_to_market_equity": float("nan")})["holdout_accepted"])
         self.assertFalse(evaluate_model_gates(SEL, {**MET, "closed_trades": None})["holdout_accepted"])

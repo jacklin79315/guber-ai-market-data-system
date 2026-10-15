@@ -16,6 +16,11 @@ FEATURE_COLUMNS = (
     "price_ema_ratio_20", "price_ema_ratio_50", "ema_slope_20",
     "ema_slope_50", "rsi_12_change", "macd_histogram_change",
 )
+DIRECTION_FEATURES = ("return_1", "return_3", "return_5", "return_10", "rsi_6", "rsi_12", "rsi_24", "macd_histogram", "adx_14", "volume_ratio", "ema_slope_20", "ema_slope_50", "rsi_12_change", "macd_histogram_change", "price_ema_ratio_20", "price_ema_ratio_50")
+STRUCTURE_FEATURES = ("atr_percent", "bb_width", "bollinger_zscore", "body_ratio", "price_ema_ratio_20", "price_ema_ratio_50", "volume_ratio", "adx_14", "return_3", "return_10")
+DIRECTION_INDICES = tuple(FEATURE_COLUMNS.index(name) for name in DIRECTION_FEATURES)
+STRUCTURE_INDICES = tuple(FEATURE_COLUMNS.index(name) for name in STRUCTURE_FEATURES)
+
 HORIZON_BARS = {
     "INTRADAY": 16, "ONE_TO_THREE_DAYS": 48,
     "ONE_WEEK": 42, "FIFTEEN_TO_THIRTY_DAYS": 22,
@@ -68,9 +73,9 @@ class HorizonModel:
     def fit(self, X, y_direction, y_up, y_down):
         if len(X) < 100 or len(np.unique(y_direction)) < 2:
             raise ValueError("insufficient labeled training data")
-        self.direction.fit(X, y_direction)
-        self.upside.fit(X, y_up)
-        self.downside.fit(X, y_down)
+        self.direction.fit(np.asarray(X)[:, DIRECTION_INDICES], y_direction)
+        self.upside.fit(np.asarray(X)[:, STRUCTURE_INDICES], y_up)
+        self.downside.fit(np.asarray(X)[:, STRUCTURE_INDICES], y_down)
         self.fitted = True
         return self
 
@@ -78,7 +83,7 @@ class HorizonModel:
         """Direction layer: predict up probability using only known features."""
         if not self.fitted:
             raise ValueError("model not trained")
-        probabilities = self.direction.predict_proba([_vector(row)])[0]
+        probabilities = self.direction.predict_proba([np.asarray(_vector(row))[DIRECTION_INDICES]])[0]
         probability_up = float(probabilities[list(self.direction.classes_).index(1)])
         if not math.isfinite(probability_up):
             raise ValueError("invalid direction prediction")
@@ -93,8 +98,8 @@ class HorizonModel:
         if not self.fitted:
             raise ValueError("model not trained")
         entry = float(row["close_price"])
-        up = max(0., float(self.upside.predict([_vector(row)])[0]))
-        down = max(0., float(self.downside.predict([_vector(row)])[0]))
+        up = max(0., float(self.upside.predict([np.asarray(_vector(row))[STRUCTURE_INDICES]])[0]))
+        down = max(0., float(self.downside.predict([np.asarray(_vector(row))[STRUCTURE_INDICES]])[0]))
         if not math.isfinite(entry) or entry <= 0 or not all(math.isfinite(x) for x in (up, down)):
             raise ValueError("invalid model output")
         return entry, up, down

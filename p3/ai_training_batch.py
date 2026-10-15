@@ -16,6 +16,7 @@ from .fee_schedule import load_fee_rate
 from .training_settings import load_training_settings
 from .iterative_generation import propose_generation
 from .generation_evaluator import compare_current_generation
+from .adaptive_trial_selection import next_candidate
 from .training_data_quality import validate_training_history
 
 PARAMETERS = tuple(
@@ -130,7 +131,10 @@ def run_batch(db, *, symbol, strategy, years):
         return {'status': 'WAIT', 'reason': 'no_safe_next_generation'}
     trials = []
     run_id = os.getenv("GITHUB_RUN_ID", "local-research")
-    for i, params in enumerate(params_grid, start=1):
+    for i in range(1, len(params_grid) + 1):
+        params = next_candidate(params_grid, trials)
+        if params is None:
+            break
         trial_key = hashlib.sha256(json.dumps(
             [symbol, strategy, years, params], sort_keys=True).encode()).hexdigest()
         record = {"trial_index": i, "trial_key": trial_key,

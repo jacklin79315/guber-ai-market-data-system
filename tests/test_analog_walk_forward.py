@@ -51,6 +51,11 @@ class AnalogWalkForwardTests(unittest.TestCase):
         self.assertTrue(all(x["strict_decision"] == "WAIT"
                             for x in exploratory["results"]))
         self.assertGreater(exploratory["realized_total_net_r"], 0)
+        self.assertEqual(len(exploratory["trade_records"]), 6)
+        self.assertEqual(exploratory["trade_records"][0]["strict_decision"], "WAIT")
+        self.assertEqual(exploratory["trade_records"][0]["exit_reason"], "TP")
+        self.assertIn("entry_price", exploratory["trade_records"][0])
+        self.assertIn("label_end_ms", exploratory["trade_records"][0])
 
 
 if __name__ == "__main__":

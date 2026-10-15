@@ -159,6 +159,37 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         history.append(result)
         print(json.dumps({"status": "ITERATION_RESULT", "strategy": strategy,
                           **result}, allow_nan=False), flush=True)
+    # Compare each completed trial against the preceding completed trial.
+    # Observational feedback only: preserve existing qualification and selection.
+    previous_complete = None
+    for trial in history:
+        if trial["status"] != "COMPLETE":
+            continue
+        if previous_complete is not None:
+            fields = {
+                "annualized_return_percent": "validation_annualized_return_percent",
+                "win_rate_percent": "validation_win_rate_percent",
+                "strategy_score": "validation_mean_score_q",
+                "drawdown_percent": "validation_drawdown_percent",
+                "closed_trades": "validation_trades",
+            }
+            deltas = {
+                name: (float(trial[key]) - float(previous_complete[key])
+                       if trial.get(key) is not None and previous_complete.get(key) is not None
+                       else None)
+                for name, key in fields.items()
+            }
+            print(json.dumps({
+                "status": "ITERATION_COMPARISON",
+                "strategy": strategy,
+                "previous_trial_index": previous_complete["trial_index"],
+                "current_trial_index": trial["trial_index"],
+                "metric_deltas": deltas,
+                "previous_eligible": previous_complete.get("validation_eligible") is True,
+                "current_eligible": trial.get("validation_eligible") is True,
+                "selection_policy_unchanged": True,
+            }, allow_nan=False), flush=True)
+        previous_complete = trial
     # Report observed trading metrics even if no model passes the existing gates.
     # This is display-only and does not alter model selection or qualification.
     observed_trials = [h for h in history if h["status"] == "COMPLETE"

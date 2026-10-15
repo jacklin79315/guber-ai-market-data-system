@@ -53,7 +53,8 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         reports[strategy] = {
             "timeframe": timeframe,
             "validation_selection": selection,
-            "holdout_threshold": selected_threshold,\n            "model_eligible_for_paper": (selected_threshold is not None and not metrics["execution_path_uncertain"] and metrics["closed_trades"] >= 5),
+            "holdout_threshold": selected_threshold,
+            "model_eligible_for_paper": (selected_threshold is not None and not metrics["execution_path_uncertain"] and metrics["closed_trades"] >= 5),
             "holdout_threshold_fallback": selected_threshold is None,
             "execution_diagnostics": summarize_execution(outcome["account"], outcome["events"]),
             "fee_rate_per_side": fee_rate,

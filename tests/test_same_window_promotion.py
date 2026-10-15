@@ -2,7 +2,9 @@ import unittest
 from p3.same_window_promotion import decide_generation_promotion
 
 BASE = {"return_percent": 3.0, "drawdown_percent": 2.0,
-        "closed_trades": 10, "execution_path_uncertain": False}
+        "closed_trades": 10, "execution_path_uncertain": False,
+        "annualized_return_percent": 12.0, "win_rate_percent": 75.0,
+        "mean_score_q": 68.0}
 
 
 class SameWindowPromotionTests(unittest.TestCase):
@@ -19,6 +21,18 @@ class SameWindowPromotionTests(unittest.TestCase):
         new = dict(BASE, return_percent=8.0, closed_trades=2)
         self.assertEqual(decide_generation_promotion(BASE, new,
                          same_validation_window=True)["status"], "REJECT")
+
+    def test_reject_challenger_below_approved_metrics(self):
+        for key, value in (("annualized_return_percent", 9.9),
+                           ("win_rate_percent", 69.9),
+                           ("mean_score_q", 64.9),
+                           ("annualized_return_percent", None)):
+            with self.subTest(metric=key, value=value):
+                new = dict(BASE, return_percent=8.0, drawdown_percent=1.0)
+                new[key] = value
+                self.assertEqual(decide_generation_promotion(
+                    BASE, new, same_validation_window=True)["reason"],
+                    "challenger_not_eligible")
 
     def test_accept_research_only(self):
         new = dict(BASE, return_percent=5.0, drawdown_percent=1.5)

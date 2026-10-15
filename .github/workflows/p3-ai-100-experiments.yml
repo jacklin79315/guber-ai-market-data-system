@@ -1,8 +1,6 @@
 name: P3 AI 100 Experiment Batch
 
 on:
-  schedule:
-    - cron: '17 2 * * *'
   workflow_dispatch:
     inputs:
       iterations:

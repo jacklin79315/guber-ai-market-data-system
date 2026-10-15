@@ -37,7 +37,12 @@ def record_model_review(db, challenger_run_key, champion_run_key=None):
         "promotion_authorized": False,
         "comparison_context": context,
     }
-    # DB unique constraints guarantee retries cannot create duplicate reviews.
-    db("POST", "ai_model_reviews", {"on_conflict": "challenger_run_key,champion_run_key"},
-       [payload], {"Prefer": "resolution=ignore-duplicates,return=minimal"})
+    # Check existing audit first; database unique indexes also reject concurrent duplicates.
+    filters = {"select": "id,decision,reason", "challenger_run_key": "eq." + challenger_run_key,
+               "champion_run_key": ("eq." + champion_run_key) if champion_run_key else "is.null"}
+    existing = db("GET", "ai_model_reviews", filters)
+    if existing:
+        return {**payload, "decision": existing[0]["decision"],
+                "reason": existing[0]["reason"], "already_recorded": True}
+    db("POST", "ai_model_reviews", None, [payload], {"Prefer": "return=minimal"})
     return payload

@@ -16,6 +16,7 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     fee_rate = load_fee_rate(db)
     reports = {}
     for strategy, timeframe in STRATEGY_TIMEFRAMES.items():
+        print(json.dumps({"status": "MODEL_STARTED", "strategy": strategy, "timeframe": timeframe}), flush=True)
         candles = load_native_candles(db, symbol, timeframe)
         features = load_native_features(db, symbol, timeframe)
         trained = train_horizon(features, candles, strategy, years=years)
@@ -64,6 +65,7 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
             "holdout_start_ms": earliest,
             "holdout_end_ms": holdout_end,
         }
+        print(json.dumps({"status": "MODEL_COMPLETE", "strategy": strategy, "timeframe": timeframe, "report": reports[strategy]}, allow_nan=False), flush=True)
     return reports
 
 def main():

@@ -16,6 +16,7 @@ from .validation_selection import select_threshold
 from .training_settings import load_training_settings
 from .training_registry import record_training_reports
 from .model_qualification import evaluate_model_gates
+from .model_provenance import fingerprint_rows, pinned_code_version, fee_fingerprint
 
 def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     fee_rate = load_fee_rate(db)
@@ -24,6 +25,12 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         print(json.dumps({"status": "MODEL_STARTED", "strategy": strategy, "timeframe": timeframe}), flush=True)
         candles = load_native_candles(db, symbol, timeframe)
         features = load_native_features(db, symbol, timeframe)
+        provenance = {
+            "dataset_version": fingerprint_rows(candles, ("open_time", "close_time", "open", "high", "low", "close")),
+            "feature_version": fingerprint_rows(features, ("open_time", "close_time", "close_price")),
+            "code_version": pinned_code_version(),
+            "fee_version": fee_fingerprint(fee_rate),
+        }
         trained = train_horizon(features, candles, strategy, years=years)
         model = trained["model"]
         selection = select_threshold(candles, features, model, symbol,
@@ -55,6 +62,7 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         qualification = evaluate_model_gates(selection, metrics)
         reports[strategy] = {
             "qualification": qualification,
+            "provenance": provenance,
             "timeframe": timeframe,
             "validation_window": list(trained["windows"]["validation"]),
             "holdout_window": list(trained["windows"]["holdout"]),

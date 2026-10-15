@@ -9,6 +9,7 @@ from collections import Counter
 from p3.analog_data_loader import load_research_history, DEFAULT_FEATURES
 from p3.analog_walk_forward import walk_forward_analog_evaluation
 from p3.raw_candle_adapter import INTERVAL_MS
+from p3.four_strategy_analog import STRATEGY_PLANS
 
 
 def main():
@@ -16,7 +17,10 @@ def main():
         raise SystemExit("Supabase credentials required")
     from collector import db
     symbol = os.getenv("ANALOG_SYMBOL", "BTCUSDT")
-    timeframe = os.getenv("ANALOG_TIMEFRAME", "1d")
+    strategy = os.getenv("ANALOG_STRATEGY", "FIFTEEN_TO_THIRTY_DAYS")
+    if strategy not in STRATEGY_PLANS:
+        raise SystemExit("Unsupported strategy")
+    timeframe = STRATEGY_PLANS[strategy]["timeframe"]
     if symbol not in ("BTCUSDT", "ETHUSDT") or timeframe not in INTERVAL_MS:
         raise SystemExit("Unsupported research symbol/timeframe")
     evaluation_bars = int(os.getenv("ANALOG_EVALUATION_BARS", "90"))
@@ -24,16 +28,20 @@ def main():
         raise SystemExit("Evaluation bars must be 20..200")
     # Fixed ex-ante plan: 2% stop, 3% target, one native bar hold.
     # Fees: 0.1% each leg; adverse slippage: 0.1% each leg.
-    stop_pct, target_pct, holding = 0.02, 0.03, 1
+    stop_pct, target_pct = 0.02, 0.03
+    holding = STRATEGY_PLANS[strategy]["max_holding_bars"]
     fee_rate, slippage_rate = 0.001, 0.001
     from datetime import datetime, timezone
     asof_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
     history = load_research_history(db, symbol, timeframe, asof_ms=asof_ms)
-    snapshots, candles = history["snapshots"], history["candles"]
+    # Bound computation for large 15m history without introducing look-ahead.
+    snapshots, candles = history["snapshots"][-2500:], history["candles"]
+    first_time = snapshots[0]["timestamp_ms"]
+    candles = [c for c in candles if c["close_time"] >= first_time]
     if len(snapshots) < evaluation_bars + 100:
         raise SystemExit("Insufficient historical research snapshots")
     evaluation_start_ms = snapshots[-evaluation_bars]["timestamp_ms"]
-    print(json.dumps({"status": "STARTED", "symbol": symbol, "timeframe": timeframe,
+    print(json.dumps({"status": "STARTED", "symbol": symbol, "strategy": strategy, "timeframe": timeframe,
                       "feature_rows": len(snapshots), "native_candles": len(candles),
                       "evaluation_bars": evaluation_bars,
                       "research_only": True, "auto_trade_enabled": False}), flush=True)
@@ -71,7 +79,7 @@ def main():
         reports[direction]["wait_reasons"] = dict(Counter(
             x["reason"] for x in report["results"] if x["decision"] == "WAIT"))
     print(json.dumps({
-        "status": "RESEARCH_COMPLETE", "symbol": symbol, "timeframe": timeframe,
+        "status": "RESEARCH_COMPLETE", "symbol": symbol, "strategy": strategy, "timeframe": timeframe,
         "evaluation_start_ms": evaluation_start_ms,
         "features": list(DEFAULT_FEATURES),
         "fixed_plan": {"stop_pct": stop_pct, "target_pct": target_pct,
@@ -81,7 +89,8 @@ def main():
         "auto_trade_enabled": False,
         "limitations": ["research only", "not model promotion",
                         "no live execution", "not annualized returns",
-                        "overlapping candidate positions excluded per direction"]
+                        "overlapping candidate positions excluded per direction",
+                        "research horizons are fixed hypotheses, not optimized or validated"]
     }, sort_keys=True), flush=True)
 
 

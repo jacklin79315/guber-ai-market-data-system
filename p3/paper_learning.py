@@ -20,7 +20,8 @@ def _vector(record, feature_names):
     return [float(v) for v in values] + [1.0 if direction == "LONG" else -1.0]
 
 
-def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=10.0):
+def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=10.0,
+                                 evaluation_start_ms=None):
 
     """Return prequential predictions: train strictly on previously SETTLED trades.
 
@@ -52,6 +53,8 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
         ]
         if len(eligible) < min_train:
             continue
+        if evaluation_start_ms is not None and t < evaluation_start_ms:
+            continue
         xs = np.array([_vector(prior, feature_names) for prior in eligible], dtype=float)
         ys = np.array([prior["net_r"] for prior in eligible], dtype=float)
         # Normalize using training-only statistics; no test-row fitting.
@@ -75,6 +78,8 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
     return {"research_only": True, "auto_trade_enabled": False,
             "model": "ridge_baseline_v1", "min_train": min_train,
             "prediction_count": len(evaluated),
+            "evaluation_start_ms": evaluation_start_ms,
+            "available_training_observation_count": len(ordered),
             "mean_absolute_error_r": model_mae,
             "baseline_mean_absolute_error_r": baseline_mae,
             "mae_improvement_r": baseline_mae - model_mae if errors else None,

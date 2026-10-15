@@ -58,7 +58,7 @@ def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
             if rows and t <= rows[-1]["open_time"]:
                 raise ValueError("duplicate or unordered row")
             rows.append(row)
-        last = rows[-1]["close_time"]
+        last = rows[-1]["open_time"]
         if len(page) < page_size:
             return rows
     raise ValueError("research pagination limit reached")

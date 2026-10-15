@@ -83,6 +83,9 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
         prices[symbol] = bar["close"]
         equity_curve.append({"time_ms": close_time, "equity": account.equity(prices),
                              "cash": account.cash, "open_lots": len(account.positions)})
-    return {"account": account, "events": events, "signals": signal_events,
-            "equity_curve": equity_curve,
-            "open_lots": len(account.positions), "closed_trades": len(account.closed_trades)}
+    result = {"account": account, "events": events, "signals": signal_events,
+              "equity_curve": equity_curve,
+              "open_lots": len(account.positions), "closed_trades": len(account.closed_trades)}
+    from .multi_position_metrics import summarize_multi_position
+    result["metrics"] = summarize_multi_position(result)
+    return result

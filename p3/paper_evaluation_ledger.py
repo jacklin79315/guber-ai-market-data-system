@@ -2,6 +2,7 @@
 import hashlib
 import json
 from .paper_outcome_memory import PLAN_VERSION, DATA_VERSION
+from .paper_model_scorecard import score_chronological_paper_decisions
 
 
 def save_paper_evaluation(db, *, symbol, strategy, timeframe,
@@ -28,6 +29,7 @@ def save_paper_evaluation(db, *, symbol, strategy, timeframe,
                                 if k != "predictions"},
                    "decisions": {k: v for k, v in decisions.items()
                                  if k != "decisions"},
+                   "scorecard": score_chronological_paper_decisions(decisions),
                    "research_only": True, "auto_trade_enabled": False},
     }
     db("POST", "ai_paper_evaluations", params={"on_conflict": "run_key"},

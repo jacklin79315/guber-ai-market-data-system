@@ -17,6 +17,7 @@ from .native_history_replay import load_native_candles
 from .multi_model_replay import STRATEGY_TIMEFRAMES
 from .training_settings import load_training_settings
 from .model_diagnostics import diagnose_validation
+from .learning_feedback import compare_trials
 
 
 def run_iterations(db, *, symbol, strategy, years, iterations=5):
@@ -188,6 +189,14 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 "validation_only": True,
                 "causal_attribution": False,
                 "changes_selection_policy": False,
+            }, allow_nan=False), flush=True)
+        previous_complete = next(
+            (item for item in reversed(history) if item["status"] == "COMPLETE"), None)
+        if previous_complete is not None and result["status"] == "COMPLETE":
+            print(json.dumps({
+                "status": "LEARNING_FEEDBACK",
+                "strategy": strategy,
+                **compare_trials(previous_complete, result),
             }, allow_nan=False), flush=True)
         history.append(result)
         print(json.dumps({"status": "ITERATION_RESULT", "strategy": strategy,

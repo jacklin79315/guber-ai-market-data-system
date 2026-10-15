@@ -37,14 +37,17 @@ def next_layer_candidate(trials):
     def layer_value(layer, name):
         return params.get(layer + "_" + name, params.get(name))
     direction = best.get("diagnostics") or {}
-    # Prefer exploring the layer with the larger relative normalized error.
-    # This is a search heuristic, never a claim about causal attribution.
+    # Diagnostic availability gates exploration; performance still selects winners.
     brier = direction.get("direction_brier_score")
     upside = direction.get("upside_mae_percent")
     downside = direction.get("downside_mae_percent")
     if brier is None or upside is None or downside is None:
         return None
-    focus = "direction" if float(brier) >= (float(upside) + float(downside)) / 200 else "structure"
+    # Error units differ; alternate the layer under exploration rather than
+    # pretending Brier and percentage-point MAE are directly comparable.
+    explored = sum(1 for t in trials
+                   if "direction_max_iter" in t.get("params", {}))
+    focus = "direction" if explored % 2 == 0 else "structure"
     tried = {tuple(sorted(t["params"].items())) for t in trials}
     for step_delta, rate_delta in ((20, 0), (-20, 0), (0, 0.01), (0, -0.01)):
         candidate = {

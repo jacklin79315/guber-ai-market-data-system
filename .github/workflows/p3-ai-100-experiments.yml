@@ -94,6 +94,14 @@ jobs:
                   else:
                       completed = [x for x in results if x['status'] == 'COMPLETE']
                       out.write(f"\nCompleted {len(completed)} of {len(results)} iterations.\n")
+                      if completed:
+                          first = completed[0]
+                          best = max(completed, key=lambda x: x['validation_score'])
+                          gain = best['validation_score'] - first['validation_score']
+                          out.write(f"\nFirst successful score: {first['validation_score']:.6f}; best score: {best['validation_score']:.6f}; gain: {gain:+.6f}.\n")
+                          out.write("\nThis is in-sample model-selection improvement, not out-of-sample proof.\n")
+                      else:
+                          out.write("\nWARNING: No successful model training iterations.\n")
           PY
       - name: Preserve every experiment result
         if: always()

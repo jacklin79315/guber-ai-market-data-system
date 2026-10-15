@@ -17,6 +17,7 @@ from .training_settings import load_training_settings
 from .training_registry import record_training_reports
 from .model_qualification import evaluate_model_gates
 from .model_provenance import fingerprint_rows, pinned_code_version, fee_fingerprint
+from .ai_decision_model import FEATURE_COLUMNS
 
 def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     fee_rate = load_fee_rate(db)
@@ -27,7 +28,7 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         features = load_native_features(db, symbol, timeframe)
         provenance = {
             "dataset_version": fingerprint_rows(candles, ("open_time", "close_time", "open", "high", "low", "close")),
-            "feature_version": fingerprint_rows(features, ("open_time", "close_time", "close_price")),
+            "feature_version": fingerprint_rows(features, ("open_time", "close_time", "close_price") + FEATURE_COLUMNS),
             "code_version": pinned_code_version(),
             "fee_version": fee_fingerprint(fee_rate),
         }

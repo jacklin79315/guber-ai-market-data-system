@@ -20,6 +20,26 @@ class ValidationSelectionTests(unittest.TestCase):
         self.assertEqual(seen, [((100, 200), t) for t in THRESHOLDS])
         self.assertEqual(result["selection_source"], "validation_only")
 
+    def test_ambiguous_validation_is_ineligible(self):
+        def fake_evaluate(*args):
+            return {"metrics": {"closed_trades": 12,
+                                "final_mark_to_market_equity": 11000,
+                                "max_close_to_close_drawdown_percent": 2,
+                                "execution_path_uncertain": True}}
+        with patch("p3.validation_selection.evaluate_window", side_effect=fake_evaluate):
+            result = select_threshold([], [], None, "BTCUSDT", (100, 200), 0.001)
+        self.assertIsNone(result["selected_threshold"])
+
+    def test_high_drawdown_is_ineligible(self):
+        def fake_evaluate(*args):
+            return {"metrics": {"closed_trades": 12,
+                                "final_mark_to_market_equity": 12000,
+                                "max_close_to_close_drawdown_percent": 9,
+                                "execution_path_uncertain": False}}
+        with patch("p3.validation_selection.evaluate_window", side_effect=fake_evaluate):
+            result = select_threshold([], [], None, "BTCUSDT", (100, 200), 0.001)
+        self.assertIsNone(result["selected_threshold"])
+
     def test_no_eligible_candidate_returns_none(self):
         def fake_evaluate(*args):
             return {"metrics": {"closed_trades": 0,

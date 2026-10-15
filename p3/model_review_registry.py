@@ -28,7 +28,7 @@ def record_model_review(db, challenger_run_key, champion_run_key=None):
     outcome = review_challenger(champion, challenger)
     context = {k: challenger.get(k) for k in
                ("validation_window", "evaluation_version", "dataset_version",
-                "feature_version", "fee_version")}
+                "feature_version", "fee_version", "code_version")}
     payload = {
         "challenger_run_key": challenger_run_key,
         "champion_run_key": champion_run_key,

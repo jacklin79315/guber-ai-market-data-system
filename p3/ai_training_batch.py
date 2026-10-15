@@ -212,8 +212,8 @@ def run_batch(db, *, symbol, strategy, years):
        }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
     print(json.dumps({'status': 'GENERATION_COMPARISON', 'strategy': strategy,
                       'comparison': comparison}, allow_nan=False), flush=True)
-    if int(os.getenv("TRAINING_GENERATION", "1")) > 1 and all(t["status"] == "FAILED" for t in trials):
-        raise RuntimeError("all next-generation experiments failed; refusing green workflow")
+    if all(t["status"] == "FAILED" for t in trials):
+        raise RuntimeError("all experiments failed; refusing green workflow for any generation")
     summary = {"status": "BATCH_COMPLETE", "symbol": symbol, "strategy": strategy,
                "lookback_years": years, "requested_trials": len(params_grid),
                "completed_trials": sum(t["status"] == "COMPLETE" for t in trials),

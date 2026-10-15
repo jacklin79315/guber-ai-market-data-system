@@ -18,6 +18,14 @@ class AutonomousPlannerTests(unittest.TestCase):
         self.assertEqual(r["generation"], 2)
         self.assertTrue(r["requires_atomic_claim"])
 
+    def test_generation_100_ready_with_new_window(self):
+        self.kw["parent_generation"] = 99
+        self.assertEqual(plan_next_generation(**self.kw)["generation"], 100)
+
+    def test_generation_101_blocked(self):
+        self.kw["parent_generation"] = 100
+        self.assertEqual(plan_next_generation(**self.kw)["reason"], "generation_limit")
+
     def test_duplicate_window(self):
         self.kw["existing_windows"] = [[3000, 4000]]
         self.assertEqual(plan_next_generation(**self.kw)["status"], "WAIT")

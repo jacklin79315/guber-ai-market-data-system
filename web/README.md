@@ -1,6 +1,23 @@
-# AI Trading Web — frontend scaffold
+# AI Trading Web
 
-Responsive dark-mode React/TypeScript dashboard. UI preview only; no credentials, backend API, authentication, order execution or deployment is configured.
+Private dark-mode dashboard, currently under development. PAPER only; no real-money trading.
+
+## Simple login with Supabase Auth
+
+No custom username-login API or extra authentication service is needed. The UI accepts a username and password and calls Supabase Auth using an internal email alias. Example: username `guber` with `VITE_AUTH_EMAIL_DOMAIN=accounts.example.com` maps to `guber@accounts.example.com`. This is only an identifier, not a required mailbox. **Use the exact same domain in the dashboard and when creating users.**
+
+1. In Supabase Dashboard → Authentication → Users, use **Add user** to create `guber@accounts.example.com` (or your chosen domain) with a password; mark email confirmed if the dashboard offers that option. Do not enable public signup for this private application.
+2. Copy `web/.env.example` to `web/.env.local` and fill in project URL, publishable key and the chosen email domain. Only the publishable key is safe for frontend use. Never put service-role keys in VITE variables.
+3. In SQL Editor, look up the new Auth user ID and insert it into `public.app_user_roles` as ADMIN. Example (replace placeholder with actual user ID):
+
+```sql
+insert into public.app_user_roles(user_id, role)
+values ('YOUR_AUTH_USER_UUID', 'ADMIN')
+on conflict (user_id) do update set role = excluded.role;
+```
+
+4. Create friends' accounts in Auth Users with the same domain and distinct usernames. Without an ADMIN role record they default to VIEWER in the UI. Do not rely on frontend role display for backend permissions; every future admin write endpoint must check the role server-side.
+5. The Supabase client persists and refreshes the login session by default; the user can log out from the UI. Admin password changes should use the Supabase Auth dashboard/API, not direct SQL updates to password hashes.
 
 ## Local preview
 
@@ -14,12 +31,9 @@ npm run dev
 
 Build with `npm run build`.
 
-## Safety and status
+## Current status
 
-- All overview values are clearly identified as existing configuration or static UI placeholders, not live data.
-- No trading API or exchange secrets in browser.
-- No backend connectivity or authorization until Supabase Auth + RLS and server-side APIs are implemented and tested.
-- Sidebar navigation changes the heading only. Functional pages are not yet implemented.
-- This directory is isolated from the existing Python collector and training workers.
-
-See `docs/web-platform-v1-spec.md` for the approved information architecture, roles, data contract and acceptance gates.
+- Login code is committed, but no Auth user, deployed website or verified end-to-end login is available yet.
+- Market data widgets are still placeholders; the collector and training workers are separate and untouched.
+- The older `supabase/functions/username-login` and `scripts/bootstrap-admin.mjs` are superseded and should not be deployed or used. Existing unused login-mapping/rate-limit tables can remain until a separately reviewed cleanup.
+- Authentication does not authorize database writes. RLS and backend authorization remain mandatory for administrative actions.

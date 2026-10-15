@@ -7,7 +7,7 @@ MIN_TRADES = 5
 MAX_VALIDATION_DRAWDOWN_PERCENT = 8.0
 
 
-def evaluate_window(candles, features, model, symbol, window, threshold, fee_rate):
+def evaluate_window(candles, features, model, symbol, window, threshold, fee_rate, *, max_holding_ms=None):
     begin, end = window
     earliest = begin + EMBARGO_MS
     selected = [c for c in candles if earliest <= int(c["open_time"]) and int(c["close_time"]) < end]
@@ -16,7 +16,8 @@ def evaluate_window(candles, features, model, symbol, window, threshold, fee_rat
     rows = {int(row["close_time"]): row for row in features}
     decisions = {int(c["close_time"]): model.decide(symbol, rows[int(c["close_time"])], confidence_threshold=threshold)
                  for c in selected if int(c["close_time"]) in rows}
-    return replay_multi_positions({symbol: selected}, {symbol: decisions}, fee_rate=fee_rate)
+    return replay_multi_positions({symbol: selected}, {symbol: decisions}, fee_rate=fee_rate,
+                                  max_holding_ms=max_holding_ms)
 
 
 def diagnose_decision_flow(candles, features, model, symbol, window, threshold):
@@ -46,11 +47,11 @@ def diagnose_decision_flow(candles, features, model, symbol, window, threshold):
     return counts
 
 
-def select_threshold(candles, features, model, symbol, validation_window, fee_rate):
+def select_threshold(candles, features, model, symbol, validation_window, fee_rate, *, max_holding_ms=None):
     candidates = []
     for threshold in THRESHOLDS:
         replay_result = evaluate_window(candles, features, model, symbol, validation_window,
-                                        threshold, fee_rate)
+                                        threshold, fee_rate, max_holding_ms=max_holding_ms)
         metrics = replay_result["metrics"]
         flow = diagnose_decision_flow(candles, features, model, symbol,
                                       validation_window, threshold)

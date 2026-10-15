@@ -1,4 +1,4 @@
-name: P3 Analog Research Report (manual)
+name: P3 Continuous Paper Learning
 on:
   push:
     branches: [feature/p3b-paper-engine]
@@ -9,6 +9,8 @@ on:
       - 'p3/four_strategy_analog.py'
       - 'p3/analog_data_loader.py'
       - '.github/workflows/p3-analog-research-report.yml'
+  schedule:
+    - cron: '20 3 * * *'
   workflow_dispatch:
     inputs:
       symbol:
@@ -50,4 +52,12 @@ jobs:
       - name: Unit test paper learner
         run: python -m unittest tests.test_paper_learning
       - name: Read-only chronological analog research
-        run: python -m p3.analog_research_report
+        run: python -m p3.analog_research_report | tee paper-research.jsonl
+      - name: Archive research and learning results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-learning-${{ matrix.strategy }}-${{ matrix.mode }}
+          path: paper-research.jsonl
+          retention-days: 90
+          if-no-files-found: ignore

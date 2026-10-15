@@ -12,17 +12,12 @@ jobs:
   train:
     runs-on: ubuntu-latest
     timeout-minutes: 180
-    strategy:
-      fail-fast: false
-      matrix:
-        symbol: [BTCUSDT, ETHUSDT]
     concurrency:
-      group: p3-training-${{ matrix.symbol }}
+      group: p3-training
       cancel-in-progress: false
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      P3_SYMBOL: ${{ matrix.symbol }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,6 +32,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_p3_stop_gap.py' -v
           python -m unittest discover -s tests -p 'test_p3_validation_selection.py' -v
+          python -m unittest discover -s tests -p 'test_p3_training_settings.py' -v
       - name: Require configured Supabase credentials
         run: |
           test -n "$SUPABASE_URL" || { echo 'Missing SUPABASE_URL secret'; exit 1; }
@@ -53,7 +49,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p3-training-${{ matrix.symbol }}-${{ github.run_id }}
+          name: p3-training-${{ github.run_id }}
           path: p3-training-report.jsonl
           if-no-files-found: ignore
           retention-days: 30

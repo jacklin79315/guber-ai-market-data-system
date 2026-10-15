@@ -1,5 +1,6 @@
 """Append-only training audit records. Holdout metrics are audit-only, never promotion criteria."""
 import os
+from .experiment_history import compare_experiment_history
 
 def record_training_reports(db, symbol, years, reports):
     run_id = os.getenv("GITHUB_RUN_ID")
@@ -38,4 +39,25 @@ def record_training_reports(db, symbol, years, reports):
         })
     db("POST", "ai_training_runs", {"on_conflict": "run_key"}, rows,
        {"Prefer": "resolution=ignore-duplicates,return=minimal"})
-    return {"recorded": True, "count": len(rows)}
+    # Read back stored rows, including older runs, for a read-only audit.
+    # Pagination avoids silently comparing against only the newest 1000 rows.
+    history = []
+    offset = 0
+    while True:
+        page = db("GET", "ai_training_runs", {
+            "select": "run_key,symbol,strategy,timeframe,lookback_years,report",
+            "symbol": "eq." + symbol,
+            "order": "run_key.desc",
+            "limit": "500",
+            "offset": str(offset),
+        })
+        history.extend(page)
+        if len(page) < 500:
+            break
+        offset += len(page)
+    audits = {}
+    for row in rows:
+        audits[row["strategy"]] = compare_experiment_history(row, history)
+    # This audit never changes a training record or activates a model.
+    return {"recorded": True, "count": len(rows),
+            "history_rows": len(history), "experiment_history": audits}

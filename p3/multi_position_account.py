@@ -74,6 +74,7 @@ class MultiPositionAccount:
             1 if lot.decision.action == "LONG" else -1)
         pnl = gross - lot.entry_fee - exit_fee
         self.cash += lot.quantity * lot.entry_price + gross - exit_fee
+        del self.positions[lot_id]
         record = {
             "lot_id": lot_id, "symbol": lot.decision.symbol,
             "side": lot.decision.action, "entry_time_ms": lot.entry_time_ms,
@@ -87,5 +88,4 @@ class MultiPositionAccount:
             "reason": reason, "equity_after": self.equity(),
         }
         self.closed_trades.append(record)
-        del self.positions[lot_id]
         return record

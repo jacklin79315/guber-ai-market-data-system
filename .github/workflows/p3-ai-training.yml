@@ -33,12 +33,17 @@ jobs:
           cache: pip
       - name: Install training dependencies
         run: pip install -r requirements.txt
+      - name: Regression tests before training
+        run: python -m unittest discover -s tests -p 'test_p3_stop_gap.py' -v
       - name: Require configured Supabase credentials
         run: |
           test -n "$SUPABASE_URL" || { echo 'Missing SUPABASE_URL secret'; exit 1; }
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'Missing SUPABASE_SERVICE_ROLE_KEY secret'; exit 1; }
       - name: Train four models and replay untouched holdout
-        run: python -m p3.ai_train_replay > p3-training-report.jsonl
+        shell: bash
+        run: |
+          set -o pipefail
+          python -u -m p3.ai_train_replay | tee p3-training-report.jsonl
       - name: Show non-secret model summary
         if: success()
         run: python -c 'import json; r=json.loads(open("p3-training-report.jsonl").read().splitlines()[-1]); print(json.dumps(r, indent=2))'

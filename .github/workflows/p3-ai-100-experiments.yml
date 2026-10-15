@@ -4,11 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       iterations:
-        description: 'Sequential feedback iterations per strategy (5 or 100)'
+        description: 'Sequential feedback iterations per strategy (5, 10 or 100)'
         required: true
         type: choice
         options:
           - '5'
+          - '10'
           - '100'
         default: '100'
       generation:

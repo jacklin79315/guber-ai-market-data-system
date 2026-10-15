@@ -41,6 +41,10 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     # The existing 25-candidate grid is reused as the initial search space.
     # For longer runs, a new local grid is generated around the best candidate.
     candidates = list(PARAMETERS)
+    candidates.extend(
+        {"max_iter": steps, "learning_rate": round(rate / 1000, 5)}
+        for steps in range(40, 341, 20)
+        for rate in range(15, 186, 10))
     for index in range(iterations):
         params = next_candidate(candidates, history)
         if params is None:

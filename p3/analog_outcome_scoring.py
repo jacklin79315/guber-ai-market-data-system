@@ -28,7 +28,7 @@ def evaluate_analog_outcomes(neighbors, outcomes, *, min_samples=30,
         if not isinstance(t, int) or not isinstance(end, int) or end <= t:
             continue
         item = outcomes.get(t)
-        if not isinstance(item, dict) or item.get("label_end_ms") != end:
+        if (not isinstance(item, dict) or not isinstance(item.get("label_end_ms"), int)\n                or not t < item["label_end_ms"] <= end):
             continue
         net_r = item.get("net_r")
         if isinstance(net_r, bool) or not isinstance(net_r, (int, float)) or not isfinite(net_r):
@@ -37,7 +37,7 @@ def evaluate_analog_outcomes(neighbors, outcomes, *, min_samples=30,
         if not isinstance(distance, (int, float)) or not isfinite(distance) or distance < 0:
             continue
         if t not in unique or distance < unique[t][0]:
-            unique[t] = (distance, end, float(net_r))
+            unique[t] = (distance, item["label_end_ms"], float(net_r))
     selected = []
     last_end = None
     for t, (distance, end, net_r) in sorted(unique.items()):

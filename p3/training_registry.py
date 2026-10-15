@@ -11,12 +11,14 @@ def record_training_reports(db, symbol, years, reports):
         threshold = selection["selected_threshold"]
         candidates = selection["candidates"]
         winner = next((c for c in candidates if c["threshold"] == threshold), None)
+        provenance = report.get("provenance") or {}
         comparison_context = {
             "validation_window": report.get("validation_window"),
             "evaluation_version": "p3-validation-v1",
-            "dataset_version": None,  # Requires reproducible native data fingerprint.
-            "feature_version": None,  # Requires pinned feature computation version.
-            "fee_version": None,  # Requires a pinned fee schedule identifier.
+            "dataset_version": provenance.get("dataset_version"),
+            "feature_version": provenance.get("feature_version") if provenance.get("code_version") else None,
+            "fee_version": provenance.get("fee_version"),
+            "code_version": provenance.get("code_version"),
         }
         rows.append({
             "run_key": f"{run_id}:{symbol}:{strategy}",

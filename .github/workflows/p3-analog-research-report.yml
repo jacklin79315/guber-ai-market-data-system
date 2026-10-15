@@ -19,6 +19,12 @@ on:
     - cron: '20 3 * * *'
   workflow_dispatch:
     inputs:
+      history_mode:
+        description: "History scope (FULL reads all available valid features; computationally expensive)"
+        required: true
+        type: choice
+        default: RECENT
+        options: [RECENT, FULL]
       symbol:
         description: "Research market"
         required: true
@@ -38,6 +44,7 @@ jobs:
       contents: read
     env:
       ANALOG_SYMBOL: ${{ inputs.symbol || 'BTCUSDT' }}
+      ANALOG_HISTORY_MODE: ${{ inputs.history_mode || 'RECENT' }}
       ANALOG_STRATEGY: ${{ matrix.strategy }}
       ANALOG_EXPLORATION: ${{ matrix.mode == 'EXPLORATION' }}
       ANALOG_EVALUATION_BARS: "40"

@@ -28,9 +28,10 @@ class FourIsolatedPoolsTests(unittest.TestCase):
         for a in accounts[1:]:
             self.assertAlmostEqual(a.capacity_limit, 8000)
 
-    def test_holding_limit_cannot_be_silently_ignored(self):
-        with self.assertRaises(NotImplementedError):
-            replay_four_models({}, {}, max_holding_ms_by_strategy={"INTRADAY": 1000})
+    def test_invalid_holding_limit_is_rejected(self):
+        with self.assertRaises(ValueError):
+            from p3.multi_position_replay import replay_multi_positions
+            replay_multi_positions({}, {}, max_holding_ms=0)
 
 
 if __name__ == "__main__":

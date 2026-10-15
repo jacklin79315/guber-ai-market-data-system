@@ -24,6 +24,7 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
             previous = bar
     candles.sort(key=lambda x: (x[0], x[1]))
     prices = {}
+    signal_events = []
     for close_time, symbol, bar, previous in candles:
         # First exit previously open lots on this symbol; entry-bar exits are
         # intentionally deferred, consistent with the legacy OHLC assumption.
@@ -48,8 +49,16 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
                 events.append({"type": "EXIT", "ambiguous_fill": ambiguous, **result})
         if previous is not None:
             decision = decisions_by_symbol.get(symbol, {}).get(previous["close_time"])
-            if decision is not None and decision.action != "WAIT":
+            if decision is not None:
                 decision.validate()
+                if decision.symbol != symbol:
+                    raise ValueError("decision symbol mismatch")
+                signal = {"symbol": symbol, "decision_time_ms": previous["close_time"],
+                          "action": decision.action, "entry": decision.entry,
+                          "take_profit": decision.take_profit, "stop_loss": decision.stop_loss,
+                          "allocation": decision.allocation, "outcome": "WAIT" if decision.action == "WAIT" else "NOT_FILLED"}
+                signal_events.append(signal)
+            if decision is not None and decision.action != "WAIT":
                 if decision.symbol != symbol:
                     raise ValueError("decision symbol mismatch")
                 if bar["open_time"] != previous["close_time"] + 1:
@@ -59,9 +68,11 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
                                            decision_close_time_ms=previous["close_time"],
                                            fee_rate=fee_rate, slippage_rate=slippage_rate)
                     if filled is None:
+                        signal["outcome"] = "INSUFFICIENT_CASH"
                         events.append({"type": "REJECTED", "reason": "INSUFFICIENT_CASH",
                                        "symbol": symbol, "time_ms": bar["open_time"]})
                     else:
+                        signal["outcome"] = "FILLED"
                         lot_id, lot = filled
                         events.append({"type": "ENTRY", "lot_id": lot_id, "symbol": symbol,
                                        "side": decision.action, "time_ms": lot.entry_time_ms,
@@ -72,5 +83,6 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
         prices[symbol] = bar["close"]
         equity_curve.append({"time_ms": close_time, "equity": account.equity(prices),
                              "cash": account.cash, "open_lots": len(account.positions)})
-    return {"account": account, "events": events, "equity_curve": equity_curve,
+    return {"account": account, "events": events, "signals": signal_events,
+            "equity_curve": equity_curve,
             "open_lots": len(account.positions), "closed_trades": len(account.closed_trades)}

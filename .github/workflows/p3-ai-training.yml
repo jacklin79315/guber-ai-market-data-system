@@ -36,15 +36,15 @@ jobs:
           test -n "$SUPABASE_URL" || { echo 'Missing SUPABASE_URL secret'; exit 1; }
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'Missing SUPABASE_SERVICE_ROLE_KEY secret'; exit 1; }
       - name: Train four models and replay untouched holdout
-        run: python -m p3.ai_train_replay > p3-training-report.json
+        run: python -m p3.ai_train_replay > p3-training-report.jsonl
       - name: Show non-secret model summary
         if: success()
-        run: python -c 'import json; r=json.load(open("p3-training-report.json")); print(json.dumps(r, indent=2))'
+        run: python -c 'import json; r=json.loads(open("p3-training-report.jsonl").read().splitlines()[-1]); print(json.dumps(r, indent=2))'
       - name: Upload training report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: p3-training-${{ inputs.symbol }}-${{ github.run_id }}
-          path: p3-training-report.json
+          path: p3-training-report.jsonl
           if-no-files-found: ignore
           retention-days: 30

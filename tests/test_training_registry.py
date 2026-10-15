@@ -26,7 +26,10 @@ def report():
 class TrainingRegistryTests(unittest.TestCase):
     def test_persists_full_comparison_context(self):
         captured = []
-        def db(method, table, params, payload, extra):
+        def db(method, table, params, payload=None, extra=None):
+            if method == "GET":
+                return []
+            self.assertEqual(method, "POST")
             captured.extend(payload)
             return []
         with patch.dict(os.environ, {"GITHUB_RUN_ID": "123"}):
@@ -41,7 +44,10 @@ class TrainingRegistryTests(unittest.TestCase):
 
     def test_missing_commit_fails_closed_for_comparison(self):
         captured = []
-        def db(method, table, params, payload, extra):
+        def db(method, table, params, payload=None, extra=None):
+            if method == "GET":
+                return []
+            self.assertEqual(method, "POST")
             captured.extend(payload)
             return []
         incomplete = report()

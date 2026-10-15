@@ -4,6 +4,7 @@ Feature vectors must contain information available at the decision timestamp.
 Outcome labels are used only AFTER neighbours are selected, never for similarity.
 """
 from math import isfinite, sqrt
+from heapq import nsmallest
 
 
 def _vector(row, features):
@@ -57,4 +58,4 @@ def search_historical_analogs(current, history, features, *, asof_ms,
         ranked.append({"timestamp_ms": row["timestamp_ms"],
                        "label_end_ms": row["label_end_ms"],
                        "distance": distance})
-    return sorted(ranked, key=lambda x: (x["distance"], x["timestamp_ms"]))[:k]
+    # Select only the k nearest rows without sorting the entire history.\n    # Identical distance/timestamp tie-breaking preserves prior semantics.\n    return nsmallest(k, ranked, key=lambda x: (x["distance"], x["timestamp_ms"]))

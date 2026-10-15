@@ -7,6 +7,7 @@ on:
     paths:
       - 'p3/multi_position_*.py'
       - 'p3/multi_model_replay.py'
+      - 'p3/validation_selection.py'
       - 'p3/validation_window_diagnostics.py'
       - 'tests/test_multi_position_replay.py'
       - 'tests/test_multi_lot_accounting.py'
@@ -15,6 +16,7 @@ on:
       - 'tests/test_multi_position_capacity.py'
       - 'tests/test_four_isolated_pools.py'
       - 'tests/test_multi_position_time_limit.py'
+      - 'tests/test_training_selection_multi_position.py'
       - 'tests/test_validation_window_diagnostics.py'
       - '.github/workflows/p3-multi-position-tests.yml'
   workflow_dispatch:
@@ -30,4 +32,4 @@ jobs:
         with:
           python-version: '3.11'
       - name: Run isolated multi-position tests
-        run: python -m unittest -v tests.test_multi_position_replay tests.test_multi_lot_accounting tests.test_validation_window_diagnostics tests.test_multi_position_validation tests.test_multi_position_audit tests.test_multi_position_capacity tests.test_four_isolated_pools tests.test_multi_position_time_limit
+        run: python -m unittest -v tests.test_multi_position_replay tests.test_multi_lot_accounting tests.test_validation_window_diagnostics tests.test_multi_position_validation tests.test_multi_position_audit tests.test_multi_position_capacity tests.test_four_isolated_pools tests.test_multi_position_time_limit tests.test_training_selection_multi_position

@@ -70,12 +70,14 @@ def run_batch(db, *, symbol, strategy, years):
     features = load_native_features(db, symbol, timeframe)
     fee_rate = load_fee_rate(db)
     generation = int(os.getenv("TRAINING_GENERATION", "1"))
+    from .ai_training_pipeline import _add_months, chronological_windows, DAY_MS
+    if not candles:
+        raise ValueError("no native candles for generation")
+    end_ms = ((int(candles[-1]["close_time"]) + 1) // DAY_MS) * DAY_MS
+    actual_window = chronological_windows(
+        _add_months(end_ms, -12 * years), years=years)["validation"]
     if generation > 1:
-        from .ai_training_pipeline import _add_months, chronological_windows, DAY_MS
         from .generation_readiness import generation_readiness
-        end_ms = ((int(candles[-1]["close_time"]) + 1) // DAY_MS) * DAY_MS
-        actual_window = chronological_windows(
-            _add_months(end_ms, -12 * years), years=years)["validation"]
         requested = json.loads(os.environ["TRAINING_CURRENT_VALIDATION_WINDOW"])
         if list(actual_window) != requested:
             raise ValueError("native-candle validation window differs from requested window")
@@ -87,11 +89,14 @@ def run_batch(db, *, symbol, strategy, years):
         })
         parent_run = os.environ["TRAINING_PARENT_RUN_ID"]
         parent_rows = db("GET", "ai_training_batch_trials", {
-            "select": "status,validation_eligible", "run_id": "eq." + parent_run,
+            "select": "status,validation_eligible,validation_start_ms,validation_end_ms", "run_id": "eq." + parent_run,
             "symbol": "eq." + symbol, "strategy": "eq." + strategy, "limit": "100",
         })
+        verified_parent = (len(parent_rows) == 25 and all(
+            x.get("validation_start_ms") == previous[0] and
+            x.get("validation_end_ms") == previous[1] for x in parent_rows))
         readiness = generation_readiness(
-            latest_run_complete=(len(parent_rows) == 25 and
+            latest_run_complete=(verified_parent and
                                  all(x["status"] == "COMPLETE" for x in parent_rows)),
             current_window=list(actual_window), previous_window=previous,
             parent_eligible=any(x.get("validation_eligible") is True for x in parent_rows),
@@ -116,6 +121,8 @@ def run_batch(db, *, symbol, strategy, years):
             "run_id": run_id, "symbol": symbol, "strategy": strategy,
             "timeframe": timeframe, "lookback_years": years,
             "trial_index": i, "status": "RUNNING", "params": params,
+            "validation_start_ms": actual_window[0],
+            "validation_end_ms": actual_window[1],
         }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
         print(json.dumps({"status": "TRIAL_STARTED", **record}), flush=True)
         winner = None
@@ -154,6 +161,8 @@ def run_batch(db, *, symbol, strategy, years):
             "run_id": run_id, "symbol": symbol, "strategy": strategy,
             "timeframe": timeframe, "lookback_years": years,
             "trial_index": i, "status": record["status"], "params": params,
+            "validation_start_ms": actual_window[0],
+            "validation_end_ms": actual_window[1],
             "validation_eligible": record["validation_eligible"],
             "validation_score": record.get("validation_score"),
             "validation_return_percent": winner["return_percent"] if winner else None,
@@ -176,8 +185,8 @@ def run_batch(db, *, symbol, strategy, years):
            "run_id": run_id, "parent_run_id": os.getenv("TRAINING_PARENT_RUN_ID"),
            "symbol": symbol, "strategy": strategy,
            "generation": generation,
-           "validation_start_ms": actual_window[0] if generation > 1 else None,
-           "validation_end_ms": actual_window[1] if generation > 1 else None,
+           "validation_start_ms": actual_window[0],
+           "validation_end_ms": actual_window[1],
            "status": comparison["status"], "reason": comparison.get("reason"),
            "comparison": comparison,
        }], {"Prefer": "resolution=merge-duplicates,return=minimal"})

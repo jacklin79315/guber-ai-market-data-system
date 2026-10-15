@@ -29,7 +29,9 @@ def save_paper_evaluation(db, *, symbol, strategy, timeframe,
                                 if k != "predictions"},
                    "decisions": {k: v for k, v in decisions.items()
                                  if k != "decisions"},
-                   "scorecard": score_chronological_paper_decisions(decisions),
+                   "scorecard": (score_chronological_paper_decisions(decisions)
+                                 if len(decisions.get("decisions", [])) >= decisions["realized_selected_count"]
+                                 else None),
                    "research_only": True, "auto_trade_enabled": False},
     }
     db("POST", "ai_paper_evaluations", params={"on_conflict": "run_key"},

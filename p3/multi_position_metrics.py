@@ -12,6 +12,7 @@ def summarize_multi_position(result, *, score_k=2.0):
     trades = account.closed_trades
     events = result["events"]
     signals = result.get("signals", [])
+    boundary_trades = [t for t in trades if t.get("reason") == "BACKTEST_END_SETTLEMENT"]
     profits = [t["net_pnl"] for t in trades]
     scores = [50 + 50 * tanh(t["reward_p"] / score_k) for t in trades]
     peak = INITIAL_EQUITY
@@ -27,6 +28,9 @@ def summarize_multi_position(result, *, score_k=2.0):
               for name in ("WAIT", "FILLED", "NOT_FILLED", "INSUFFICIENT_CASH")}
     return {
         "closed_trades": len(trades),
+        "normal_closed_trades": len(trades) - len(boundary_trades),
+        "backtest_end_settlement_count": len(boundary_trades),
+        "backtest_end_settlement_percent": 100 * len(boundary_trades) / len(trades) if trades else 0.0,
         "open_lots": len(account.positions),
         "available_cash": account.cash,
         "realized_net_pnl": sum(profits),

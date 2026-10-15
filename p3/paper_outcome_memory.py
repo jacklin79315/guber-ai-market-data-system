@@ -28,7 +28,9 @@ def save_settled_outcomes(db, *, symbol, strategy, timeframe, records, asof_ms):
             "source_data_version": DATA_VERSION,
         })
     for start in range(0, len(rows), 200):
-        db("POST", "ai_paper_outcomes", payload=rows[start:start + 200],
+        db("POST", "ai_paper_outcomes",
+           params={"on_conflict": "symbol,strategy,timeframe,signal_time_ms,direction,model_plan_version,source_data_version"},
+           payload=rows[start:start + 200],
            extra={"Prefer": "resolution=ignore-duplicates,return=minimal"})
     return len(rows)
 

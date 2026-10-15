@@ -60,9 +60,9 @@ def process_closed_candle(account: PaperAccount, candle: dict, *,
     # MAE on a stop exit is capped at the stop; intrabar order is unknown.
     if hit == "SL":
         if p.decision.action == "LONG":
-            account.mark(max(l, p.decision.stop_loss), h)
+            account.mark(min(h, max(l, p.decision.stop_loss)), h)
         else:
-            account.mark(l, min(h, p.decision.stop_loss))
+            account.mark(l, max(l, min(h, p.decision.stop_loss)))
     elif hit == "TP":
         # The bar extreme can occur after the TP fill. Do not charge
         # unknown post-exit adverse movement to this completed trade.

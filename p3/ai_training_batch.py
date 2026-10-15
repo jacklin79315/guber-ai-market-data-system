@@ -41,6 +41,12 @@ def choose_generation_parameters(db, symbol, strategy):
     parent_run = os.environ["TRAINING_PARENT_RUN_ID"]
     old_window = json.loads(os.environ["TRAINING_PARENT_VALIDATION_WINDOW"])
     new_window = json.loads(os.environ["TRAINING_CURRENT_VALIDATION_WINDOW"])
+    if (not isinstance(old_window, list) or not isinstance(new_window, list)
+            or len(old_window) != 2 or len(new_window) != 2
+            or not all(isinstance(x, int) for x in old_window + new_window)
+            or new_window[0] <= old_window[0]
+            or new_window[1] <= old_window[1]):
+        raise ValueError("validation window must advance chronologically")
     history = db("GET", "ai_training_batch_trials", {
         "select": "trial_index,status,validation_eligible,validation_score,params",
         "run_id": "eq." + parent_run, "symbol": "eq." + symbol,
@@ -84,6 +90,11 @@ def run_batch(db, *, symbol, strategy, years):
         try:
             trained = train_horizon(features, candles, strategy,
                                     years=years, model_params=params)
+            if int(os.getenv("TRAINING_GENERATION", "1")) > 1:
+                actual_window = list(trained["windows"]["validation"])
+                requested_window = json.loads(os.environ["TRAINING_CURRENT_VALIDATION_WINDOW"])
+                if actual_window != requested_window:
+                    raise ValueError("actual validation window differs from requested generation window")
             selection = select_threshold(
                 candles, features, trained["model"], symbol,
                 trained["windows"]["validation"], fee_rate)
@@ -125,6 +136,8 @@ def run_batch(db, *, symbol, strategy, years):
         trials.append(record)
         print(json.dumps({"status": "TRIAL_RESULT", **record}, allow_nan=False), flush=True)
     ranking = rank_validation_trials(trials)
+    if int(os.getenv("TRAINING_GENERATION", "1")) > 1 and all(t["status"] == "FAILED" for t in trials):
+        raise RuntimeError("all next-generation experiments failed; refusing green workflow")
     summary = {"status": "BATCH_COMPLETE", "symbol": symbol, "strategy": strategy,
                "lookback_years": years, "requested_trials": len(params_grid),
                "completed_trials": sum(t["status"] == "COMPLETE" for t in trials),

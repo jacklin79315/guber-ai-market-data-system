@@ -1,6 +1,8 @@
 name: P3 AI Training and Holdout Replay
 
 on:
+  schedule:
+    - cron: '17 2 * * 0'
   workflow_dispatch:
     inputs:
       symbol:
@@ -19,10 +21,17 @@ jobs:
   train:
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        symbol: [BTCUSDT, ETHUSDT]
+    concurrency:
+      group: p3-training-${{ matrix.symbol }}
+      cancel-in-progress: false
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      P3_SYMBOL: ${{ inputs.symbol }}
+      P3_SYMBOL: ${{ github.event_name == 'workflow_dispatch' && inputs.symbol || matrix.symbol }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,7 +60,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p3-training-${{ inputs.symbol }}-${{ github.run_id }}
+          name: p3-training-${{ matrix.symbol }}-${{ github.run_id }}
           path: p3-training-report.jsonl
           if-no-files-found: ignore
           retention-days: 30

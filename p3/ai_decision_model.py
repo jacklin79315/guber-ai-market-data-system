@@ -99,6 +99,22 @@ class HorizonModel:
             raise ValueError("invalid model output")
         return entry, up, down
 
+    def predict_price_levels(self, row):
+        """Expose learned future price-range bounds for structure evaluation.
+
+        These are forecast high/low candidates, NOT confirmed historical
+        support/resistance levels. This method does not change trading policy.
+        """
+        entry, up, down = self.analyze_price_structure(row)
+        return {
+            "reference_price": entry,
+            "predicted_upper_bound": entry * (1.0 + up),
+            "predicted_lower_bound": entry * (1.0 - down),
+            "predicted_upside_fraction": up,
+            "predicted_downside_fraction": down,
+            "confirmed_support_resistance": False,
+        }
+
     def decide(self, symbol, row, *, confidence_threshold=0.6, allocation=0.5):
         """Return model-generated direction and price targets or explicit WAIT.
 

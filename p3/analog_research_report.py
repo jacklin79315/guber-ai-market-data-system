@@ -10,7 +10,7 @@ from p3.analog_data_loader import load_research_history, DEFAULT_FEATURES
 from p3.analog_walk_forward import walk_forward_analog_evaluation
 from p3.raw_candle_adapter import INTERVAL_MS
 from p3.four_strategy_analog import STRATEGY_PLANS
-from p3.paper_learning import chronological_paper_learning
+from p3.paper_learning import chronological_paper_learning, chronological_direction_decisions
 
 
 def main():
@@ -121,6 +121,11 @@ def main():
         records = [r for direction in ("LONG", "SHORT")
                    for r in reports[direction].get("_training_records", [])]
         learning = chronological_paper_learning(records, DEFAULT_FEATURES, min_train=10)
+        decisions = chronological_direction_decisions(learning["predictions"])
+        print(json.dumps({"status": "PAPER_MODEL_DECISIONS",
+                          "symbol": symbol, "strategy": strategy,
+                          **{k: v for k, v in decisions.items() if k != "decisions"}},
+                         sort_keys=True), flush=True)
         print(json.dumps({"status": "PAPER_LEARNING_REPORT",
                           "symbol": symbol, "strategy": strategy,
                           **{k: v for k, v in learning.items() if k != "predictions"}},

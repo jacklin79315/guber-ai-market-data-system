@@ -35,5 +35,5 @@ Build with `npm run build`.
 
 - Login code is committed, but no Auth user, deployed website or verified end-to-end login is available yet.
 - Market data widgets are still placeholders; the collector and training workers are separate and untouched.
-- The older `supabase/functions/username-login` and `scripts/bootstrap-admin.mjs` are superseded and should not be deployed or used. Existing unused login-mapping/rate-limit tables can remain until a separately reviewed cleanup.
+- The obsolete custom login function and bootstrap script have been removed from this branch. Unused legacy login-mapping/rate-limit tables remain in Supabase for now; they are not used by this frontend.
 - Authentication does not authorize database writes. RLS and backend authorization remain mandatory for administrative actions.

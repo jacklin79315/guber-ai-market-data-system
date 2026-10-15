@@ -1,5 +1,5 @@
 import unittest
-from p3.paper_outcome_memory import save_settled_outcomes
+from p3.paper_outcome_memory import save_settled_outcomes, load_settled_outcomes
 
 
 class PaperMemoryTests(unittest.TestCase):
@@ -16,6 +16,18 @@ class PaperMemoryTests(unittest.TestCase):
         self.assertEqual(calls[0][0][:2], ("POST", "ai_paper_outcomes"))
         self.assertIn("ignore-duplicates", calls[0][1]["extra"]["Prefer"])
         self.assertEqual(calls[0][1]["payload"][0]["direction"], "LONG")
+
+    def test_reader_filters_settled_versioned_rows(self):
+        calls = []
+        def db(*args, **kwargs):
+            calls.append((args, kwargs))
+            return []
+        load_settled_outcomes(db, symbol="BTCUSDT", strategy="INTRADAY",
+                              timeframe="15m", asof_ms=500)
+        params = calls[0][1]["params"]
+        self.assertEqual(params["label_end_ms"], "lt.500")
+        self.assertIn("model_plan_version", params)
+        self.assertIn("source_data_version", params)
 
     def test_future_or_duplicate_labels_rejected_without_writes(self):
         calls = []

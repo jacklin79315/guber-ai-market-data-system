@@ -19,6 +19,10 @@ class PaperDirectionTests(unittest.TestCase):
         self.assertEqual(result["short_count"], 0)
         self.assertEqual(result["wait_count"], 1)
         self.assertEqual(result["realized_selected_mean_net_r"], -1)
+        self.assertEqual(result["realized_total_net_r"], -1)
+        self.assertEqual(result["realized_win_rate"], 0)
+        self.assertEqual(result["max_closed_trade_drawdown_r"], 1)
+        self.assertEqual(result["profit_factor"], 0)
 
     def test_opposite_direction_cannot_open_while_position_active(self):
         rows = [

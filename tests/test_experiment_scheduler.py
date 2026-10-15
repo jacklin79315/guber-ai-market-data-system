@@ -66,3 +66,29 @@ def test_shifted_validation_remains_wait():
     result = plan_next_experiment([latest()], {"INTRADAY": [110, 210]})
     assert result["INTRADAY"]["status"] == "WAIT"
     assert result["INTRADAY"]["reason"] == "validation_overlap_or_embargo"
+
+
+def test_preflight_blocks_previously_evaluated_candidate_window():
+    from p3.ai_training_pipeline import EMBARGO_MS, DAY_MS
+    from p3.ai_training_pipeline import _add_months, chronological_windows
+    from datetime import datetime, timezone
+    end = int(datetime(2026, 10, 15, tzinfo=timezone.utc).timestamp() * 1000)
+    start = _add_months(end, -24)
+    current = list(chronological_windows(start, years=2)["validation"])
+    previous = [current[0] - 5 * EMBARGO_MS, current[0] - EMBARGO_MS]
+    row = latest()
+    row["report"]["comparison_context"]["validation_window"] = previous
+    calls = []
+    def db(method, table, params):
+        calls.append(table)
+        if table == "ai_training_runs":
+            return [row]
+        if table == "raw_candles":
+            return [{"close_time": end - 1}]
+        if table == "ai_candidate_trials":
+            return [{"trial_key": "prior"}]
+        raise AssertionError(table)
+    result = load_schedule_from_supabase(db, "BTCUSDT", years=2)
+    assert "ai_candidate_trials" in calls
+    assert result["decisions"]["INTRADAY"]["status"] == "WAIT"
+    assert result["decisions"]["INTRADAY"]["reason"] == "validation_already_evaluated"

@@ -1,4 +1,6 @@
 import unittest
+import numpy as np
+from sklearn.linear_model import Ridge
 from p3.paper_learning import chronological_paper_learning
 
 
@@ -92,6 +94,46 @@ class PaperLearningTests(unittest.TestCase):
         result = chronological_paper_learning(rows, ["x"], min_train=2)
         self.assertEqual(result["prediction_count"], 2)
         self.assertTrue(all(p["train_count"] >= 2 for p in result["predictions"]))
+
+    def test_predictions_match_independent_reference_fits(self):
+        # Reference deliberately recomputes the complete eligible sample set.
+        # It checks optimized indexing against the original chronological rule.
+        rows = []
+        for i in range(32):
+            for direction in ("LONG", "SHORT"):
+                rows.append({
+                    "signal_time_ms": i * 100,
+                    "label_end_ms": i * 100 + (175 if direction == "LONG" else 25),
+                    "direction": direction,
+                    "signal_features": {"x": float(i % 7), "y": float(i % 5)},
+                    "net_r": (i % 9 - 4) / 5.0 * (1 if direction == "LONG" else -1),
+                })
+        result = chronological_paper_learning(
+            rows, ["x", "y"], min_train=6, evaluation_start_ms=1800)
+        self.assertGreater(result["prediction_count"], 0)
+        for prediction in result["predictions"]:
+            t = prediction["signal_time_ms"]
+            eligible = [row for row in rows
+                        if row["signal_time_ms"] < t and row["label_end_ms"] < t]
+            xs = np.asarray([
+                [row["signal_features"]["x"], row["signal_features"]["y"],
+                 1.0 if row["direction"] == "LONG" else -1.0]
+                for row in eligible], dtype=float)
+            ys = np.asarray([row["net_r"] for row in eligible], dtype=float)
+            mean, std = xs.mean(axis=0), xs.std(axis=0)
+            std[std == 0] = 1.0
+            model = Ridge(alpha=10.0).fit((xs - mean) / std, ys)
+            matched = next(row for row in rows
+                           if row["signal_time_ms"] == t
+                           and row["direction"] == prediction["direction"])
+            x = np.asarray([matched["signal_features"]["x"],
+                            matched["signal_features"]["y"],
+                            1.0 if matched["direction"] == "LONG" else -1.0])
+            expected = float(model.predict(((x - mean) / std).reshape(1, -1))[0])
+            self.assertAlmostEqual(prediction["prediction_net_r"], expected, places=10)
+            self.assertAlmostEqual(prediction["baseline_prediction_net_r"],
+                                   float(ys.mean()), places=10)
+            self.assertEqual(prediction["train_count"], len(eligible))
 
     def test_duplicate_rejected(self):
         row = {"signal_time_ms": 1, "label_end_ms": 2, "direction": "LONG",

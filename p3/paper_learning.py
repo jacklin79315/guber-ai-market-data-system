@@ -90,6 +90,7 @@ def chronological_direction_decisions(predictions):
     for row in predictions:
         grouped.setdefault(row["signal_time_ms"], {})[row["direction"]] = row
     decisions = []
+    occupied_until = None
     for t, pair in sorted(grouped.items()):
         long, short = pair.get("LONG"), pair.get("SHORT")
         if long is None or short is None:
@@ -100,11 +101,18 @@ def chronological_direction_decisions(predictions):
         direction = "LONG" if lv > 0 and lv > sv else (
             "SHORT" if sv > 0 and sv > lv else "WAIT")
         selected = pair.get(direction)
+        if selected and occupied_until is not None and t < occupied_until:
+            direction, selected = "WAIT", None
+            reason = "existing_paper_position"
+        else:
+            reason = "positive_best_prediction" if selected else "nonpositive_or_tied"
+        if selected:
+            occupied_until = selected["label_end_ms"]
         decisions.append({
             "signal_time_ms": t, "decision": direction,
             "predicted_long_net_r": lv, "predicted_short_net_r": sv,
             "realized_selected_net_r": selected["actual_net_r"] if selected else None,
-            "reason": "positive_best_prediction" if selected else "nonpositive_or_tied",
+            "reason": reason,
         })
     trades = [x["realized_selected_net_r"] for x in decisions if x["decision"] != "WAIT"]
     return {"research_only": True, "auto_trade_enabled": False,

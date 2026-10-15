@@ -147,7 +147,9 @@ def main():
                 "symbol": symbol, "strategy": strategy,
                 "unique_training_observations": len(records),
                 "research_only": True}), flush=True)
-        learning = chronological_paper_learning(records, DEFAULT_FEATURES, min_train=10)
+        learning = chronological_paper_learning(
+            records, DEFAULT_FEATURES, min_train=10,
+            evaluation_start_ms=evaluation_start_ms)
         decisions = chronological_direction_decisions(learning["predictions"])
         print(json.dumps({"status": "PAPER_MODEL_DECISIONS",
                           "symbol": symbol, "strategy": strategy,

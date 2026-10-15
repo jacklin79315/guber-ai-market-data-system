@@ -1,0 +1,27 @@
+name: Multi-position regression tests
+
+on:
+  push:
+    branches:
+      - feature/p3b-paper-engine
+    paths:
+      - 'p3/multi_position_*.py'
+      - 'p3/validation_window_diagnostics.py'
+      - 'tests/test_multi_position_replay.py'
+      - 'tests/test_multi_lot_accounting.py'
+      - 'tests/test_validation_window_diagnostics.py'
+      - '.github/workflows/p3-multi-position-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run isolated multi-position tests
+        run: python -m unittest -v tests.test_multi_position_replay tests.test_multi_lot_accounting tests.test_validation_window_diagnostics

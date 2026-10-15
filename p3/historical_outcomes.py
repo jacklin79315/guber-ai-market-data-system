@@ -4,6 +4,7 @@ Research only. Signal features must be computed at signal_close_ms; entry is
 the NEXT native candle open. A same-bar TP+SL collision is scored as SL.
 """
 from math import isfinite
+from bisect import bisect_right
 
 
 def _price(value, name):
@@ -76,13 +77,21 @@ def build_historical_outcomes(signals, candles, *, direction, stop_pct,
                               target_pct, max_holding_bars, fee_rate=0.0,
                               slippage_rate=0.0):
     """Label past feature snapshots without modifying or filtering features."""
+    # Search only the relevant future bars instead of re-sorting/scanning the
+    # entire multi-year candle history for every historical neighbor.
+    ordered = sorted(candles, key=lambda c: c["open_time"])
+    opens = [c["open_time"] for c in ordered]
+    if len(opens) != len(set(opens)):
+        raise ValueError("duplicate candle")
     outcomes = {}
     for signal in signals:
         t = signal["timestamp_ms"]
         if t in outcomes:
             raise ValueError("duplicate signal timestamp")
+        first = bisect_right(opens, t)
+        window = ordered[first:first + max_holding_bars]
         outcome = label_fixed_plan(
-            candles, signal_close_ms=t, direction=direction, stop_pct=stop_pct,
+            window, signal_close_ms=t, direction=direction, stop_pct=stop_pct,
             target_pct=target_pct, max_holding_bars=max_holding_bars,
             fee_rate=fee_rate, slippage_rate=slippage_rate)
         if outcome is not None:

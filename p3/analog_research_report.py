@@ -49,6 +49,7 @@ def main():
                       "evaluation_bars": evaluation_bars,
                       "research_only": True, "auto_trade_enabled": False}), flush=True)
     reports = {}
+    exploration = os.getenv("ANALOG_EXPLORATION", "false").lower() == "true"
     for direction in ("LONG", "SHORT"):
         report = walk_forward_analog_evaluation(
             snapshots, candles, DEFAULT_FEATURES,
@@ -56,14 +57,15 @@ def main():
             direction=direction, stop_pct=stop_pct, target_pct=target_pct,
             max_holding_bars=holding, fee_rate=fee_rate,
             slippage_rate=slippage_rate, k=100, min_samples=30,
-            evaluation_start_ms=evaluation_start_ms)
+            evaluation_start_ms=evaluation_start_ms, exploration=exploration)
         reports[direction] = {
             key: report[key] for key in (
                 "evaluations", "candidate_count", "wait_count",
                 "realized_candidate_count", "unresolved_candidate_count",
                 "realized_net_expectancy_r", "realized_win_rate",
                 "realized_total_net_r", "max_closed_trade_drawdown_r",
-                "profit_factor", "skipped_overlapping_candidates")
+                "profit_factor", "skipped_overlapping_candidates",
+                "exploration_paper_only")
         }
         # Diagnostic distributions explain WHY conservative selection rejected trades.
         # They are descriptive, not validation or a basis for tuning on test data.
@@ -103,6 +105,7 @@ def main():
                        "max_holding_bars": holding, "fee_rate": fee_rate,
                        "slippage_rate": slippage_rate, "k": 100, "min_samples": 30},
         "directions": reports, "research_only": True,
+        "exploration_paper_only": exploration,
         "auto_trade_enabled": False,
         "limitations": ["research only", "not model promotion",
                         "no live execution", "not annualized returns",

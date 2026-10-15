@@ -15,6 +15,7 @@ from .execution_diagnostics import summarize_execution
 from .validation_selection import select_threshold
 from .training_settings import load_training_settings
 from .training_registry import record_training_reports
+from .model_qualification import evaluate_model_gates
 
 def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     fee_rate = load_fee_rate(db)
@@ -51,13 +52,15 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
             raise ValueError("insufficient holdout replay candles")
         outcome = replay_with_metrics(holdout_candles, decisions, fee_rate=fee_rate)
         metrics = outcome["metrics"]
+        qualification = evaluate_model_gates(selection, metrics)
         reports[strategy] = {
+            "qualification": qualification,
             "timeframe": timeframe,
             "validation_window": list(trained["windows"]["validation"]),
             "holdout_window": list(trained["windows"]["holdout"]),
             "validation_selection": selection,
             "holdout_threshold": selected_threshold,
-            "model_eligible_for_paper": (selected_threshold is not None and not metrics["execution_path_uncertain"] and metrics["closed_trades"] >= 5),
+            "model_eligible_for_paper": qualification["paper_eligible"],
             "holdout_threshold_fallback": selected_threshold is None,
             "execution_diagnostics": summarize_execution(outcome["account"], outcome["events"]),
             "fee_rate_per_side": fee_rate,

@@ -35,6 +35,7 @@ jobs:
         run: pip install -r requirements.txt
       - name: Regression tests before training
         run: python -m unittest discover -s tests -p 'test_p3_stop_gap.py' -v
+          python -m unittest discover -s tests -p 'test_p3_validation_selection.py' -v
       - name: Require configured Supabase credentials
         run: |
           test -n "$SUPABASE_URL" || { echo 'Missing SUPABASE_URL secret'; exit 1; }

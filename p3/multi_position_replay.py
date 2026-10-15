@@ -10,7 +10,7 @@ from .multi_position_account import MultiPositionAccount
 
 def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
                            fee_rate=0.0, slippage_rate=0.0,
-                           max_holding_ms=None):
+                           max_holding_ms=None, score_k=2.0):
     if max_holding_ms is not None and (not isinstance(max_holding_ms, int) or isinstance(max_holding_ms, bool) or max_holding_ms <= 0):
         raise ValueError("max_holding_ms must be positive integer milliseconds")
     account = MultiPositionAccount()
@@ -103,5 +103,5 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
               "reserved_notional": account.reserved_notional,
               "remaining_capacity": account.remaining_capacity}
     from .multi_position_metrics import summarize_multi_position
-    result["metrics"] = summarize_multi_position(result)
+    result["metrics"] = summarize_multi_position(result, score_k=score_k)
     return result

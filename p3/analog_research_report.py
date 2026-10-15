@@ -109,11 +109,12 @@ def main():
         reports[direction]["ambiguous_bar_count"] = sum(
             x["ambiguous_bar"] for x in report["trade_records"])
         if exploration:
-            reports[direction]["_training_records"] = report["trade_records"]
+            reports[direction]["_training_records"] = report["training_records"]
             print(json.dumps({"status": "PAPER_EXPLORATION_TRADES",
                               "strategy": strategy, "symbol": symbol,
                               "direction": direction,
                               "trades": report["trade_records"],
+                              "labeled_learning_observation_count": len(report["training_records"]),
                               "research_only": True,
                               "auto_trade_enabled": False},
                              sort_keys=True), flush=True)

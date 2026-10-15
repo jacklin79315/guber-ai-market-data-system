@@ -33,10 +33,11 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     valid = np.array([train_begin <= t and t + HORIZON_BARS[strategy] * interval < train_end
                       for t in times])
     X, y, up, down = X[valid], y[valid], up[valid], down[valid]
-    if len(X) < 400:
-        raise ValueError("insufficient training-only samples for iterative learning")
-    # Four forward-only folds: train on the past, score on unseen later labels.
-    boundaries = [int(len(X) * f) for f in (0.4, 0.55, 0.7, 0.85, 1.0)]
+    minimum = max(160, int(110 / 0.65) + HORIZON_BARS[strategy] * 2)
+    if len(X) < minimum:
+        raise ValueError(f"insufficient training-only samples: {len(X)} < {minimum}")
+    # Two forward-only folds work even for the lower-frequency daily series.
+    boundaries = [int(len(X) * f) for f in (0.65, 0.82, 1.0)]
     history = []
     # The existing 25-candidate grid is reused as the initial search space.
     # For longer runs, a new local grid is generated around the best candidate.
@@ -63,7 +64,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 raise RuntimeError("candidate search exhausted")
         scores = []
         error = None
-        for j in range(1, 4):
+        for j in range(2):
             train_stop = boundaries[j]
             eval_stop = boundaries[j + 1]
             # Purge labels that would overlap the next evaluation segment.

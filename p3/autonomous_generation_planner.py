@@ -8,7 +8,7 @@ from .generation_readiness import generation_readiness
 
 def plan_next_generation(*, parent_run_id, parent_generation, parent_trials,
                          previous_window, current_window, existing_windows,
-                         maximum_generations=10):
+                         maximum_generations=100):
     if not parent_run_id or not isinstance(parent_generation, int):
         return {"status": "WAIT", "reason": "missing_parent_lineage"}
     if not isinstance(parent_trials, list) or len(parent_trials) != 25:

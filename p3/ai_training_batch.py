@@ -16,6 +16,7 @@ from .fee_schedule import load_fee_rate
 from .training_settings import load_training_settings
 from .iterative_generation import propose_generation
 from .generation_evaluator import compare_current_generation
+from .training_data_quality import validate_training_history
 
 PARAMETERS = tuple(
     {"max_iter": iterations, "learning_rate": rate}
@@ -81,6 +82,11 @@ def run_batch(db, *, symbol, strategy, years):
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
     if actual_window[1] > now_ms:
         raise ValueError("validation window is not fully closed")
+    quality = validate_training_history(
+        candles, features, timeframe,
+        required_start_ms=_add_months(end_ms, -12 * years))
+    print(json.dumps({"status": "DATA_QUALITY", "strategy": strategy,
+                      **quality}), flush=True)
     if generation == 1:
         previous_baseline = db("GET", "ai_training_generation_comparisons", {
             "select": "id", "symbol": "eq." + symbol, "strategy": "eq." + strategy,

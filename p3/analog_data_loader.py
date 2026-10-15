@@ -22,6 +22,8 @@ def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
     for _ in range(max_pages):
         params = {
             "select": ",".join(fields),
+            "source": "eq.BINANCE",
+            "market": "eq.SPOT",
             "symbol": "eq." + symbol,
             "timeframe": "eq." + timeframe,
             "close_time": "lte." + str(asof_ms),
@@ -41,7 +43,7 @@ def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
             t = row["close_time"]
             if not isinstance(t, int) or t > asof_ms or (last is not None and t <= last):
                 raise ValueError("out of order or future row")
-            if row["symbol"] != symbol or row["timeframe"] != timeframe:
+            if row["symbol"] != symbol or row["timeframe"] != timeframe or (\n                    "source" in row and row["source"] != "BINANCE") or (\n                    "market" in row and row["market"] != "SPOT"):
                 raise ValueError("wrong research series")
             if rows and t <= rows[-1]["close_time"]:
                 raise ValueError("duplicate or unordered row")
@@ -57,11 +59,11 @@ def load_research_history(db, symbol, timeframe, *, asof_ms,
                           max_pages=200):
     if not symbol or not timeframe or not isinstance(asof_ms, int) or isinstance(asof_ms, bool):
         raise ValueError("invalid research scope")
-    feature_fields = ["symbol", "timeframe", "close_time", *features]
+    feature_fields = ["source", "market", "symbol", "timeframe", "close_time", *features]
     feature_rows = _fetch_pages(
         db, "market_features", symbol, timeframe, asof_ms=asof_ms,
         fields=feature_fields, page_size=page_size, max_pages=max_pages)
-    candle_fields = ["symbol", "timeframe", "open_time", "close_time",
+    candle_fields = ["source", "market", "symbol", "timeframe", "open_time", "close_time",
                      "open_price", "high_price", "low_price", "close_price"]
     candle_rows = _fetch_pages(
         db, "raw_candles", symbol, timeframe, asof_ms=asof_ms,

@@ -37,6 +37,8 @@ def execute_with_lease(db, *, symbol, strategy, years, runner, lease_seconds=144
     try:
         outcome = runner(db, symbol=symbol, strategy=strategy, years=years)
         if outcome.get("status") == "BATCH_COMPLETE":
+            if outcome.get("eligible_trials", 0) < 1:
+                raise RuntimeError("no eligible training candidate; iteration cannot advance")
             final_status = "SUCCEEDED"
         elif outcome.get("status") == "WAIT":
             final_status = "CANCELLED"

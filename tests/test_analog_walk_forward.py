@@ -29,5 +29,29 @@ class AnalogWalkForwardTests(unittest.TestCase):
         self.assertEqual(report["skipped_overlapping_candidates"], 0)
 
 
+    def test_exploration_preserves_strict_decision_and_papers_outcomes(self):
+        candles = []
+        snapshots = []
+        for i in range(8):
+            t = i * 100
+            snapshots.append({"timestamp_ms": t + 9, "rsi": 30})
+            candles.append({"open_time": t + 10, "close_time": t + 19,
+                            "open": 100, "high": 104, "low": 99, "close": 103})
+        kwargs = dict(horizon_ms=20, direction="LONG", stop_pct=.02,
+                      target_pct=.03, max_holding_bars=1, fee_rate=0,
+                      slippage_rate=0, k=5, min_samples=30,
+                      evaluation_start_ms=209)
+        strict = walk_forward_analog_evaluation(snapshots, candles, ["rsi"], **kwargs)
+        exploratory = walk_forward_analog_evaluation(
+            snapshots, candles, ["rsi"], exploration=True, **kwargs)
+        self.assertEqual(strict["candidate_count"], 0)
+        self.assertEqual(exploratory["candidate_count"], 6)
+        self.assertEqual(exploratory["realized_candidate_count"], 6)
+        self.assertTrue(exploratory["exploration_paper_only"])
+        self.assertTrue(all(x["strict_decision"] == "WAIT"
+                            for x in exploratory["results"]))
+        self.assertGreater(exploratory["realized_total_net_r"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

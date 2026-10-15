@@ -43,7 +43,12 @@ def main():
     candles = [c for c in candles if c["close_time"] >= first_time]
     if len(snapshots) < evaluation_bars + 100:
         raise SystemExit("Insufficient historical research snapshots")
-    evaluation_start_ms = snapshots[-evaluation_bars]["timestamp_ms"]
+    # Reserve the entire holding horizon AFTER each evaluation snapshot.
+    # Otherwise 1h/4h strategies with horizons >= 40 bars cannot settle.
+    if len(snapshots) < evaluation_bars + holding + 100:
+        raise SystemExit("Insufficient mature evaluation snapshots")
+    evaluation_start_ms = snapshots[-(evaluation_bars + holding)]["timestamp_ms"]
+    evaluation_end_ms = snapshots[-(holding + 1)]["timestamp_ms"]
     print(json.dumps({"status": "STARTED", "symbol": symbol, "strategy": strategy, "timeframe": timeframe,
                       "feature_rows": len(snapshots), "native_candles": len(candles),
                       "evaluation_bars": evaluation_bars,
@@ -57,7 +62,8 @@ def main():
             direction=direction, stop_pct=stop_pct, target_pct=target_pct,
             max_holding_bars=holding, fee_rate=fee_rate,
             slippage_rate=slippage_rate, k=100, min_samples=30,
-            evaluation_start_ms=evaluation_start_ms, exploration=exploration)
+            evaluation_start_ms=evaluation_start_ms,
+            evaluation_end_ms=evaluation_end_ms, exploration=exploration)
         reports[direction] = {
             key: report[key] for key in (
                 "evaluations", "candidate_count", "wait_count",
@@ -112,6 +118,7 @@ def main():
     print(json.dumps({
         "status": "RESEARCH_COMPLETE", "symbol": symbol, "strategy": strategy, "timeframe": timeframe,
         "evaluation_start_ms": evaluation_start_ms,
+        "evaluation_end_ms": evaluation_end_ms,
         "features": list(DEFAULT_FEATURES),
         "fixed_plan": {"stop_pct": stop_pct, "target_pct": target_pct,
                        "max_holding_bars": holding, "fee_rate": fee_rate,

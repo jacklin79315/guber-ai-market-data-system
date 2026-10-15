@@ -10,7 +10,9 @@ import hashlib
 from datetime import datetime, timezone
 import numpy as np
 from .ai_decision_model import HorizonModel, HORIZON_BARS, build_supervised_examples
-from .ai_training_pipeline import _add_months, chronological_windows, DAY_MS
+from .ai_training_pipeline import _add_months, chronological_windows, DAY_MS, train_horizon
+from .validation_selection import select_threshold
+from .fee_schedule import load_fee_rate
 from .adaptive_trial_selection import next_candidate
 from .ai_training_batch import PARAMETERS
 from .ai_feature_history import load_native_features
@@ -42,11 +44,11 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     boundaries = [int(len(X) * f) for f in (0.65, 0.82, 1.0)]
     # A stable dataset-scoped ID resumes the same experiment without mixing
     # incompatible historical windows or the original 200 batch trials.
-    experiment = json.dumps(["autonomous-v1", symbol, strategy, years,
+    experiment = json.dumps(["autonomous-v2-trade-replay", symbol, strategy, years,
                              timeframe, train_begin, train_end], separators=(",", ":"))
-    run_id = "autonomous-v1-" + hashlib.sha256(experiment.encode()).hexdigest()[:24]
+    run_id = "autonomous-v2-" + hashlib.sha256(experiment.encode()).hexdigest()[:24]
     previous = db("GET", "ai_training_batch_trials", {
-        "select": "trial_index,status,validation_eligible,validation_score,params,error_reason",
+        "select": "trial_index,status,validation_eligible,validation_score,params,error_reason,validation_return_percent,validation_drawdown_percent,validation_trades,selected_threshold",
         "run_id": "eq." + run_id, "strategy": "eq." + strategy,
         "order": "trial_index.asc", "limit": "100",
     })
@@ -55,7 +57,11 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 "status": row["status"],
                 "validation_eligible": row.get("validation_eligible"),
                 "validation_score": row.get("validation_score"),
-                "error": row.get("error_reason")}
+                "error": row.get("error_reason"),
+                "validation_return_percent": row.get("validation_return_percent"),
+                "validation_drawdown_percent": row.get("validation_drawdown_percent"),
+                "validation_trades": row.get("validation_trades"),
+                "selected_threshold": row.get("selected_threshold")}
                for row in previous if row["status"] in ("COMPLETE", "FAILED")]
     history.sort(key=lambda row: row["trial_index"])
     if [row["trial_index"] for row in history] != list(range(1, len(history) + 1)):
@@ -70,10 +76,11 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         {"max_iter": steps, "learning_rate": round(rate / 1000, 5)}
         for steps in range(40, 341, 20)
         for rate in range(15, 186, 10))
+    fee_rate = load_fee_rate(db)
     for index in range(len(history), iterations):
         params = next_candidate(candidates, history)
         if params is None:
-            best = max((h for h in history if h["status"] == "COMPLETE"),
+            best = max((h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None),
                        key=lambda h: h["validation_score"], default=None)
             if best is None:
                 raise RuntimeError("no successful iterations to refine")
@@ -94,30 +101,39 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                "validation_start_ms": train_begin,
                "validation_end_ms": train_end,
            }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
-        scores = []
+        # Restore the original validation-only trading replay. The outer
+        # holdout remains untouched, and model selection uses net trading
+        # return minus drawdown rather than direction-classification Brier score.
         error = None
-        for j in range(2):
-            train_stop = boundaries[j]
-            eval_stop = boundaries[j + 1]
-            # Purge labels that would overlap the next evaluation segment.
-            train_stop = max(0, train_stop - HORIZON_BARS[strategy])
-            try:
-                model = HorizonModel(**params).fit(
-                    X[:train_stop], y[:train_stop], up[:train_stop], down[:train_stop])
-                prob = model.direction.predict_proba(X[boundaries[j]:eval_stop])[:, 1]
-                truth = y[boundaries[j]:eval_stop]
-                if len(truth) == 0:
-                    raise ValueError("empty evaluation fold")
-                # Brier score evaluates probabilistic direction, not trade returns.
-                scores.append(float(1 - np.mean((prob - truth) ** 2)))
-            except Exception as exc:
-                error = str(exc)
-                break
+        winner = None
+        selected_threshold = None
+        training_samples = None
+        validation_samples = None
+        try:
+            trained = train_horizon(
+                features, candles, strategy, years=years, model_params=params)
+            selection = select_threshold(
+                candles, features, trained["model"], symbol,
+                trained["windows"]["validation"], fee_rate)
+            selected_threshold = selection["selected_threshold"]
+            winner = next(
+                (c for c in selection["candidates"]
+                 if c["threshold"] == selected_threshold), None)
+            training_samples = trained["coverage"]["train"]["samples"]
+            validation_samples = trained["coverage"]["validation"]["samples"]
+        except Exception as exc:
+            error = str(exc)
+        score = (winner["return_percent"] - winner["drawdown_percent"]
+                 if winner is not None else None)
         result = {"trial_index": index + 1, "params": params,
                   "status": "COMPLETE" if error is None else "FAILED",
-                  "validation_eligible": error is None,
-                  "validation_score": float(np.mean(scores)) if error is None else None,
-                  "fold_scores": scores, "error": error}
+                  "validation_eligible": winner is not None,
+                  "validation_score": score,
+                  "validation_return_percent": winner["return_percent"] if winner else None,
+                  "validation_drawdown_percent": winner["drawdown_percent"] if winner else None,
+                  "validation_trades": winner["closed_trades"] if winner else None,
+                  "selected_threshold": selected_threshold,
+                  "error": error}
         db("POST", "ai_training_batch_trials",
            {"on_conflict": "run_id,strategy,trial_index"}, [{
                "run_id": run_id, "symbol": symbol, "strategy": strategy,
@@ -127,6 +143,12 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                "validation_end_ms": train_end,
                "validation_eligible": result["validation_eligible"],
                "validation_score": result["validation_score"],
+               "validation_return_percent": result["validation_return_percent"],
+               "validation_drawdown_percent": result["validation_drawdown_percent"],
+               "validation_trades": result["validation_trades"],
+               "selected_threshold": result["selected_threshold"],
+               "training_samples": training_samples,
+               "validation_samples": validation_samples,
                "error_reason": result["error"],
                "completed_at": datetime.now(timezone.utc).isoformat(),
            }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
@@ -135,9 +157,9 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                           **result}, allow_nan=False), flush=True)
     best = max((h for h in history if h["status"] == "COMPLETE"),
                key=lambda h: h["validation_score"], default=None)
-    successful = [h for h in history if h["status"] == "COMPLETE"]
+    successful = [h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None]
     if not successful:
-        raise RuntimeError("all autonomous training iterations failed; see persisted FAILED trials")
+        raise RuntimeError("no trading-replay-eligible iterations; inspect persisted trial metrics")
     baseline = successful[0]
     improvement = (float(best["validation_score"]) - float(baseline["validation_score"])
                    if best is not None and baseline is not None else None)

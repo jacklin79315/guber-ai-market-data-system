@@ -29,6 +29,11 @@ on:
         type: choice
         default: RECENT
         options: [RECENT, FULL]
+      evaluation_offset_bars:
+        description: "Shift OOS evaluation window N native bars into the past; use FULL history for older windows"
+        required: true
+        type: number
+        default: 0
       symbol:
         description: "Research market"
         required: true
@@ -49,6 +54,7 @@ jobs:
     env:
       ANALOG_SYMBOL: ${{ inputs.symbol || 'BTCUSDT' }}
       ANALOG_HISTORY_MODE: ${{ inputs.history_mode || 'RECENT' }}
+      ANALOG_EVALUATION_OFFSET_BARS: ${{ inputs.evaluation_offset_bars || '0' }}
       ANALOG_STRATEGY: ${{ matrix.strategy }}
       ANALOG_EXPLORATION: ${{ matrix.mode == 'EXPLORATION' }}
       ANALOG_EVALUATION_BARS: "40"

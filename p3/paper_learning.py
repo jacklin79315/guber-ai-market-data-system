@@ -120,7 +120,20 @@ def chronological_direction_decisions(predictions):
     paired = [x for x in decisions if "predicted_long_net_r" in x]
     positive = [x for x in paired if max(x["predicted_long_net_r"], x["predicted_short_net_r"]) > 0]
     trades = [x["realized_selected_net_r"] for x in decisions if x["decision"] != "WAIT"]
+    wins = [v for v in trades if v > 0]
+    losses = [v for v in trades if v < 0]
+    equity, peak, max_drawdown = 0.0, 0.0, 0.0
+    for value in trades:
+        equity += value
+        peak = max(peak, equity)
+        max_drawdown = max(max_drawdown, peak - equity)
+    gross_profit = sum(wins)
+    gross_loss = -sum(losses)
     return {"research_only": True, "auto_trade_enabled": False,
+            "realized_total_net_r": sum(trades),
+            "realized_win_rate": len(wins) / len(trades) if trades else None,
+            "max_closed_trade_drawdown_r": max_drawdown if trades else None,
+            "profit_factor": gross_profit / gross_loss if gross_loss else None,
             "decision_count": len(decisions),
             "paired_prediction_count": len(paired),
             "positive_forecast_count": len(positive),

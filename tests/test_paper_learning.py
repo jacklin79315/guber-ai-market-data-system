@@ -31,6 +31,21 @@ class PaperLearningTests(unittest.TestCase):
         result = chronological_paper_learning(rows, ["x"], min_train=2)
         self.assertEqual(result["prediction_count"], 3)
 
+    def test_direction_changes_forecast_with_identical_market_features(self):
+        rows = []
+        for i in range(8):
+            for direction, net_r in (("LONG", 1.0), ("SHORT", -1.0)):
+                rows.append({"signal_time_ms": i * 100,
+                             "label_end_ms": i * 100 + 10,
+                             "direction": direction,
+                             "signal_features": {"x": 5.0},
+                             "net_r": net_r})
+        result = chronological_paper_learning(rows, ["x"], min_train=4)
+        final = [r for r in result["predictions"] if r["signal_time_ms"] == 700]
+        self.assertEqual(len(final), 2)
+        forecasts = {r["direction"]: r["prediction_net_r"] for r in final}
+        self.assertGreater(forecasts["LONG"], forecasts["SHORT"])
+
     def test_duplicate_rejected(self):
         row = {"signal_time_ms": 1, "label_end_ms": 2, "direction": "LONG",
                "signal_features": {"x": 1.0}, "net_r": 0.1}

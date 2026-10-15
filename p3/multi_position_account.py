@@ -66,6 +66,38 @@ class MultiPositionAccount:
         self.positions[lot_id] = lot
         return lot_id, lot
 
+    def settle_backtest_end(self, lot_id, time_ms, *, fee_rate=0.0):
+        """Synthetic boundary accounting, not a market fill or time-based exit.
+
+        Return original collateral, ignore unrealized price change, charge
+        entry fee already paid plus an estimated exit fee on entry notional.
+        """
+        lot = self.positions[lot_id]
+        if not isfinite(fee_rate) or not 0 <= fee_rate < 1:
+            raise ValueError("invalid fee_rate")
+        notional = lot.quantity * lot.entry_price
+        exit_fee = notional * fee_rate
+        net_pnl = -lot.entry_fee - exit_fee
+        self.cash += notional - exit_fee
+        del self.positions[lot_id]
+        self.realized_net_pnl += net_pnl
+        from .paper_engine import reward
+        record = {
+            "lot_id": lot_id, "symbol": lot.decision.symbol,
+            "side": lot.decision.action, "entry_time_ms": lot.entry_time_ms,
+            "exit_time_ms": time_ms, "entry_price": lot.entry_price,
+            "exit_price": None, "quantity": lot.quantity,
+            "net_pnl": net_pnl, "pre_entry_equity": lot.pre_entry_equity,
+            "planned_rr": abs(lot.decision.take_profit - lot.decision.entry)
+                          / abs(lot.decision.entry - lot.decision.stop_loss),
+            "mae_percent": lot.max_adverse_percent,
+            "reward_p": reward(net_pnl, lot.pre_entry_equity, lot.max_adverse_percent),
+            "reason": "BACKTEST_END_SETTLEMENT", "equity_after": self.equity(),
+            "synthetic_settlement": True,
+        }
+        self.closed_trades.append(record)
+        return record
+
     def mark(self, lot_id, low, high):
         lot = self.positions[lot_id]
         low, high = _positive(low, "low"), _positive(high, "high")

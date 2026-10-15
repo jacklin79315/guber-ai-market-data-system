@@ -15,6 +15,7 @@ from .validation_selection import select_threshold
 from .fee_schedule import load_fee_rate
 from .training_settings import load_training_settings
 from .iterative_generation import propose_generation
+from .generation_evaluator import compare_current_generation
 
 PARAMETERS = tuple(
     {"max_iter": iterations, "learning_rate": rate}
@@ -136,6 +137,11 @@ def run_batch(db, *, symbol, strategy, years):
         trials.append(record)
         print(json.dumps({"status": "TRIAL_RESULT", **record}, allow_nan=False), flush=True)
     ranking = rank_validation_trials(trials)
+    comparison = compare_current_generation(db, symbol=symbol, strategy=strategy,
+        years=years, candles=candles, features=features, fee_rate=fee_rate,
+        ranking=ranking)
+    print(json.dumps({'status': 'GENERATION_COMPARISON', 'strategy': strategy,
+                      'comparison': comparison}, allow_nan=False), flush=True)
     if int(os.getenv("TRAINING_GENERATION", "1")) > 1 and all(t["status"] == "FAILED" for t in trials):
         raise RuntimeError("all next-generation experiments failed; refusing green workflow")
     summary = {"status": "BATCH_COMPLETE", "symbol": symbol, "strategy": strategy,
@@ -144,7 +150,8 @@ def run_batch(db, *, symbol, strategy, years):
                "failed_trials": sum(t["status"] == "FAILED" for t in trials),
                "eligible_trials": len(ranking),
                "best_trial": ranking[0] if ranking else None,
-               "holdout_evaluated": False, "auto_promote": False}
+               "holdout_evaluated": False, "auto_promote": False,
+               "generation_comparison": comparison}
     print(json.dumps(summary, allow_nan=False), flush=True)
     return summary
 

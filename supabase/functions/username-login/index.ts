@@ -18,6 +18,8 @@ Deno.serve(async(request)=>{
   const secret=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const publishable=Deno.env.get('SUPABASE_ANON_KEY')!;
   const admin=createClient(url,secret,{auth:{autoRefreshToken:false,persistSession:false}});
+  const limiter=await admin.rpc('app_claim_login_attempt',{p_username:username});
+  if(limiter.error||limiter.data!==true)return invalid();
   const mapping=await admin.from('app_usernames').select('user_id').eq('username',username).maybeSingle();
   if(mapping.error||!mapping.data)return invalid();
   // Auth email must be fetched server-side, never returned to client.

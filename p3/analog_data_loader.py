@@ -43,7 +43,9 @@ def _fetch_pages(db, table, symbol, timeframe, *, asof_ms, fields,
             t = row["close_time"]
             if not isinstance(t, int) or t > asof_ms or (last is not None and t <= last):
                 raise ValueError("out of order or future row")
-            if row["symbol"] != symbol or row["timeframe"] != timeframe or (\n                    "source" in row and row["source"] != "BINANCE") or (\n                    "market" in row and row["market"] != "SPOT"):
+            if row["symbol"] != symbol or row["timeframe"] != timeframe or (
+                    "source" in row and row["source"] != "BINANCE") or (
+                    "market" in row and row["market"] != "SPOT"):
                 raise ValueError("wrong research series")
             if rows and t <= rows[-1]["close_time"]:
                 raise ValueError("duplicate or unordered row")

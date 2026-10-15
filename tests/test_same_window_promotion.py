@@ -13,7 +13,7 @@ class SameWindowPromotionTests(unittest.TestCase):
                          same_validation_window=False)["status"], "WAIT")
 
     def test_reject_increased_drawdown_even_with_higher_score(self):
-        new = dict(BASE, return_percent=10.0, drawdown_percent=3.0)
+        new = dict(BASE, return_percent=10.0, drawdown_percent=3.0, annualized_return_percent=14.0)
         self.assertEqual(decide_generation_promotion(BASE, new,
                          same_validation_window=True)["reason"], "drawdown_worsened")
 
@@ -34,8 +34,27 @@ class SameWindowPromotionTests(unittest.TestCase):
                     BASE, new, same_validation_window=True)["reason"],
                     "challenger_not_eligible")
 
+    def test_priority_annualized_over_win_rate(self):
+        new = dict(BASE, annualized_return_percent=13.0,
+                   win_rate_percent=71.0, mean_score_q=65.0)
+        self.assertEqual(decide_generation_promotion(
+            BASE, new, same_validation_window=True)["status"], "RESEARCH_CANDIDATE")
+
+    def test_no_promotion_when_annualized_worsens(self):
+        new = dict(BASE, annualized_return_percent=11.0,
+                   win_rate_percent=95.0, mean_score_q=90.0)
+        self.assertEqual(decide_generation_promotion(
+            BASE, new, same_validation_window=True)["reason"], "no_priority_order_improvement")
+
+    def test_win_rate_then_score_tie_breakers(self):
+        higher_win = dict(BASE, win_rate_percent=76.0)
+        higher_score = dict(BASE, mean_score_q=69.0)
+        for candidate in (higher_win, higher_score):
+            self.assertEqual(decide_generation_promotion(
+                BASE, candidate, same_validation_window=True)["status"], "RESEARCH_CANDIDATE")
+
     def test_accept_research_only(self):
-        new = dict(BASE, return_percent=5.0, drawdown_percent=1.5)
+        new = dict(BASE, return_percent=5.0, drawdown_percent=1.5, annualized_return_percent=13.0)
         result = decide_generation_promotion(BASE, new, same_validation_window=True)
         self.assertEqual(result["status"], "RESEARCH_CANDIDATE")
         self.assertFalse(result["live_promoted"])

@@ -68,6 +68,26 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
                                 "validation_candidates": candidate_rows})
             if score is not None and (winner is None or score > winner[0]):
                 winner = (score, candidate, candidate_selection, params)
+        # A bounded second stage reacts only to validation diagnostics.
+        # Do not use holdout outcomes to propose or rank candidates.
+        reasons = [row["failure_reason"] for row in experiments]
+        if winner is None and reasons and all(reason == "no_closed_trades" for reason in reasons):
+            next_params = {"max_iter": 240, "learning_rate": 0.03}
+            adaptation_reason = "validation_no_closed_trades"
+        elif winner is None and reasons and all(reason == "execution_path_uncertain" for reason in reasons):
+            next_params = {"max_iter": 80, "learning_rate": 0.05}
+            adaptation_reason = "validation_execution_uncertainty"
+        elif winner is not None:
+            next_params = {"max_iter": 240, "learning_rate": 0.05}
+            adaptation_reason = "validation_eligible_refinement"
+        else:
+            next_params = None
+            adaptation_reason = "no_safe_adaptation"
+        # Plan the next experiment rather than repeatedly searching the same
+        # validation period; repeated tuning risks overfitting.
+        next_experiment = {"params": next_params, "reason": adaptation_reason,
+                           "status": "PROPOSED" if next_params else "WAIT",
+                           "requires_new_validation_window": True}
         if winner is None:
             # No eligible candidate: retain a reportable baseline, never trade.
             trained = candidate
@@ -106,7 +126,8 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
             "qualification": qualification,
             "optimization": {"selection_source": "validation_only",
                              "experiments": experiments,
-                             "selected_params": chosen_params},
+                             "selected_params": chosen_params,
+                             "next_experiment": next_experiment},
             "provenance": provenance,
             "timeframe": timeframe,
             "validation_window": list(trained["windows"]["validation"]),

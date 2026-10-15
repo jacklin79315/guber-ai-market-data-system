@@ -13,6 +13,14 @@ on:
     - cron: '17 2 * * *'
   workflow_dispatch:
     inputs:
+      iterations:
+        description: 'Sequential feedback iterations per strategy (5 or 100)'
+        required: true
+        type: choice
+        options:
+          - '5'
+          - '100'
+        default: '5'
       generation:
         description: 'Generation number (1 for baseline)'
         required: true
@@ -44,7 +52,7 @@ jobs:
         strategy: [INTRADAY, ONE_TO_THREE_DAYS, ONE_WEEK, FIFTEEN_TO_THIRTY_DAYS]
     env:
       TRAINING_GENERATION: ${{ inputs.generation || '1' }}
-      TRAINING_ITERATIONS: '5'
+      TRAINING_ITERATIONS: ${{ inputs.iterations || '5' }}
       TRAINING_PARENT_RUN_ID: ${{ inputs.parent_run_id }}
       TRAINING_PARENT_VALIDATION_WINDOW: ${{ inputs.previous_validation_window }}
       TRAINING_CURRENT_VALIDATION_WINDOW: ${{ inputs.current_validation_window }}
@@ -60,7 +68,7 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Validate experiment grid
         run: python -m unittest tests.test_indicator_interaction_learning tests.test_adaptive_trial_selection tests.test_ai_training_batch tests.test_iterative_generation tests.test_generation_comparison tests.test_same_window_promotion tests.test_generation_evaluator tests.test_generation_readiness tests.test_training_data_quality tests.test_autonomous_generation_planner tests.test_research_lease_policy tests.test_research_job_guard
-      - name: Run 5 sequential feedback-driven learning iterations
+      - name: Run sequential feedback-driven learning iterations
         shell: bash
         run: |
           set -o pipefail

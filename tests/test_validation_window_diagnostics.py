@@ -1,6 +1,5 @@
 import unittest
-from p3.validation_window_diagnostics import audit_validation_window
-from p3.ai_training_pipeline import EMBARGO_MS
+from p3.validation_window_diagnostics import audit_validation_window, EMBARGO_MS
 
 DAY = 86400000
 

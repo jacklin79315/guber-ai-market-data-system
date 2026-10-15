@@ -13,6 +13,7 @@ from .replay_runner import replay_with_metrics
 from .fee_schedule import load_fee_rate
 from .execution_diagnostics import summarize_execution
 from .validation_selection import select_threshold
+from .training_settings import load_training_settings
 
 def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
     fee_rate = load_fee_rate(db)
@@ -82,11 +83,11 @@ def main():
     if not os.getenv("SUPABASE_URL") or not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
         raise SystemExit("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required")
     from collector import db
-    symbol = os.getenv("P3_SYMBOL", "BTCUSDT")
-    if symbol not in ("BTCUSDT", "ETHUSDT"):
-        raise SystemExit("unsupported symbol")
+    settings = load_training_settings(db)
+    symbol = settings["symbol"]
+    years = settings["years"]
     print(json.dumps({"status": "TRAINING_STARTED", "symbol": symbol}), flush=True)
-    result = run_training(db, symbol)
+    result = run_training(db, symbol, years=years)
     print(json.dumps({"status": "COMPLETE", "symbol": symbol, "models": result},
                      sort_keys=True, allow_nan=False), flush=True)
 

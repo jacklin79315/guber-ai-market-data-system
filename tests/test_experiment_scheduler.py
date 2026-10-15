@@ -48,6 +48,7 @@ def test_supabase_preflight_uses_latest_native_candle():
         raise AssertionError(table)
     result = load_schedule_from_supabase(db, "BTCUSDT", years=2)
     assert result["history_rows"] == 0
+    assert calls[0][1]["order"] == "trained_at.desc,id.desc"
     assert len([x for x in calls if x[0] == "raw_candles"]) == len(STRATEGY_TIMEFRAMES)
     start = _add_months(end, -24)
     assert result["validation_windows"]["INTRADAY"][0] == _add_months(start, 16)

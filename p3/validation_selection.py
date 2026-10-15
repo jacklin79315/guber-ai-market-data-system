@@ -1,5 +1,5 @@
 """Validation-only candidate ranking, with an untouched final holdout."""
-from .ai_training_pipeline import EMBARGO_MS
+from .validation_window_diagnostics import EMBARGO_MS
 from .multi_position_replay import replay_multi_positions
 
 THRESHOLDS = (0.55, 0.60, 0.65, 0.70)

@@ -22,4 +22,4 @@ jobs:
       - name: Run P3B tests
         run: |
           python -m unittest discover -s tests -p 'test_p3_*.py' -v
-          python -m unittest tests.test_historical_similarity tests.test_analog_outcome_scoring tests.test_historical_outcomes tests.test_analog_research_pipeline tests.test_analog_data_loader tests.test_native_analog_research -v
+          python -m unittest tests.test_historical_similarity tests.test_analog_outcome_scoring tests.test_historical_outcomes tests.test_analog_research_pipeline tests.test_analog_data_loader tests.test_native_analog_research tests.test_analog_walk_forward -v

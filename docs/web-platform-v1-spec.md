@@ -68,3 +68,13 @@ F. No schema changes until existing Supabase tables and RLS policies are inspect
 - Always-visible PAPER / NO REAL ORDERS environment indicator. No order-entry or real-funds controls in V1.
 - Chart data must come from real stored metrics; sample charts and placeholder metrics must be visibly labeled as mock data.
 - Accessibility: keyboard navigation, visible focus, text alternatives for status icons, responsive tables, WCAG AA contrast target.
+
+## Authentication amendment — 2026-10-15
+
+- Login UI uses **username + password**, not an email field. Initial administrator username: `guber`. Initial password is supplied privately by the owner at provisioning time; NEVER commit, log, seed in a public migration, or store it in plaintext.
+- The username maps to a server-side identity; use Supabase Auth for secure password hashing, session management and refresh. An internal email identifier may exist as an implementation detail, but users never need to enter email.
+- Implement username resolution and password verification on a protected server endpoint, with rate limiting, generic error messages, lockout/abuse controls, and TLS. Never expose username-to-email mappings or privileged Auth admin APIs in the browser.
+- Bootstrap administrator via a one-time privileged provisioning step, not client-side signup or public SQL insertion. Username is unique and case-normalized. Restrict role assignment to trusted admin-only backend operations.
+- Persist login through the supported Supabase Auth refresh-session mechanism; restore sessions after page refresh/browser restart. Sign out invalidates the local session; provide sign-out-all-sessions where supported.
+- Password changes should go through Supabase Auth Admin APIs or a secure self-service flow, not direct edits to auth.users encrypted_password or plaintext database fields. Account display name and role can be updated separately with audited DB operations.
+- Add tests for session restoration, expired/revoked sessions, rate limiting, and unauthorized ADMIN settings requests.

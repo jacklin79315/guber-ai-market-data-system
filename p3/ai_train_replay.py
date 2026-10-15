@@ -10,8 +10,10 @@ from .native_history_replay import load_native_candles
 from .ai_training_pipeline import train_horizon, EMBARGO_MS
 from .multi_model_replay import STRATEGY_TIMEFRAMES
 from .replay_runner import replay_with_metrics
+from .fee_schedule import load_fee_rate
 
 def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
+    fee_rate = load_fee_rate(db)
     reports = {}
     for strategy, timeframe in STRATEGY_TIMEFRAMES.items():
         candles = load_native_candles(db, symbol, timeframe)
@@ -37,10 +39,11 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
         ]
         if len(holdout_candles) < 2:
             raise ValueError("insufficient holdout replay candles")
-        outcome = replay_with_metrics(holdout_candles, decisions)
+        outcome = replay_with_metrics(holdout_candles, decisions, fee_rate=fee_rate)
         metrics = outcome["metrics"]
         reports[strategy] = {
             "timeframe": timeframe,
+            "fee_rate_per_side": fee_rate,
             "training_samples": len(trained["partitions"]["train"]["X"]),
             "validation_samples": len(trained["partitions"]["validation"]["X"]),
             "holdout_label_samples": len(trained["partitions"]["holdout"]["X"]),

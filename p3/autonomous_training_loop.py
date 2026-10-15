@@ -34,7 +34,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                              timeframe, train_begin, train_end], separators=(",", ":"))
     run_id = "autonomous-v2-" + hashlib.sha256(experiment.encode()).hexdigest()[:24]
     previous = db("GET", "ai_training_batch_trials", {
-        "select": "trial_index,status,validation_eligible,validation_score,params,error_reason,validation_return_percent,validation_drawdown_percent,validation_trades,selected_threshold",
+        "select": "trial_index,status,validation_eligible,validation_score,params,error_reason,validation_return_percent,validation_drawdown_percent,validation_trades,selected_threshold,validation_annualized_return_percent,validation_win_rate_percent,validation_mean_score_q",
         "run_id": "eq." + run_id, "strategy": "eq." + strategy,
         "order": "trial_index.asc", "limit": "100",
     })
@@ -47,6 +47,9 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 "validation_return_percent": row.get("validation_return_percent"),
                 "validation_drawdown_percent": row.get("validation_drawdown_percent"),
                 "validation_trades": row.get("validation_trades"),
+                "validation_annualized_return_percent": row.get("validation_annualized_return_percent"),
+                "validation_win_rate_percent": row.get("validation_win_rate_percent"),
+                "validation_mean_score_q": row.get("validation_mean_score_q"),
                 "selected_threshold": row.get("selected_threshold")}
                for row in previous if row["status"] in ("COMPLETE", "FAILED")]
     history.sort(key=lambda row: row["trial_index"])
@@ -144,6 +147,9 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                "validation_return_percent": result["validation_return_percent"],
                "validation_drawdown_percent": result["validation_drawdown_percent"],
                "validation_trades": result["validation_trades"],
+               "validation_annualized_return_percent": result["validation_annualized_return_percent"],
+               "validation_win_rate_percent": result["validation_win_rate_percent"],
+               "validation_mean_score_q": result["validation_mean_score_q"],
                "selected_threshold": result["selected_threshold"],
                "training_samples": training_samples,
                "validation_samples": validation_samples,

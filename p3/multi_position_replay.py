@@ -89,7 +89,11 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
                              "cash": account.cash, "open_lots": len(account.positions)})
     result = {"account": account, "events": events, "signals": signal_events,
               "equity_curve": equity_curve,
-              "open_lots": len(account.positions), "closed_trades": len(account.closed_trades)}
+              "open_lots": len(account.positions), "closed_trades": len(account.closed_trades),
+              "settled_equity": account.settled_equity,
+              "capacity_limit": account.capacity_limit,
+              "reserved_notional": account.reserved_notional,
+              "remaining_capacity": account.remaining_capacity}
     from .multi_position_metrics import summarize_multi_position
     result["metrics"] = summarize_multi_position(result)
     return result

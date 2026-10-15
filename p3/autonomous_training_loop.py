@@ -152,7 +152,13 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     successful = [h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None]
     best = max(successful, key=lambda h: h["validation_score"], default=None)
     if not successful:
-        raise RuntimeError("no trading-replay-eligible iterations; inspect persisted trial metrics")
+        return {"status": "ITERATIONS_COMPLETE_NO_ELIGIBLE_MODEL",
+                "strategy": strategy, "run_id": run_id,
+                "iterations": len(history), "successful": 0,
+                "baseline_score": None, "best_score": None,
+                "improvement_vs_first_successful": None,
+                "best": None, "outer_validation_used": True,
+                "holdout_used": False}
     baseline = successful[0]
     improvement = (float(best["validation_score"]) - float(baseline["validation_score"])
                    if best is not None and baseline is not None else None)

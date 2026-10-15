@@ -14,6 +14,7 @@ from .multi_model_replay import STRATEGY_TIMEFRAMES
 from .validation_selection import select_threshold
 from .fee_schedule import load_fee_rate
 from .training_settings import load_training_settings
+from .iterative_generation import propose_generation
 
 PARAMETERS = tuple(
     {"max_iter": iterations, "learning_rate": rate}
@@ -31,6 +32,29 @@ def rank_validation_trials(trials):
         -t["validation_score"], t["trial_index"]))
 
 
+def choose_generation_parameters(db, symbol, strategy):
+    generation = int(os.getenv("TRAINING_GENERATION", "1"))
+    if generation == 1:
+        return PARAMETERS
+    if generation < 1:
+        raise ValueError("invalid generation")
+    parent_run = os.environ["TRAINING_PARENT_RUN_ID"]
+    old_window = json.loads(os.environ["TRAINING_PARENT_VALIDATION_WINDOW"])
+    new_window = json.loads(os.environ["TRAINING_CURRENT_VALIDATION_WINDOW"])
+    history = db("GET", "ai_training_batch_trials", {
+        "select": "trial_index,status,validation_eligible,validation_score,params",
+        "run_id": "eq." + parent_run, "symbol": "eq." + symbol,
+        "strategy": "eq." + strategy, "order": "trial_index.asc",
+        "limit": "100",
+    })
+    plan = propose_generation(history, current_validation_window=new_window,
+                              previous_validation_window=old_window)
+    print(json.dumps({"status": "GENERATION_PLAN", "strategy": strategy,
+                      "generation": generation, "reason": plan["reason"],
+                      "candidate_count": len(plan["candidates"])}), flush=True)
+    return tuple(plan["candidates"])
+
+
 def run_batch(db, *, symbol, strategy, years):
     if strategy not in STRATEGY_TIMEFRAMES:
         raise ValueError("unsupported training strategy")
@@ -38,9 +62,12 @@ def run_batch(db, *, symbol, strategy, years):
     candles = load_native_candles(db, symbol, timeframe)
     features = load_native_features(db, symbol, timeframe)
     fee_rate = load_fee_rate(db)
+    params_grid = choose_generation_parameters(db, symbol, strategy)
+    if not params_grid:
+        return {'status': 'WAIT', 'reason': 'no_safe_next_generation'}
     trials = []
     run_id = os.getenv("GITHUB_RUN_ID", "local-research")
-    for i, params in enumerate(PARAMETERS, start=1):
+    for i, params in enumerate(params_grid, start=1):
         trial_key = hashlib.sha256(json.dumps(
             [symbol, strategy, years, params], sort_keys=True).encode()).hexdigest()
         record = {"trial_index": i, "trial_key": trial_key,
@@ -99,7 +126,7 @@ def run_batch(db, *, symbol, strategy, years):
         print(json.dumps({"status": "TRIAL_RESULT", **record}, allow_nan=False), flush=True)
     ranking = rank_validation_trials(trials)
     summary = {"status": "BATCH_COMPLETE", "symbol": symbol, "strategy": strategy,
-               "lookback_years": years, "requested_trials": len(PARAMETERS),
+               "lookback_years": years, "requested_trials": len(params_grid),
                "completed_trials": sum(t["status"] == "COMPLETE" for t in trials),
                "failed_trials": sum(t["status"] == "FAILED" for t in trials),
                "eligible_trials": len(ranking),

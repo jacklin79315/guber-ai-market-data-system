@@ -4,6 +4,7 @@ This module never promotes a model, places orders, or updates the database.
 Fit uses only records whose outcomes were known by the next decision time.
 """
 from math import isfinite
+from bisect import bisect_left
 import numpy as np
 from sklearn.linear_model import Ridge
 
@@ -32,7 +33,7 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
         raise ValueError("invalid training configuration")
     ordered = sorted(records, key=lambda r: (r["signal_time_ms"], r["direction"]))
     seen = set()
-    evaluated = []
+    valid = []
     for row in ordered:
         t = row["signal_time_ms"]
         key = (t, row["direction"])
@@ -40,23 +41,26 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
             raise ValueError("duplicate training example")
         seen.add(key)
         x = _vector(row, feature_names)
-        if x is None:
-            continue
-        eligible = [
-            prior for prior in ordered
-            if prior["label_end_ms"] < t
-            and prior["signal_time_ms"] < t
-            and _vector(prior, feature_names) is not None
-            and isinstance(prior.get("net_r"), (int, float))
-            and not isinstance(prior["net_r"], bool)
-            and isfinite(prior["net_r"])
-        ]
-        if len(eligible) < min_train:
-            continue
+        y = row.get("net_r")
+        if (x is not None and isinstance(y, (int, float))
+                and not isinstance(y, bool) and isfinite(y)):
+            valid.append((row, x, float(y)))
+    # Index settled labels once. A label may enter the training set only
+    # strictly AFTER its settlement time, never at or before it.
+    by_settlement = sorted(valid, key=lambda v: v[0]["label_end_ms"])
+    settlement_times = [v[0]["label_end_ms"] for v in by_settlement]
+    evaluated = []
+    for row, x, _ in valid:
+        t = row["signal_time_ms"]
         if evaluation_start_ms is not None and t < evaluation_start_ms:
             continue
-        xs = np.array([_vector(prior, feature_names) for prior in eligible], dtype=float)
-        ys = np.array([prior["net_r"] for prior in eligible], dtype=float)
+        boundary = bisect_left(settlement_times, t)
+        eligible = [v for v in by_settlement[:boundary]
+                    if v[0]["signal_time_ms"] < t]
+        if len(eligible) < min_train:
+            continue
+        xs = np.array([v[1] for v in eligible], dtype=float)
+        ys = np.array([v[2] for v in eligible], dtype=float)
         # Normalize using training-only statistics; no test-row fitting.
         mean, std = xs.mean(axis=0), xs.std(axis=0)
         std[std == 0] = 1.0
@@ -70,7 +74,7 @@ def chronological_paper_learning(records, feature_names, *, min_train=10, alpha=
                           "label_end_ms": row["label_end_ms"],
                           "train_count": len(eligible),
                           "training_latest_label_end_ms": max(
-                              prior["label_end_ms"] for prior in eligible)})
+                              v[0]["label_end_ms"] for v in eligible)})
     errors = [v["prediction_net_r"] - v["actual_net_r"] for v in evaluated]
     baseline_errors = [v["baseline_prediction_net_r"] - v["actual_net_r"] for v in evaluated]
     model_mae = sum(abs(e) for e in errors) / len(errors) if errors else None

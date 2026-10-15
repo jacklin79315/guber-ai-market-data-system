@@ -14,6 +14,23 @@ class MultiPositionAccount:
     positions: dict = field(default_factory=dict)
     closed_trades: list = field(default_factory=list)
     next_lot_id: int = 1
+    realized_net_pnl: float = 0.0
+
+    @property
+    def settled_equity(self):
+        return INITIAL_EQUITY + self.realized_net_pnl
+
+    @property
+    def capacity_limit(self):
+        return max(0.0, self.settled_equity * 0.80)
+
+    @property
+    def reserved_notional(self):
+        return sum(p.quantity * p.entry_price for p in self.positions.values())
+
+    @property
+    def remaining_capacity(self):
+        return max(0.0, self.capacity_limit - self.reserved_notional)
 
     def equity(self, prices=None):
         prices = prices or {}
@@ -35,11 +52,11 @@ class MultiPositionAccount:
         if any(not isfinite(x) or x < 0 or x >= 1 for x in (fee_rate, slippage_rate)):
             raise ValueError("invalid trading cost")
         pre_equity = self.equity()
-        notional = pre_equity * decision.allocation
+        notional = self.settled_equity * decision.allocation
         fill = decision.entry * (1 + slippage_rate if decision.action == "LONG"
                                  else 1 - slippage_rate)
         fee = notional * fee_rate
-        if notional + fee > self.cash + 1e-9:
+        if notional > self.remaining_capacity + 1e-9 or notional + fee > self.cash + 1e-9:
             return None  # No leverage or reused collateral.
         lot = Position(decision, notional / fill, fill, pre_equity, fee,
                        time_ms, decision_close_time_ms)
@@ -75,6 +92,7 @@ class MultiPositionAccount:
         pnl = gross - lot.entry_fee - exit_fee
         self.cash += lot.quantity * lot.entry_price + gross - exit_fee
         del self.positions[lot_id]
+        self.realized_net_pnl += pnl
         record = {
             "lot_id": lot_id, "symbol": lot.decision.symbol,
             "side": lot.decision.action, "entry_time_ms": lot.entry_time_ms,

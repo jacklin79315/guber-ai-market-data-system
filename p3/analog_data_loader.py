@@ -7,7 +7,7 @@ from .raw_candle_adapter import raw_rows_to_candles
 
 
 DEFAULT_FEATURES = (
-    "rsi_12", "rsi_12_change", "macd_histogram", "macd_hist_change",
+    "rsi_12", "rsi_12_change", "macd_histogram", "macd_histogram_change",
     "adx_14", "atr_percent", "volume_ratio", "return_3",
     "ema_slope_20", "body_ratio",
 )

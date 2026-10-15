@@ -58,4 +58,6 @@ def search_historical_analogs(current, history, features, *, asof_ms,
         ranked.append({"timestamp_ms": row["timestamp_ms"],
                        "label_end_ms": row["label_end_ms"],
                        "distance": distance})
-    # Select only the k nearest rows without sorting the entire history.\n    # Identical distance/timestamp tie-breaking preserves prior semantics.\n    return nsmallest(k, ranked, key=lambda x: (x["distance"], x["timestamp_ms"]))
+    # Select only the k nearest rows without sorting the entire history.
+    # Identical distance/timestamp tie-breaking preserves prior semantics.
+    return nsmallest(k, ranked, key=lambda x: (x["distance"], x["timestamp_ms"]))

@@ -47,6 +47,19 @@ class AnalogDataLoaderTests(unittest.TestCase):
                                  "(close_time.gt.3599999,close_time.lte.3599999)")
                 self.assertNotIn("close_time", params)
 
+    def test_rejects_missing_matching_native_candle(self):
+        def db(method, table, params):
+            if table == "market_features":
+                return [{"symbol": "BTCUSDT", "timeframe": "1h",
+                         "close_time": 7199999, "rsi_12": 35}]
+            return [{"symbol": "BTCUSDT", "timeframe": "1h",
+                     "open_time": 0, "close_time": 3599999,
+                     "open_price": "100", "high_price": "110",
+                     "low_price": "90", "close_price": "105"}]
+        with self.assertRaisesRegex(ValueError, "aligned"):
+            load_research_history(db, "BTCUSDT", "1h", asof_ms=7199999,
+                                  features=("rsi_12",))
+
     def test_rejects_future_rows(self):
         def db(method, table, params):
             return [{"symbol": "BTCUSDT", "timeframe": "1h",

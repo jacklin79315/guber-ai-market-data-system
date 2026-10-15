@@ -26,6 +26,10 @@ class GenerationReadinessTests(unittest.TestCase):
     def test_generation_100_allowed(self):
         self.assertEqual(generation_readiness(**dict(DEFAULT, next_generation=100))["status"], "READY")
 
+    def test_explicit_run_limit_still_works(self):
+        result = generation_readiness(**dict(DEFAULT, next_generation=101), max_generations=100)
+        self.assertEqual(result["reason"], "generation_limit")
+
     def test_generation_101_allowed(self):
         self.assertEqual(generation_readiness(**dict(DEFAULT, next_generation=101))["status"], "READY")
 

@@ -230,8 +230,11 @@ def main():
     from collector import db
     settings = load_training_settings(db)
     strategy = os.environ["TRAINING_BATCH_STRATEGY"]
-    run_batch(db, symbol=settings["symbol"], strategy=strategy,
-              years=settings["years"])
+    from .research_job_guard import execute_with_lease
+    result = execute_with_lease(db, symbol=settings["symbol"], strategy=strategy,
+                                years=settings["years"], runner=run_batch)
+    print(json.dumps({"status": "LEASE_GUARDED_RESULT", "result": result},
+                     allow_nan=False), flush=True)
 
 
 if __name__ == "__main__":

@@ -93,23 +93,24 @@ jobs:
                               results.append(item)
                       except (ValueError, TypeError):
                           pass
-                  out.write('| Iteration | Status | Validation score | Parameters |\n')
-                  out.write('|---:|---|---:|---|\n')
+                  out.write('| Iteration | Status | Trading validation score | Return % | Drawdown % | Trades | Eligible | Parameters |\n')
+                  out.write('|---:|---|---:|---:|---:|---:|---|---|\n')
                   for item in results:
-                      out.write(f"| {item['trial_index']} | {item['status']} | {item.get('validation_score')} | `{json.dumps(item['params'])}` |\n")
+                      out.write(f"| {item['trial_index']} | {item['status']} | {item.get('validation_score')} | {item.get('validation_return_percent')} | {item.get('validation_drawdown_percent')} | {item.get('validation_trades')} | {item.get('validation_eligible')} | `{json.dumps(item['params'])}` |\n")
                   if not results:
                       out.write('No completed iteration results were found; inspect the job log.\n')
                   else:
                       completed = [x for x in results if x['status'] == 'COMPLETE']
+                      eligible = [x for x in completed if x.get('validation_eligible') is True and x.get('validation_score') is not None]
                       out.write(f"\nCompleted {len(completed)} of {len(results)} iterations.\n")
-                      if completed:
-                          first = completed[0]
-                          best = max(completed, key=lambda x: x['validation_score'])
+                      if eligible:
+                          first = eligible[0]
+                          best = max(eligible, key=lambda x: x['validation_score'])
                           gain = best['validation_score'] - first['validation_score']
                           out.write(f"\nFirst successful score: {first['validation_score']:.6f}; best score: {best['validation_score']:.6f}; gain: {gain:+.6f}.\n")
-                          out.write("\nThis is in-sample model-selection improvement, not out-of-sample proof.\n")
+                          out.write("\nThese are validation-only trading replay results, not holdout or live-trading proof.\n")
                       else:
-                          out.write("\nWARNING: No successful model training iterations.\n")
+                          out.write("\nNo validation-eligible trading models; review the recorded replay metrics.\n")
           PY
       - name: Preserve every experiment result
         if: always()

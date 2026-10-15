@@ -3,7 +3,7 @@ from .multi_position_replay import replay_multi_positions
 from .validation_window_diagnostics import audit_validation_window, EMBARGO_MS
 
 
-def evaluate_multi_lot_window(candles, features, model, symbol, window, threshold, fee_rate):
+def evaluate_multi_lot_window(candles, features, model, symbol, window, threshold, fee_rate, *, max_holding_ms=None):
     begin, end = window
     selected = [c for c in candles if begin + EMBARGO_MS <= int(c["open_time"])
                 and int(c["close_time"]) < end]
@@ -13,6 +13,7 @@ def evaluate_multi_lot_window(candles, features, model, symbol, window, threshol
     decisions = {int(c["close_time"]): model.decide(
         symbol, rows[int(c["close_time"])], confidence_threshold=threshold)
         for c in selected if int(c["close_time"]) in rows}
-    result = replay_multi_positions({symbol: selected}, {symbol: decisions}, fee_rate=fee_rate)
+    result = replay_multi_positions({symbol: selected}, {symbol: decisions}, fee_rate=fee_rate,
+                                    max_holding_ms=max_holding_ms)
     result["coverage"] = audit_validation_window(candles, features, window)
     return result

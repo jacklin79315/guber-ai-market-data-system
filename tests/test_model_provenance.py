@@ -20,6 +20,13 @@ class ModelProvenanceTests(unittest.TestCase):
         with self.assertRaises(ValueError): fingerprint_rows(list(reversed(ROWS)), FIELDS)
     def test_missing_field_rejected(self):
         with self.assertRaises(ValueError): fingerprint_rows([{"open_time": 1}], FIELDS)
+    def test_nullable_warmup_feature_is_fingerprinted(self):
+        rows = [{"open_time": 1, "close_time": 2, "open": None}]
+        self.assertEqual(fingerprint_rows(rows, FIELDS), fingerprint_rows(rows, FIELDS))
+        self.assertNotEqual(fingerprint_rows(rows, FIELDS), fingerprint_rows([{"open_time": 1, "close_time": 2, "open": 1.0}], FIELDS))
+    def test_nonfinite_source_rejected(self):
+        with self.assertRaises(ValueError):
+            fingerprint_rows([{"open_time": 1, "close_time": 2, "open": float("nan")}], FIELDS)
     def test_fee_fingerprint(self):
         self.assertEqual(fee_fingerprint(0.001), fee_fingerprint(0.001))
         self.assertNotEqual(fee_fingerprint(0.001), fee_fingerprint(0.002))

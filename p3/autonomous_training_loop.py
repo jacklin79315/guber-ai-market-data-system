@@ -32,7 +32,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     # incompatible historical windows or the original 200 batch trials.
     experiment = json.dumps(["autonomous-v3-dual-feature-layers", symbol, strategy, years,
                              timeframe, train_begin, train_end], separators=(",", ":"))
-    run_id = "autonomous-v2-" + hashlib.sha256(experiment.encode()).hexdigest()[:24]
+    run_id = "autonomous-v3-" + hashlib.sha256(experiment.encode()).hexdigest()[:24]
     previous = db("GET", "ai_training_batch_trials", {
         "select": "trial_index,status,validation_eligible,validation_score,params,error_reason,validation_return_percent,validation_drawdown_percent,validation_trades,selected_threshold,validation_annualized_return_percent,validation_win_rate_percent,validation_mean_score_q",
         "run_id": "eq." + run_id, "strategy": "eq." + strategy,

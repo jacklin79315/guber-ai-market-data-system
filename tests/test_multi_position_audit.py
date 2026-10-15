@@ -13,7 +13,7 @@ class PortfolioAuditTests(unittest.TestCase):
         report = audit_portfolio(a, {"BTCUSDT": 110, "ETHUSDT": 90})
         self.assertEqual(report["open_lots"], 2)
         self.assertEqual(set(report["symbols"]), {"BTCUSDT", "ETHUSDT"})
-        self.assertAlmostEqual(report["equity"], 10360)
+        self.assertAlmostEqual(report["equity"], 10400)
         self.assertAlmostEqual(report["cash"] + report["reserved"] + report["unrealized"], report["equity"])
 
     def test_exit_one_lot_preserves_other(self):

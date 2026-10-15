@@ -5,6 +5,7 @@ on:
     paths:
       - 'p3/analog_research_report.py'
       - 'p3/four_strategy_analog.py'
+      - 'p3/analog_data_loader.py'
       - '.github/workflows/p3-analog-research-report.yml'
   workflow_dispatch:
     inputs:

@@ -84,6 +84,12 @@ def authorize_next_validation(proposal_audit, previous_window, new_window):
         return {"authorized": False, "reason": "invalid_window"}
     if new_start <= old_start or new_end <= old_end:
         return {"authorized": False, "reason": "validation_not_advanced"}
-    return {"authorized": True, "reason": "new_validation_window",
+    # A shifted four-month window is NOT fresh validation: it reuses labels
+    # and can repeatedly overfit the same outcomes. Require fully unseen
+    # validation plus the existing 30-day embargo.
+    from .ai_training_pipeline import EMBARGO_MS
+    if new_start < old_end + EMBARGO_MS:
+        return {"authorized": False, "reason": "validation_overlap_or_embargo"}
+    return {"authorized": True, "reason": "new_nonoverlapping_validation_window",
             "params": proposal_audit["next_experiment"],
             "auto_promote": False, "allow_holdout_selection": False}

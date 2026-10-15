@@ -4,6 +4,7 @@ on:
     branches: [feature/p3b-paper-engine]
     paths:
       - 'p3/analog_research_report.py'
+      - 'p3/four_strategy_analog.py'
       - '.github/workflows/p3-analog-research-report.yml'
   workflow_dispatch:
     inputs:
@@ -13,22 +14,20 @@ on:
         type: choice
         default: BTCUSDT
         options: [BTCUSDT, ETHUSDT]
-      timeframe:
-        description: "Native candle timeframe"
-        required: true
-        type: choice
-        default: 1d
-        options: [1d, 4h, 1h, 15m]
 jobs:
   research:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        strategy: [INTRADAY, ONE_TO_THREE_DAYS, ONE_WEEK, FIFTEEN_TO_THIRTY_DAYS]
     permissions:
       contents: read
     env:
       ANALOG_SYMBOL: ${{ inputs.symbol || 'BTCUSDT' }}
-      ANALOG_TIMEFRAME: ${{ inputs.timeframe || '1d' }}
-      ANALOG_EVALUATION_BARS: "90"
+      ANALOG_STRATEGY: ${{ matrix.strategy }}
+      ANALOG_EVALUATION_BARS: "40"
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:

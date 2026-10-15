@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - '5'
+          - '10'
           - '100'
         default: '100'
       generation:

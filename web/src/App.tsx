@@ -22,9 +22,12 @@ export function App(){
   useEffect(()=>{let alive=true;
     async function refresh(){if(!supabase){if(alive)setLoading(false);return;}
       const {data}=await supabase.auth.getSession();if(!alive)return;
-      setSignedIn(!!data.session);setRole(data.session?await getDisplayRole():'VIEWER');setLoading(false);
+      const verified=data.session?await supabase.auth.getUser():null;
+      if(!alive)return;
+      setSignedIn(!!verified?.data.user&&!verified.error);
+      setRole(verified?.data.user&&!verified.error?await getDisplayRole():'VIEWER');setLoading(false);
     }
-    void refresh();const {data:listener}=supabase?.auth.onAuthStateChange(()=>{void refresh()})??{data:null};
+    void refresh();const {data:listener}=supabase?.auth.onAuthStateChange(()=>{queueMicrotask(()=>{void refresh()})})??{data:null};
     return ()=>{alive=false;listener?.subscription.unsubscribe()};
   },[]);
   if(loading)return <div className="loading-screen">正在檢查登入狀態…</div>;

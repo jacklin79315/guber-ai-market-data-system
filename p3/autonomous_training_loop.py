@@ -1,15 +1,12 @@
-"""Sequential autonomous learning on historical indicator combinations.
+"""Sequential autonomous training with original validation-only trade replay.
 
-Each iteration fits the existing HorizonModel on an earlier training slice and
-scores it on a later slice. The outer validation/holdout partitions are not
-used to choose parameters. Candidate choice uses the preceding outcomes.
+Each candidate trains on the chronological training partition, replays only
+validation trades, and never inspects the final holdout for model selection.
 """
 import json
 import os
 import hashlib
 from datetime import datetime, timezone
-import numpy as np
-from .ai_decision_model import HorizonModel, HORIZON_BARS, build_supervised_examples
 from .ai_training_pipeline import _add_months, chronological_windows, DAY_MS, train_horizon
 from .validation_selection import select_threshold
 from .fee_schedule import load_fee_rate
@@ -30,18 +27,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     end = ((int(candles[-1]["close_time"]) + 1) // DAY_MS) * DAY_MS
     windows = chronological_windows(_add_months(end, -12 * years), years=years)
     train_begin, train_end = windows["train"]
-    # All optimization samples are strictly inside the outer training period.
-    X, y, up, down, times = build_supervised_examples(
-        features, candles, HORIZON_BARS[strategy])
-    interval = {"15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000}[timeframe]
-    valid = np.array([train_begin <= t and t + HORIZON_BARS[strategy] * interval < train_end
-                      for t in times])
-    X, y, up, down = X[valid], y[valid], up[valid], down[valid]
-    minimum = max(160, int(110 / 0.65) + HORIZON_BARS[strategy] * 2)
-    if len(X) < minimum:
-        raise ValueError(f"insufficient training-only samples: {len(X)} < {minimum}")
-    # Two forward-only folds work even for the lower-frequency daily series.
-    boundaries = [int(len(X) * f) for f in (0.65, 0.82, 1.0)]
+    validation_begin, validation_end = windows["validation"]
     # A stable dataset-scoped ID resumes the same experiment without mixing
     # incompatible historical windows or the original 200 batch trials.
     experiment = json.dumps(["autonomous-v2-trade-replay", symbol, strategy, years,
@@ -98,8 +84,8 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                "run_id": run_id, "symbol": symbol, "strategy": strategy,
                "timeframe": timeframe, "lookback_years": years,
                "trial_index": index + 1, "status": "RUNNING", "params": params,
-               "validation_start_ms": train_begin,
-               "validation_end_ms": train_end,
+               "validation_start_ms": validation_begin,
+               "validation_end_ms": validation_end,
            }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
         # Restore the original validation-only trading replay. The outer
         # holdout remains untouched, and model selection uses net trading
@@ -139,8 +125,8 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                "run_id": run_id, "symbol": symbol, "strategy": strategy,
                "timeframe": timeframe, "lookback_years": years,
                "trial_index": index + 1, "status": result["status"],
-               "params": params, "validation_start_ms": train_begin,
-               "validation_end_ms": train_end,
+               "params": params, "validation_start_ms": validation_begin,
+               "validation_end_ms": validation_end,
                "validation_eligible": result["validation_eligible"],
                "validation_score": result["validation_score"],
                "validation_return_percent": result["validation_return_percent"],
@@ -168,7 +154,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
             "baseline_score": baseline["validation_score"] if baseline else None,
             "best_score": best["validation_score"] if best else None,
             "improvement_vs_first_successful": improvement,
-            "best": best, "outer_validation_used": False, "holdout_used": False}
+            "best": best, "outer_validation_used": True, "holdout_used": False}
 
 
 def main():

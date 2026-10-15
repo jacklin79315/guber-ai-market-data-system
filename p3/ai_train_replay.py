@@ -40,7 +40,8 @@ def run_training(db, symbol, *, years=2, confidence_threshold=0.6):
                     symbol, feature_by_close[t],
                     confidence_threshold=selected_threshold,
                 )
-        # No validated threshold means WAIT, not a silent default threshold.\n        # Holdout never influences candidate selection.
+        # No validated threshold means WAIT, not a silent default threshold.
+        # Holdout never influences candidate selection.
         # Include one pre-holdout bar only if it cannot cause an entry.
         holdout_candles = [
             c for c in candles if earliest <= int(c["open_time"])

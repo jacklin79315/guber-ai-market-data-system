@@ -111,6 +111,20 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 trained["windows"]["validation"], fee_rate)
             diagnostics = diagnose_validation(trained["model"], trained["partitions"]["validation"])
             selected_threshold = selection["selected_threshold"]
+            print(json.dumps({
+                "status": "VALIDATION_DECISION_FUNNEL",
+                "strategy": strategy,
+                "trial_index": index + 1,
+                "thresholds": [
+                    {"threshold": candidate["threshold"],
+                     "eligible": candidate["eligible"],
+                     "closed_trades": candidate["closed_trades"],
+                     "decision_flow": candidate["decision_flow"]}
+                    for candidate in selection["candidates"]
+                ],
+                "validation_only": True,
+                "selection_policy_unchanged": True,
+            }, allow_nan=False), flush=True)
             winner = next(
                 (c for c in selection["candidates"]
                  if c["threshold"] == selected_threshold), None)

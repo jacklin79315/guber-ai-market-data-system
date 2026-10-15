@@ -4,6 +4,7 @@ on:
     branches: [feature/p3b-paper-engine]
     paths:
       - 'p3/analog_research_report.py'
+      - 'p3/analog_walk_forward.py'
       - 'p3/four_strategy_analog.py'
       - 'p3/analog_data_loader.py'
       - '.github/workflows/p3-analog-research-report.yml'
@@ -15,6 +16,11 @@ on:
         type: choice
         default: BTCUSDT
         options: [BTCUSDT, ETHUSDT]
+      exploration:
+        description: "Paper exploration (no orders)"
+        required: false
+        type: boolean
+        default: false
 jobs:
   research:
     runs-on: ubuntu-latest
@@ -28,6 +34,7 @@ jobs:
     env:
       ANALOG_SYMBOL: ${{ inputs.symbol || 'BTCUSDT' }}
       ANALOG_STRATEGY: ${{ matrix.strategy }}
+      ANALOG_EXPLORATION: ${{ inputs.exploration || false }}
       ANALOG_EVALUATION_BARS: "40"
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

@@ -17,6 +17,10 @@ on:
         description: 'New validation [start_ms,end_ms] JSON'
         required: false
 
+concurrency:
+  group: p3-ai-research-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 

@@ -46,6 +46,21 @@ class PaperLearningTests(unittest.TestCase):
         forecasts = {r["direction"]: r["prediction_net_r"] for r in final}
         self.assertGreater(forecasts["LONG"], forecasts["SHORT"])
 
+    def test_historical_memory_trains_but_is_not_rescored(self):
+        rows = [{"signal_time_ms": i * 100,
+                 "label_end_ms": i * 100 + 10,
+                 "direction": "LONG",
+                 "signal_features": {"x": float(i)},
+                 "net_r": float(i % 3 - 1)} for i in range(12)]
+        result = chronological_paper_learning(
+            rows, ["x"], min_train=2, evaluation_start_ms=900)
+        self.assertEqual(result["prediction_count"], 3)
+        self.assertEqual(result["available_training_observation_count"], 12)
+        self.assertTrue(all(x["signal_time_ms"] >= 900
+                            for x in result["predictions"]))
+        self.assertTrue(all(x["training_latest_label_end_ms"] <
+                            x["signal_time_ms"] for x in result["predictions"]))
+
     def test_duplicate_rejected(self):
         row = {"signal_time_ms": 1, "label_end_ms": 2, "direction": "LONG",
                "signal_features": {"x": 1.0}, "net_r": 0.1}

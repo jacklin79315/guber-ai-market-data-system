@@ -19,7 +19,8 @@ def test_wait_for_unchanged_validation_window():
 
 
 def test_ready_for_advanced_window_but_never_promote():
-    result = plan_next_experiment([latest()], {"INTRADAY": [110, 210]})
+    from p3.ai_training_pipeline import EMBARGO_MS
+    result = plan_next_experiment([latest()], {"INTRADAY": [200 + EMBARGO_MS, 300 + EMBARGO_MS]})
     assert result["INTRADAY"]["status"] == "READY"
     assert result["INTRADAY"]["params"]["max_iter"] == 80
     assert not result["INTRADAY"]["auto_promote"]
@@ -58,3 +59,9 @@ def test_preflight_without_candles_fails_closed():
         return []
     result = load_schedule_from_supabase(db, "BTCUSDT", years=2)
     assert all(value is None for value in result["validation_windows"].values())
+
+
+def test_shifted_validation_remains_wait():
+    result = plan_next_experiment([latest()], {"INTRADAY": [110, 210]})
+    assert result["INTRADAY"]["status"] == "WAIT"
+    assert result["INTRADAY"]["reason"] == "validation_overlap_or_embargo"

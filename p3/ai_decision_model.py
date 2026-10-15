@@ -83,9 +83,9 @@ class HorizonModel:
     def fit(self, X, y_direction, y_up, y_down):
         if len(X) < 100 or len(np.unique(y_direction)) < 2:
             raise ValueError("insufficient labeled training data")
-        self.direction.fit(np.asarray(X)[:, DIRECTION_INDICES], y_direction)
-        self.upside.fit(np.asarray(X)[:, STRUCTURE_INDICES], y_up)
-        self.downside.fit(np.asarray(X)[:, STRUCTURE_INDICES], y_down)
+        self.direction.fit(np.asarray(X)[:, list(DIRECTION_INDICES)], y_direction)
+        self.upside.fit(np.asarray(X)[:, list(STRUCTURE_INDICES)], y_up)
+        self.downside.fit(np.asarray(X)[:, list(STRUCTURE_INDICES)], y_down)
         self.fitted = True
         return self
 
@@ -93,7 +93,7 @@ class HorizonModel:
         """Direction layer: predict up probability using only known features."""
         if not self.fitted:
             raise ValueError("model not trained")
-        probabilities = self.direction.predict_proba([np.asarray(_vector(row))[DIRECTION_INDICES]])[0]
+        probabilities = self.direction.predict_proba([np.asarray(_vector(row))[list(DIRECTION_INDICES)]])[0]
         probability_up = float(probabilities[list(self.direction.classes_).index(1)])
         if not math.isfinite(probability_up):
             raise ValueError("invalid direction prediction")
@@ -108,8 +108,8 @@ class HorizonModel:
         if not self.fitted:
             raise ValueError("model not trained")
         entry = float(row["close_price"])
-        up = max(0., float(self.upside.predict([np.asarray(_vector(row))[STRUCTURE_INDICES]])[0]))
-        down = max(0., float(self.downside.predict([np.asarray(_vector(row))[STRUCTURE_INDICES]])[0]))
+        up = max(0., float(self.upside.predict([np.asarray(_vector(row))[list(STRUCTURE_INDICES)]])[0]))
+        down = max(0., float(self.downside.predict([np.asarray(_vector(row))[list(STRUCTURE_INDICES)]])[0]))
         if not math.isfinite(entry) or entry <= 0 or not all(math.isfinite(x) for x in (up, down)):
             raise ValueError("invalid model output")
         return entry, up, down

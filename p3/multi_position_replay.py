@@ -25,7 +25,11 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
     candles.sort(key=lambda x: (x[0], x[1]))
     prices = {}
     signal_events = []
+    previous_close_time = None
     for close_time, symbol, bar, previous in candles:
+        if previous_close_time is not None and close_time < previous_close_time:
+            raise ValueError("merged candle timeline must be chronological")
+        previous_close_time = close_time
         # First exit previously open lots on this symbol; entry-bar exits are
         # intentionally deferred, consistent with the legacy OHLC assumption.
         for lot_id, lot in list(account.positions.items()):

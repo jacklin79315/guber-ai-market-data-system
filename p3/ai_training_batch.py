@@ -53,6 +53,7 @@ def run_batch(db, *, symbol, strategy, years):
             "trial_index": i, "status": "RUNNING", "params": params,
         }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
         print(json.dumps({"status": "TRIAL_STARTED", **record}), flush=True)
+        winner = None
         try:
             trained = train_horizon(features, candles, strategy,
                                     years=years, model_params=params)

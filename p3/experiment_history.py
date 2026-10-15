@@ -58,3 +58,32 @@ def compare_experiment_history(current, history):
         "auto_execute": False,
         "auto_promote": False,
     }
+
+
+def authorize_next_validation(proposal_audit, previous_window, new_window):
+    """Gate future candidate testing to genuinely later validation data.
+
+    A new model must still be trained only on its chronological train segment;
+    this function does not run training or authorize holdout/paper/live usage.
+    """
+    if not isinstance(proposal_audit, dict):
+        return {"authorized": False, "reason": "missing_audit"}
+    if proposal_audit.get("status") != "NEW_VALIDATION_REQUIRED":
+        return {"authorized": False, "reason": "no_new_candidate"}
+    if not proposal_audit.get("next_experiment"):
+        return {"authorized": False, "reason": "missing_candidate"}
+    if (not isinstance(previous_window, (list, tuple)) or
+            not isinstance(new_window, (list, tuple)) or
+            len(previous_window) != 2 or len(new_window) != 2):
+        return {"authorized": False, "reason": "invalid_window"}
+    if any(not isinstance(v, (int, float)) for v in (*previous_window, *new_window)):
+        return {"authorized": False, "reason": "invalid_window"}
+    old_start, old_end = previous_window
+    new_start, new_end = new_window
+    if not (old_start < old_end and new_start < new_end):
+        return {"authorized": False, "reason": "invalid_window"}
+    if new_start <= old_start or new_end <= old_end:
+        return {"authorized": False, "reason": "validation_not_advanced"}
+    return {"authorized": True, "reason": "new_validation_window",
+            "params": proposal_audit["next_experiment"],
+            "auto_promote": False, "allow_holdout_selection": False}

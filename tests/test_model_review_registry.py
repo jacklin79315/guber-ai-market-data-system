@@ -8,7 +8,7 @@ def row(key, score=2.0, accepted=True):
             "report": {"qualification": {"holdout_accepted": accepted, "paper_eligible": False},
                        "comparison_context": {"validation_window": [1, 2],
                            "evaluation_version": "v1", "dataset_version": "d1",
-                           "feature_version": "f1", "fee_version": "fee1"}}}
+                           "feature_version": "f1", "fee_version": "fee1", "code_version": "git:abc"}}}
 
 class ReviewRegistryTests(unittest.TestCase):
     def test_write_review_without_promotion(self):

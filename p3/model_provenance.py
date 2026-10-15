@@ -1,6 +1,7 @@
 """Reproducible provenance identifiers; fail closed if source metadata is absent."""
 import hashlib
 import json
+import math
 import os
 
 
@@ -15,9 +16,11 @@ def fingerprint_rows(rows, fields):
         if previous is not None and key <= previous:
             raise ValueError("source timestamps not strictly increasing")
         previous = key
-        values = [row.get(field) for field in fields]
-        if any(value is None for value in values):
+        if any(field not in row for field in fields):
             raise ValueError("source fingerprint field missing")
+        values = [row[field] for field in fields]
+        if any(isinstance(v, float) and not math.isfinite(v) for v in values):
+            raise ValueError("nonfinite source fingerprint value")
         digest.update(json.dumps(values, separators=(",", ":"), ensure_ascii=True, default=str).encode())
         digest.update(bytes([10]))
     return "sha256:" + digest.hexdigest()

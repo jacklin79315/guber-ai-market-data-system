@@ -31,7 +31,7 @@ export function GenerationHistory(){
    <td>{r.generation}</td><td>{r.strategy}</td><td>{r.status}</td>
    <td>{typeof r.comparison?.score_delta==='number'?r.comparison.score_delta.toFixed(2):'—'}</td>
    <td>{r.comparison?.research_promoted?'通過研究門檻':'否'}</td>
-   <td>{r.reason||r.comparison?.research_promoted?'—':r.reason||'尚無可比較結果'}</td>
+   <td>{r.reason||'—'}</td>
    <td>{r.run_id}</td>
   </tr>):<tr><td colSpan={7}>尚無世代比較紀錄；第二代尚未完成</td></tr>}
   </tbody></table></div>

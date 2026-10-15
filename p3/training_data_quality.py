@@ -42,8 +42,8 @@ def validate_training_history(candles, features, timeframe, *, required_start_ms
             raise ValueError("feature timestamp absent from native candles")
         if not math.isclose(float(row["close_price"]), by_close[t], rel_tol=1e-8):
             raise ValueError("feature price differs from native candle")
-        if not any(row.get(k) is not None and math.isfinite(float(row[k])) for k in FEATURE_COLUMNS):
-            raise ValueError("feature vector entirely missing")
+        if any(row.get(k) is None or not math.isfinite(float(row[k])) for k in FEATURE_COLUMNS):
+            raise ValueError("missing or non-finite model feature")
         matched += 1
     expected = sum(1 for c in candles if int(c["close_time"]) >= required_start_ms)
     if matched != expected:

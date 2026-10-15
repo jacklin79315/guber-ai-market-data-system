@@ -1,6 +1,6 @@
 """Validation-only candidate ranking, with an untouched final holdout."""
 from .ai_training_pipeline import EMBARGO_MS
-from .replay_runner import replay_with_metrics
+from .multi_position_replay import replay_multi_positions
 
 THRESHOLDS = (0.55, 0.60, 0.65, 0.70)
 MIN_TRADES = 5
@@ -16,7 +16,7 @@ def evaluate_window(candles, features, model, symbol, window, threshold, fee_rat
     rows = {int(row["close_time"]): row for row in features}
     decisions = {int(c["close_time"]): model.decide(symbol, rows[int(c["close_time"])], confidence_threshold=threshold)
                  for c in selected if int(c["close_time"]) in rows}
-    return replay_with_metrics(selected, decisions, fee_rate=fee_rate)
+    return replay_multi_positions({symbol: selected}, {symbol: decisions}, fee_rate=fee_rate)
 
 
 def diagnose_decision_flow(candles, features, model, symbol, window, threshold):
@@ -59,7 +59,9 @@ def select_threshold(candles, features, model, symbol, validation_window, fee_ra
         flow["exits_recorded"] = sum(e["type"] == "EXIT" for e in events)
         flow["unfilled_or_position_blocked"] = (
             flow["LONG"] + flow["SHORT"] - flow["entries_filled"])
-        flow["open_position_at_end"] = replay_result["account"].position is not None
+        flow["open_position_at_end"] = bool(replay_result["account"].positions)
+        metrics["execution_path_uncertain"] = bool(
+            metrics["entry_bars_with_unresolved_exit"] or metrics["ambiguous_exit_count"])
         trades = metrics["closed_trades"]
         candidates.append({
             "threshold": threshold,

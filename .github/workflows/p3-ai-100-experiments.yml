@@ -73,9 +73,9 @@ jobs:
           import json, os, pathlib
           file = pathlib.Path('batch-results.jsonl')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
-              out.write('## Autonomous learning results\\n\\n')
+              out.write('## Autonomous learning results\n\n')
               if not file.exists():
-                  out.write('No result file was produced.\\n')
+                  out.write('No result file was produced.\n')
               else:
                   results = []
                   for line in file.read_text().splitlines():
@@ -85,15 +85,15 @@ jobs:
                               results.append(item)
                       except (ValueError, TypeError):
                           pass
-                  out.write('| Iteration | Status | Validation score | Parameters |\\n')
-                  out.write('|---:|---|---:|---|\\n')
+                  out.write('| Iteration | Status | Validation score | Parameters |\n')
+                  out.write('|---:|---|---:|---|\n')
                   for item in results:
-                      out.write(f"| {item['trial_index']} | {item['status']} | {item.get('validation_score')} | \`{json.dumps(item['params'])}\` |\\n")
+                      out.write(f"| {item['trial_index']} | {item['status']} | {item.get('validation_score')} | `{json.dumps(item['params'])}` |\n")
                   if not results:
-                      out.write('No completed iteration results were found; inspect the job log.\\n')
+                      out.write('No completed iteration results were found; inspect the job log.\n')
                   else:
                       completed = [x for x in results if x['status'] == 'COMPLETE']
-                      out.write(f"\\nCompleted {len(completed)} of {len(results)} iterations.\\n")
+                      out.write(f"\nCompleted {len(completed)} of {len(results)} iterations.\n")
           PY
       - name: Preserve every experiment result
         if: always()

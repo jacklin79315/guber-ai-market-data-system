@@ -11,7 +11,7 @@ from p3.analog_walk_forward import walk_forward_analog_evaluation
 from p3.raw_candle_adapter import INTERVAL_MS
 from p3.four_strategy_analog import STRATEGY_PLANS
 from p3.paper_learning import chronological_paper_learning, chronological_direction_decisions
-from p3.paper_outcome_memory import save_settled_outcomes
+from p3.paper_outcome_memory import save_settled_outcomes, load_settled_outcomes
 
 
 def main():
@@ -127,6 +127,25 @@ def main():
                 timeframe=timeframe, records=records, asof_ms=asof_ms)
             print(json.dumps({"status": "PAPER_MEMORY_SAVED", "symbol": symbol,
                 "strategy": strategy, "settled_observations_submitted": persisted,
+                "research_only": True}), flush=True)
+        if os.getenv("PAPER_MEMORY_READ", "false").lower() == "true":
+            memory = load_settled_outcomes(
+                db, symbol=symbol, strategy=strategy, timeframe=timeframe,
+                asof_ms=asof_ms)
+            existing = {(x["signal_time_ms"], x["direction"]): x for x in memory}
+            for row in records:
+                key = (row["signal_time_ms"], row["direction"])
+                if key in existing:
+                    old = existing[key]
+                    if (int(old["label_end_ms"]) != row["label_end_ms"]
+                            or abs(float(old["net_r"]) - row["net_r"]) > 1e-8):
+                        raise ValueError("historical outcome drift for versioned memory")
+                else:
+                    existing[key] = row
+            records = list(existing.values())
+            print(json.dumps({"status": "PAPER_MEMORY_LOADED",
+                "symbol": symbol, "strategy": strategy,
+                "unique_training_observations": len(records),
                 "research_only": True}), flush=True)
         learning = chronological_paper_learning(records, DEFAULT_FEATURES, min_train=10)
         decisions = chronological_direction_decisions(learning["predictions"])

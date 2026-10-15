@@ -54,6 +54,7 @@ class AnalogWalkForwardTests(unittest.TestCase):
         self.assertEqual(len(exploratory["trade_records"]), 6)
         self.assertEqual(exploratory["trade_records"][0]["strict_decision"], "WAIT")
         self.assertEqual(exploratory["trade_records"][0]["exit_reason"], "TP")
+        self.assertEqual(exploratory["trade_records"][0]["signal_features"], {"rsi": 30})
         self.assertIn("entry_price", exploratory["trade_records"][0])
         self.assertIn("label_end_ms", exploratory["trade_records"][0])
 

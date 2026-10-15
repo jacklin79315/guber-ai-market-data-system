@@ -58,6 +58,18 @@ class MultiPositionReplayTests(unittest.TestCase):
                          ["WAIT", "NOT_FILLED", "FILLED"])
         self.assertEqual(result["open_lots"], 1)
 
+    def test_portfolio_metrics_distinguish_open_and_closed(self):
+        candles = {"BTCUSDT": bars([(99, 101, 100)] * 3)}
+        result = replay_multi_positions(candles, {
+            "BTCUSDT": {59999: long("BTCUSDT")}
+        })
+        metrics = result["metrics"]
+        self.assertEqual(metrics["open_lots"], 1)
+        self.assertEqual(metrics["closed_trades"], 0)
+        self.assertIsNone(metrics["annualized_return_percent"])
+        self.assertEqual(metrics["signal_counts"]["FILLED"], 1)
+        self.assertEqual(metrics["final_mark_to_market_equity"], 10000)
+
     def test_insufficient_cash_rejects_without_leverage(self):
         candles = {s: bars([(99, 101, 100)] * 3) for s in ("BTCUSDT", "ETHUSDT")}
         decisions = {s: {59999: long(s, allocation=0.8)} for s in candles}

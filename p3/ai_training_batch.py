@@ -140,6 +140,14 @@ def run_batch(db, *, symbol, strategy, years):
     comparison = compare_current_generation(db, symbol=symbol, strategy=strategy,
         years=years, candles=candles, features=features, fee_rate=fee_rate,
         ranking=ranking)
+    db("POST", "ai_training_generation_comparisons",
+       {"on_conflict": "run_id,strategy"}, [{
+           "run_id": run_id, "parent_run_id": os.getenv("TRAINING_PARENT_RUN_ID"),
+           "symbol": symbol, "strategy": strategy,
+           "generation": int(os.getenv("TRAINING_GENERATION", "1")),
+           "status": comparison["status"], "reason": comparison.get("reason"),
+           "comparison": comparison,
+       }], {"Prefer": "resolution=merge-duplicates,return=minimal"})
     print(json.dumps({'status': 'GENERATION_COMPARISON', 'strategy': strategy,
                       'comparison': comparison}, allow_nan=False), flush=True)
     if int(os.getenv("TRAINING_GENERATION", "1")) > 1 and all(t["status"] == "FAILED" for t in trials):

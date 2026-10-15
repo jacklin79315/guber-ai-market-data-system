@@ -32,6 +32,10 @@ def select_threshold(candles, features, model, symbol, validation_window, fee_ra
             "return_percent": 100 * (metrics["final_mark_to_market_equity"] / 10000 - 1),
             "drawdown_percent": metrics["max_close_to_close_drawdown_percent"],
             "execution_path_uncertain": metrics["execution_path_uncertain"],
+            "win_rate_percent": metrics["win_rate_percent"],
+            "mean_score_q": metrics["mean_score_q"],
+            "annualized_return_percent": metrics["annualized_return_percent"],
+            "annualized_mark_to_market_return_percent": metrics["annualized_mark_to_market_return_percent"],
         })
     eligible = [c for c in candidates if c["eligible"]]
     winner = max(eligible, key=lambda c: (c["return_percent"] - c["drawdown_percent"],

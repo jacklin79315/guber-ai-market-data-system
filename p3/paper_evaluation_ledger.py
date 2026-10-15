@@ -45,13 +45,21 @@ def compare_paper_evaluations(db, *, symbol, strategy, limit=20):
         "order": "created_at.desc", "limit": str(limit),
     })
     result = []
-    # Select only mutually non-overlapping windows, newest first.\n    selected_windows = []\n    for row in rows:
+    # Select only mutually non-overlapping windows, newest first.
+    selected_windows = []
+    for row in rows:
         comparable = (row["plan_version"] == PLAN_VERSION
                       and row["data_version"] == DATA_VERSION)
         mae = row["model_mae_r"]
         baseline = row["baseline_mae_r"]
         trades = row["selected_trades"]
-        start, end = int(row["evaluation_start_ms"]), int(row["evaluation_end_ms"])\n        independent = not any(start <= prior_end and prior_start <= end\n                              for prior_start, prior_end in selected_windows)\n        if independent and comparable:\n            selected_windows.append((start, end))\n        result.append({**row,\n            "independent_evaluation_window": independent and comparable,
+        start, end = int(row["evaluation_start_ms"]), int(row["evaluation_end_ms"])
+        independent = not any(start <= prior_end and prior_start <= end
+                              for prior_start, prior_end in selected_windows)
+        if independent and comparable:
+            selected_windows.append((start, end))
+        result.append({**row,
+            "independent_evaluation_window": independent and comparable,
             "version_comparable": comparable,
             "mae_beats_baseline": (float(mae) < float(baseline)
                                    if mae is not None and baseline is not None else None),

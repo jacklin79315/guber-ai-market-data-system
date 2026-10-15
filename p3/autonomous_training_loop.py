@@ -149,16 +149,15 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         history.append(result)
         print(json.dumps({"status": "ITERATION_RESULT", "strategy": strategy,
                           **result}, allow_nan=False), flush=True)
-    best = max((h for h in history if h["status"] == "COMPLETE"),
-               key=lambda h: h["validation_score"], default=None)
     successful = [h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None]
+    best = max(successful, key=lambda h: h["validation_score"], default=None)
     if not successful:
         raise RuntimeError("no trading-replay-eligible iterations; inspect persisted trial metrics")
     baseline = successful[0]
     improvement = (float(best["validation_score"]) - float(baseline["validation_score"])
                    if best is not None and baseline is not None else None)
     return {"status": "ITERATIONS_COMPLETE", "strategy": strategy,
-            "run_id": run_id, "iterations": len(history), "successful": sum(h["status"] == "COMPLETE" for h in history),
+            "run_id": run_id, "iterations": len(history), "successful": len(successful),
             "baseline_score": baseline["validation_score"] if baseline else None,
             "best_score": best["validation_score"] if best else None,
             "improvement_vs_first_successful": improvement,

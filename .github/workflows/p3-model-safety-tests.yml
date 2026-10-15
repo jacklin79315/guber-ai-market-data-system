@@ -6,6 +6,7 @@ on:
       - 'p3/**'
       - 'tests/test_model_*.py'
       - 'tests/test_training_registry.py'
+      - 'tests/test_champion_challenger.py'
       - '.github/workflows/p3-model-safety-tests.yml'
   pull_request:
     paths:

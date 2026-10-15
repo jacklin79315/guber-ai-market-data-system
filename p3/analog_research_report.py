@@ -62,12 +62,20 @@ def main():
     # Otherwise 1h/4h strategies with horizons >= 40 bars cannot settle.
     if len(snapshots) < evaluation_bars + holding + 100:
         raise SystemExit("Insufficient mature evaluation snapshots")
-    evaluation_start_ms = snapshots[-(evaluation_bars + holding)]["timestamp_ms"]
-    evaluation_end_ms = snapshots[-(holding + 1)]["timestamp_ms"]
+    # Historical backfill: shift a fixed-size OOS window backwards by N bars.
+    # A window is only evaluated when its full future holding horizon exists.
+    evaluation_offset_bars = int(os.getenv("ANALOG_EVALUATION_OFFSET_BARS", "0"))
+    if evaluation_offset_bars < 0:
+        raise SystemExit("Evaluation offset must be nonnegative")
+    if len(snapshots) < evaluation_bars + holding + evaluation_offset_bars + 100:
+        raise SystemExit("Insufficient history for requested backfill window")
+    evaluation_start_ms = snapshots[-(evaluation_bars + holding + evaluation_offset_bars)]["timestamp_ms"]
+    evaluation_end_ms = snapshots[-(holding + evaluation_offset_bars + 1)]["timestamp_ms"]
     print(json.dumps({"status": "STARTED", "symbol": symbol, "strategy": strategy, "timeframe": timeframe,
                       "feature_rows": len(snapshots), "native_candles": len(candles),
                       "history_mode": history_mode, "first_feature_time_ms": snapshots[0]["timestamp_ms"],
                       "evaluation_bars": evaluation_bars,
+                      "evaluation_offset_bars": evaluation_offset_bars,
                       "research_only": True, "auto_trade_enabled": False}), flush=True)
     reports = {}
     exploration = os.getenv("ANALOG_EXPLORATION", "false").lower() == "true"
@@ -204,6 +212,7 @@ def main():
                                 "analog_by_direction": analog_direction_seconds,
                                 "paper_learning": paper_learning_seconds},
         "evaluation_window_bars": evaluation_bars,
+        "evaluation_offset_bars": evaluation_offset_bars,
         "fixed_plan": {"stop_pct": stop_pct, "target_pct": target_pct,
                        "max_holding_bars": holding, "fee_rate": fee_rate,
                        "slippage_rate": slippage_rate, "k": 100, "min_samples": 30},

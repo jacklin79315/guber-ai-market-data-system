@@ -59,6 +59,8 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
         decision_result.get('price_range_predictions', []))
     from .walk_forward_diagnostics import classify_research_evidence
     evidence_status = classify_research_evidence(prediction_coverage, direction_diagnosis, structure_diagnosis, trade_rows)
+    from .walk_forward_diagnostics import audit_severe_drawdown
+    severe_audit = audit_severe_drawdown(replay)
     diagnosis = diagnose_drawdown(replay)
     eligible_diagnosis = diagnose_eligible_trades(replay)
     return {
@@ -70,6 +72,7 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
         "research_decisions": len(decisions),
         "research_trading_metrics": metrics,
         "drawdown_failure_diagnosis": diagnosis,
+        "severe_drawdown_audit": severe_audit,
         "eligible_trade_diagnosis": eligible_diagnosis,
         "structure_prediction_diagnostics": structure_diagnosis,
         "direction_prediction_diagnostics": direction_diagnosis,

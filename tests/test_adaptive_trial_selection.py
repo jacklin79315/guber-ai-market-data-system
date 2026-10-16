@@ -17,9 +17,9 @@ class AdaptiveTrialSelectionTests(unittest.TestCase):
 
     def test_feedback_changes_next_trial(self):
         history = [{"params": self.grid[0], "status": "COMPLETE",
-                    "validation_eligible": True, "validation_score": 1.0},
+                    "validation_eligible": True, "validation_score": 1.0, "validation_drawdown_percent": 8, "validation_annualized_return_percent": 12, "validation_win_rate_percent": 75, "validation_mean_score_q": 68},
                    {"params": self.grid[3], "status": "COMPLETE",
-                    "validation_eligible": True, "validation_score": 9.0}]
+                    "validation_eligible": True, "validation_score": 9.0, "validation_drawdown_percent": 8, "validation_annualized_return_percent": 15, "validation_win_rate_percent": 75, "validation_mean_score_q": 68}]
         self.assertEqual(next_candidate(self.grid, history), self.grid[2])
 
     def test_never_repeat_tried_candidate(self):

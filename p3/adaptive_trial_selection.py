@@ -48,10 +48,10 @@ def next_layer_candidate(trials):
     """
     eligible = [t for t in trials if t.get("status") == "COMPLETE"
                 and t.get("validation_eligible") is True
-                and t.get("validation_score") is not None]
+                and validated_rank(t) is not None]
     if not eligible:
         return None
-    best = max(eligible, key=lambda t: float(t["validation_score"]))
+    best = max(eligible, key=validated_rank)
     params = best["params"]
     def layer_value(layer, name):
         return params.get(layer + "_" + name, params.get(name))

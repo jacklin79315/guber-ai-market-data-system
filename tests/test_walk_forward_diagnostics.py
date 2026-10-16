@@ -60,6 +60,11 @@ class EligibleTradeDiagnosisTests(unittest.TestCase):
         self.assertEqual(context["unmatched_trades"], 0)
         self.assertEqual(context["mean_planned_rr"], 2.5)
         self.assertEqual(context["entry_bar_exit_unresolved"], 1)
+        group = diagnose_eligible_trades(replay)["entry_condition_groups"]["LONG:ENTRY_BAR_UNRESOLVED"]
+        self.assertEqual(group["trades"], 1)
+        self.assertEqual(group["losses"], 1)
+        self.assertEqual(group["stops"], 1)
+        self.assertTrue(group["sample_size_warning"])
 
     def test_high_drawdown_excluded_from_learning_evidence(self):
         for dd in (35.01, 40, 40.01, 90):

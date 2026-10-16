@@ -191,3 +191,28 @@ def trade_prediction_rows(replay, direction_predictions, structure_predictions):
             "forecast_pair_complete": bool(direction) and bool(structure),
         })
     return rows
+
+
+def classify_research_evidence(coverage, direction, structure, trades):
+    """Conservative evidence routing, not a causal diagnosis or promotion."""
+    total = coverage.get("entry_events", 0)
+    paired = coverage.get("matched_both", 0)
+    if not total or paired != total:
+        return {"status": "WAIT", "reason": "INCOMPLETE_TRADE_FORECAST_LINKAGE",
+                "eligible_for_candidate_selection": False}
+    if not trades or any(not r.get("forecast_pair_complete") for r in trades):
+        return {"status": "WAIT", "reason": "INCOMPLETE_CLOSED_TRADE_RECORDS",
+                "eligible_for_candidate_selection": False}
+    d_ok = (direction.get("status") == "RESEARCH_DIRECTION_EVALUATION"
+            and direction.get("matched_predictions", 0) >= 5)
+    s_ok = (structure.get("status") == "RESEARCH_FORECAST_EVALUATION"
+            and structure.get("matched_predictions", 0) >= 5)
+    if not d_ok or not s_ok:
+        return {"status": "WAIT", "reason": "INSUFFICIENT_MATURED_MODEL_LABELS",
+                "eligible_for_candidate_selection": False}
+    return {"status": "EVIDENCE_READY_FOR_COMPARATIVE_RESEARCH",
+            "reason": "BOTH_MODEL_ERRORS_AND_TRADE_LINKAGE_AVAILABLE",
+            "direction_error_rate_percent": direction["direction_error_rate_percent"],
+            "structure_mean_absolute_range_error": structure["mean_absolute_range_error"],
+            "eligible_for_candidate_selection": False,
+            "limitations": "No causal attribution, benchmark superiority or independent holdout."}

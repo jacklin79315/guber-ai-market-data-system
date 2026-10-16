@@ -2,6 +2,7 @@
 
 Only eligible trade feedback can anchor new candidates. No holdout or live orders.
 """
+import math
 from .walk_forward_feedback import feedback_rank, diagnose_feedback_hypothesis
 
 ITER_VALUES = (60, 80, 100, 120, 160, 200)
@@ -65,25 +66,35 @@ def next_feedback_candidate(history):
 
 
 def diagnose_structure_evidence(history):
-    """Audit observed stop exits for eligible trials; not a causal explanation."""
+    """Require actual price-range prediction error, not merely stop exits.
+
+    Stop events describe execution outcomes and cannot distinguish a bad
+    forecast from a valid forecast stopped by the market path.
+    """
     eligible = [row for row in history
                 if feedback_rank(row.get("metrics") or {}) is not None
                 and _valid_params(row.get("params"))]
     if not eligible:
         return {"status": "NO_ELIGIBLE_FEEDBACK"}
     best = max(eligible, key=lambda row: feedback_rank(row["metrics"]))
-    evidence = best.get("eligible_trade_diagnosis") or {}
-    groups = evidence.get("by_direction") or {}
-    count = sum(int(g.get("closed", 0)) for g in groups.values())
-    stops = sum(int(g.get("stop_losses", 0)) for g in groups.values())
-    if count < 5 or stops == 0:
-        return {"status": "INSUFFICIENT_STRUCTURE_EVIDENCE",
-                "observed_exits": count, "stop_exits": stops}
+    evidence = best.get("structure_prediction_diagnostics")
+    if not isinstance(evidence, dict):
+        return {"status": "MISSING_STRUCTURE_PREDICTION_EVIDENCE",
+                "source_trial_index": best.get("trial_index"),
+                "limitations": "Stop-loss events do not measure price-range forecast error."}
+    count = evidence.get("matched_predictions")
+    error = evidence.get("mean_absolute_range_error")
+    if (type(count) is not int or count < 5
+            or type(error) not in (int, float)
+            or not math.isfinite(error) or error < 0):
+        return {"status": "INSUFFICIENT_STRUCTURE_PREDICTION_EVIDENCE",
+                "source_trial_index": best.get("trial_index")}
     return {"status": "STRUCTURE_HYPOTHESIS_ONLY",
             "source_trial_index": best.get("trial_index"),
-            "observed_exits": count, "stop_exits": stops,
+            "matched_predictions": count,
+            "mean_absolute_range_error": error,
             "hypothesis": "REVIEW_PREDICTED_PRICE_RANGES",
-            "limitations": "Stop exits alone do not prove price-model error."}
+            "limitations": "Forecast error is descriptive, not proof that retuning improves trades."}
 
 
 def next_structure_candidate(history):

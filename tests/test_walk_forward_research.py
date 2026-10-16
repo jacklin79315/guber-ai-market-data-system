@@ -22,7 +22,7 @@ class ResearchWindowTests(unittest.TestCase):
     def test_rejects_month_of_history_as_two_years(self):
         start, end = research_window(ms(2026, 10, 1))
         candle = {"close_time": start + 900000 - 1}
-        with self.assertRaisesRegex(ValueError, "insufficient 24-month"):
+        with self.assertRaisesRegex(ValueError, "invalid 24-month native continuity/alignment"):
             check_research_coverage([candle], [candle], (start, end),
                                     timeframe="15m")
 

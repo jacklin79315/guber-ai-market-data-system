@@ -37,7 +37,7 @@ def research_rank(metrics):
     return tuple(values)
 
 
-def select_research_candidate(history, candidates=DEFAULT_CANDIDATES):
+def select_research_candidate(history, candidates=DEFAULT_CANDIDATES, symbol=None):
     """Choose an untried candidate, anchored to the best *trading* result."""
     seen = {tuple(sorted(row["params"].items())) for row in history}
     remaining = [dict(p) for p in candidates
@@ -68,7 +68,7 @@ def run_research_iterations(candles, features, strategy, research, *,
             break
         result = replay_walk_forward_research(
             candles, features, strategy, research, params=params,
-            fee_rate=fee_rate, slippage_rate=slippage_rate)
+            fee_rate=fee_rate, slippage_rate=slippage_rate, symbol=symbol)
         metrics = result["research_trading_metrics"]
         rank = research_rank(metrics)
         previous = history[-1] if history else None

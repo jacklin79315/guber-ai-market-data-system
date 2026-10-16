@@ -25,7 +25,7 @@ class CandidateGenerationTests(unittest.TestCase):
                    "slippage_rate": 0.001, "data_fingerprint": "same"}
         anchor.update(context)
         candidate.update(context)
-        candidate["metrics"]["annualized_return_percent"] = -4
+        candidate["metrics"] = dict(candidate["metrics"], annualized_return_percent=-4)
         result = assess_candidate_research(anchor, candidate)
         self.assertEqual(result["status"], "WAIT")
         self.assertFalse(result["eligible_for_promotion"])

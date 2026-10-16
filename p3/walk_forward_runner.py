@@ -16,6 +16,7 @@ def run_four_strategy_research(db, *, symbol, holdout_start_ms,
                                iterations=5):
     research = research_window(holdout_start_ms)
     fee_rate = load_fee_rate(db)
+    # Research results remain in memory and logs; no database writes.
     results = {}
     for strategy, timeframe in STRATEGY_TIMEFRAMES.items():
         candles = load_native_candles(db, symbol, timeframe,

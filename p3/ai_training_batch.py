@@ -16,7 +16,7 @@ from .fee_schedule import load_fee_rate
 from .training_settings import load_training_settings
 from .iterative_generation import propose_generation
 from .generation_evaluator import compare_current_generation
-from .adaptive_trial_selection import next_candidate
+from .adaptive_trial_selection import next_candidate, validated_rank
 from .training_data_quality import validate_training_history
 
 PARAMETERS = tuple(
@@ -30,9 +30,9 @@ assert len(PARAMETERS) == 25
 
 def rank_validation_trials(trials):
     """Only independent validation scores determine research ranking."""
-    eligible = [t for t in trials if t.get("validation_eligible")]
+    eligible = [t for t in trials if validated_rank(t) is not None]
     return sorted(eligible, key=lambda t: (
-        -t["validation_score"], t["trial_index"]))
+        tuple(-v for v in validated_rank(t)), t["trial_index"]))
 
 
 def choose_generation_parameters(db, symbol, strategy):
@@ -169,6 +169,10 @@ def run_batch(db, *, symbol, strategy, years):
                 "validation_eligible": winner is not None,
                 "validation_score": (winner["return_percent"] - winner["drawdown_percent"])
                                     if winner else None,
+                "validation_annualized_return_percent": winner["annualized_return_percent"] if winner else None,
+                "validation_win_rate_percent": winner["win_rate_percent"] if winner else None,
+                "validation_mean_score_q": winner["mean_score_q"] if winner else None,
+                "validation_drawdown_percent": winner["drawdown_percent"] if winner else None,
                 "selected_threshold": selection["selected_threshold"],
                 "validation_candidates": selection["candidates"],
                 "training_samples": trained["coverage"]["train"]["samples"],
@@ -192,6 +196,9 @@ def run_batch(db, *, symbol, strategy, years):
             "validation_return_percent": winner["return_percent"] if winner else None,
             "validation_drawdown_percent": winner["drawdown_percent"] if winner else None,
             "validation_trades": winner["closed_trades"] if winner else None,
+            "validation_annualized_return_percent": record.get("validation_annualized_return_percent"),
+            "validation_win_rate_percent": record.get("validation_win_rate_percent"),
+            "validation_mean_score_q": record.get("validation_mean_score_q"),
             "selected_threshold": record.get("selected_threshold"),
             "training_samples": record.get("training_samples"),
             "validation_samples": record.get("validation_samples"),

@@ -87,6 +87,7 @@ def run_research_iterations(candles, features, strategy, research, *,
         metrics = result["research_trading_metrics"]
         history.append({
             "drawdown_failure_diagnosis": result.get("drawdown_failure_diagnosis"),
+            "eligible_trade_diagnosis": result.get("eligible_trade_diagnosis"),
             "trial_index": index + 1, "params": params, "metrics": metrics,
             "research_rank": research_rank(metrics),
             "feedback_rank": feedback_rank(metrics),

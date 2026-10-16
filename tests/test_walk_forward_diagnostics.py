@@ -1,5 +1,5 @@
 import unittest
-from p3.walk_forward_diagnostics import diagnose_drawdown
+from p3.walk_forward_diagnostics import diagnose_drawdown, diagnose_eligible_trades
 
 
 class DrawdownDiagnosisTests(unittest.TestCase):
@@ -27,6 +27,30 @@ class DrawdownDiagnosisTests(unittest.TestCase):
             self.assertEqual(result["loss_exit_events"], 1)
             self.assertEqual(result["stop_loss_exit_events"], 1)
             self.assertEqual(result["max_drawdown_episode"]["open_lots_at_trough"], 3)
+
+
+class EligibleTradeDiagnosisTests(unittest.TestCase):
+    def test_directional_evidence_and_missing_side(self):
+        replay = {"metrics": {"max_close_to_close_drawdown_percent": 20,
+                              "signal_counts": {"INSUFFICIENT_CASH": 4,
+                                                "NOT_FILLED": 3}},
+                  "events": [{"type": "EXIT", "side": "LONG", "net_pnl": -12, "reason": "SL"},
+                             {"type": "EXIT", "side": "LONG", "net_pnl": 20, "reason": "TP"},
+                             {"type": "EXIT", "side": "SHORT", "net_pnl": -5, "reason": "SL"},
+                             {"type": "EXIT", "net_pnl": -1, "reason": "SL"},
+                             {"type": "BACKTEST_END_SETTLEMENT", "side": "LONG", "net_pnl": -2}]}
+        result = diagnose_eligible_trades(replay)
+        self.assertEqual(result["closed_trade_events"], 4)
+        self.assertEqual(result["by_direction"]["LONG"]["win_rate_percent"], 50)
+        self.assertEqual(result["by_direction"]["SHORT"]["losses"], 1)
+        self.assertEqual(result["missing_direction_events"], 1)
+        self.assertEqual(result["insufficient_cash_signals"], 4)
+        self.assertFalse(result["eligible_for_candidate_selection"])
+
+    def test_high_drawdown_excluded_from_learning_evidence(self):
+        for dd in (35.01, 40, 40.01, 90):
+            self.assertIsNone(diagnose_eligible_trades({"metrics": {
+                "max_close_to_close_drawdown_percent": dd}, "events": []}))
 
 
 if __name__ == "__main__":

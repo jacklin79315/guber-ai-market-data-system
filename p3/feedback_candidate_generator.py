@@ -3,7 +3,7 @@
 Only eligible trade feedback can anchor new candidates. No holdout or live orders.
 """
 import math
-from .walk_forward_feedback import feedback_rank, exploration_rank, diagnose_feedback_hypothesis
+from .walk_forward_feedback import exploration_rank, diagnose_feedback_hypothesis
 
 ITER_VALUES = (60, 80, 100, 120, 160, 200)
 RATE_VALUES = (0.025, 0.05, 0.10)
@@ -86,7 +86,7 @@ def diagnose_structure_evidence(history):
                 and _valid_params(row.get("params"))]
     if not eligible:
         return {"status": "NO_ELIGIBLE_FEEDBACK"}
-    best = max(eligible, key=lambda row: feedback_rank(row["metrics"]))
+    best = max(eligible, key=lambda row: exploration_rank(row["metrics"]))
     evidence = best.get("structure_prediction_diagnostics")
     if not isinstance(evidence, dict):
         return {"status": "MISSING_STRUCTURE_PREDICTION_EVIDENCE",

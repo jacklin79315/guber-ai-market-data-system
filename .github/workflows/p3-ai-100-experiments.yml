@@ -92,13 +92,13 @@ jobs:
                       out.write('No completed iteration results were found; inspect the job log.\n')
                   else:
                       completed = [x for x in results if x['status'] == 'COMPLETE']
-                      eligible = [x for x in completed if x.get('validation_eligible') is True and x.get('validation_score') is not None]
+                      from p3.adaptive_trial_selection import validated_rank
+                      eligible = [x for x in completed if validated_rank(x) is not None]
                       out.write(f"\nCompleted {len(completed)} of {len(results)} iterations.\n")
                       if eligible:
                           first = eligible[0]
-                          best = max(eligible, key=lambda x: x['validation_score'])
-                          gain = best['validation_score'] - first['validation_score']
-                          out.write(f"\nFirst successful score: {first['validation_score']:.6f}; best score: {best['validation_score']:.6f}; gain: {gain:+.6f}.\n")
+                          best = max(eligible, key=validated_rank)
+                          out.write(f"\nFirst eligible annualized/win/quality: {validated_rank(first)}; best: {validated_rank(best)}.\n")
                           out.write("\nThese are validation-only trading replay results, not holdout or live-trading proof.\n")
                       else:
                           out.write("\nNo validation-eligible trading models; review the recorded replay metrics.\n")

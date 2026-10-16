@@ -66,6 +66,44 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(result["research_summary"]["candidate_trials"], 1)
         self.assertEqual(result["research_summary"]["inconclusive_candidates"], 1)
 
+    def test_severe_drawdown_can_explore_but_not_qualify(self):
+        from p3.walk_forward_feedback import feedback_rank, exploration_rank
+        from p3.feedback_candidate_generator import next_feedback_candidate
+        metrics = dict(row(dd=90)["metrics"], ambiguous_exit_count=0)
+        self.assertIsNone(feedback_rank(metrics))
+        self.assertIsNotNone(exploration_rank(metrics))
+        history = [{"trial_index": 1, "params": dict(DEFAULT_LAYER_PARAMS),
+                    "metrics": metrics,
+                    "direction_prediction_diagnostics": {
+                        "matched_predictions": 100,
+                        "direction_error_rate_percent": 55}}]
+        proposal = next_feedback_candidate(history)
+        self.assertEqual(proposal["status"], "CANDIDATE_READY")
+        self.assertFalse(proposal["eligible_for_promotion"])
+
+    def test_severe_drawdown_runs_bounded_candidate_research(self):
+        candles = [{"close_time": 10, "close": 100}]
+        features = [{"close_time": 10, "close_price": 100}]
+        def fake_replay(*args, **kwargs):
+            return {"research_trading_metrics": dict(row(dd=90)["metrics"]),
+                    "research_evidence_status": {
+                        "status": "EVIDENCE_READY_FOR_COMPARATIVE_RESEARCH"},
+                    "direction_prediction_diagnostics": {
+                        "matched_predictions": 100, "direction_error_rate_percent": 55},
+                    "training_checkpoints": []}
+        with patch("p3.feedback_candidate_research.replay_walk_forward_research",
+                   side_effect=fake_replay) as replay:
+            result = run_feedback_candidate_research(
+                candles, features, "INTRADAY", (1, 20),
+                symbol="BTCUSDT", fee_rate=0.001, slippage_rate=0.001,
+                max_new_candidates=2)
+        self.assertEqual(replay.call_count, 3)
+        self.assertEqual(result["new_candidates_run"], 2)
+        self.assertTrue(all(not t["eligible_for_promotion"]
+                            for t in result["iterations"]))
+        self.assertTrue(all(t["feedback_rank"] is None
+                            for t in result["iterations"]))
+
     def test_batch_rejects_budget_above_ten(self):
         with self.assertRaises(ValueError):
             run_feedback_candidate_research([], [], "INTRADAY", (1, 20),

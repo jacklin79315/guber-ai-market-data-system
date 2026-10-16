@@ -29,3 +29,12 @@
 
 ## 結論
 P0.1～P0.4 均為**部分通過**，P0 尚不可封版。保留原始行情與指標資料，不修改排程、服務、資料庫表或任務紀錄。
+
+
+## 2026-10-17 追加驗收與處理結果
+- 已核對 Railway 重啟時間：2026-10-16T23:05:46Z；22 筆 RUNNING 全部在該時間前開始，屬不可能由新容器繼續執行的舊任務。
+- 已在 Supabase 將這 22 筆任務結案為 FAILED，記錄「collector restart interrupted」原因；保留歷史，沒有修改行情或指標資料。回查：RUNNING 0、FAILED 30、SUCCEEDED 1878。FAILED 中原本 8 筆為歷史 451，新增 22 筆為中斷結案，不代表 30 個當前故障。
+- 28 組 raw_candles 均存在；使用每組相鄰 open_time 的窗口檢查，**28/28 組缺口數均為 0**。OHLC 合法性檢查違規 0 筆；data_quality_issues 未解決 0 筆。仍需外部來源抽樣與收盤對齊驗證。
+- 28 組 market_features 均存在，與 raw_candles 同鍵對齊的孤兒特徵 0 筆；sma_200 為 NULL 的 feature 0 筆。每組前 200 根 raw 未寫入 feature，與既定暖機設計一致。指標公式獨立重算仍待驗收。
+- 三個 public SECURITY DEFINER RPC 確認 authenticated 有執行權限、anon 無權限；三個函式原始碼均有 auth.uid() 及 app_user_roles 管理員檢查。安全 Advisor 警告仍存在，需評估是否收回舊 RPC 權限或留待前端重建；不可單憑警告判定已被非管理員繞過。
+- ai_v2 的資金上限、bundle role 與 active bundle 三類 trigger 均存在，但尚未執行隔離交易的負向測試，**P0.1 尚未封版**。

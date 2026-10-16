@@ -130,8 +130,10 @@ def run_recent(sym, interval):
         a,b,c=save(sym,interval,closed,now)
         finish(jid,"SUCCEEDED",a,b,c)
         LOG.info("recent %s %s inserted=%s duplicate=%s issues=%s",sym,interval,a,b,c)
+        return True
     except Exception as e:
         finish(jid,"FAILED",error=str(e)[:2000]); LOG.exception("recent %s %s",sym,interval)
+        return False
 
 def run_backfill(sym, interval, years, kind):
     jid=job(sym,interval,kind); a=b=c=0
@@ -154,8 +156,10 @@ def run_backfill(sym, interval, years, kind):
             time.sleep(0.15)
         finish(jid,"SUCCEEDED",a,b,c)
         LOG.info("%s %s %s inserted=%s duplicate=%s issues=%s",kind,sym,interval,a,b,c)
+        return True
     except Exception as e:
         finish(jid,"FAILED",a,b,c,str(e)[:2000]); LOG.exception("%s %s %s",kind,sym,interval)
+        return False
 
 def completed_initial(sym, interval, requested_at):
     """Use durable successful jobs to resume initial backfills after restart."""

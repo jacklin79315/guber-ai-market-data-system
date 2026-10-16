@@ -1,5 +1,5 @@
 import unittest
-from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate
+from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate
 
 
 def row(dd=10):
@@ -18,6 +18,18 @@ class CandidateGenerationTests(unittest.TestCase):
     def test_rejects_disqualified_feedback(self):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],
                          "NO_ELIGIBLE_FEEDBACK")
+
+    def test_structure_requires_evidence(self):
+        self.assertEqual(next_structure_candidate([row()])["status"],
+                         "INSUFFICIENT_STRUCTURE_EVIDENCE")
+
+    def test_structure_changes_only_structure_parameter(self):
+        source = row()
+        source["eligible_trade_diagnosis"]["by_direction"]["LONG"]["stop_losses"] = 5
+        choice = next_structure_candidate([source])
+        self.assertEqual(choice["status"], "CANDIDATE_READY")
+        self.assertEqual(choice["target_layer"], "STRUCTURE")
+        self.assertTrue(choice["changed_field"].startswith("structure_"))
 
     def test_changes_only_one_approved_parameter(self):
         choice = next_feedback_candidate([row()])

@@ -127,6 +127,17 @@ jobs:
                               for label, group in sorted((diagnostic.get(groups_key) or {}).items()):
                                   out.write(f"| {label} | {group['closed']} | {group['win_rate_percent']:.2f} | {group['net_pnl']:.2f} |\\n")
                               out.write('\\nDescriptive association only; not causal evidence or promotion eligibility.\\n')
+                      for trial in result['iterations']:
+                          audit = trial.get('matured_trade_forecast_audit') or {}
+                          if not audit:
+                              continue
+                          out.write(f"\\n### Matured forecast versus trade outcome: trial {trial['trial_index']}\\n\\n")
+                          out.write(f"Matched: {audit.get('matched_trades')}; skipped: {audit.get('skipped')}.\\n\\n")
+                          out.write('| Direction / realized range | Trades | Win rate % | Net PnL | Mean planned RR |\\n')
+                          out.write('|---|---:|---:|---:|---:|\\n')
+                          for label, group in sorted((audit.get('by_direction_and_range_accuracy') or {}).items()):
+                              out.write(f"| {label} | {group['closed']} | {group['win_rate_percent']:.2f} | {group['net_pnl']:.2f} | {group['mean_planned_rr']} |\\n")
+                          out.write('\\nMatured research labels only; no holdout, causal attribution, or candidate selection.\\n')
                       out.write('\nHoldout untouched; research candidates are not qualified for promotion.\n')
                   if not results:
                       out.write('No completed research report.\n')

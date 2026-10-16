@@ -81,6 +81,7 @@ def replay_multi_positions(candles_by_symbol, decisions_by_symbol, *,
                         lot_id, lot = filled
                         events.append({"type": "ENTRY", "lot_id": lot_id, "symbol": symbol,
                                        "side": decision.action, "time_ms": lot.entry_time_ms,
+                                       "decision_time_ms": previous["close_time"],
                                        "price": lot.entry_price, "entry_time_estimated": True,
                                        "entry_bar_exit_unresolved": (
                                            bar["low"] <= decision.stop_loss <= bar["high"]

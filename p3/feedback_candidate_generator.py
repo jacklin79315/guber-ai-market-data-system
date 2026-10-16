@@ -39,10 +39,20 @@ def next_feedback_candidate(history):
                 and _valid_params(row.get("params"))]
     if not eligible:
         return {"status": "NO_ELIGIBLE_FEEDBACK", "candidate": None}
-    hypothesis = diagnose_feedback_hypothesis(eligible)
-    if hypothesis["status"] != "TESTABLE_HYPOTHESIS_ONLY":
-        return {"status": hypothesis["status"], "candidate": None}
     best = max(eligible, key=lambda row: feedback_rank(row["metrics"]))
+    evidence = best.get("direction_prediction_diagnostics")
+    if not isinstance(evidence, dict):
+        return {"status": "MISSING_DIRECTION_PREDICTION_EVIDENCE", "candidate": None}
+    count = evidence.get("matched_predictions")
+    error = evidence.get("direction_error_rate_percent")
+    if (type(count) is not int or count < 5
+            or type(error) not in (int, float) or not math.isfinite(error)
+            or not 0 <= error <= 100):
+        return {"status": "INSUFFICIENT_DIRECTION_PREDICTION_EVIDENCE", "candidate": None}
+    hypothesis = {"status": "DIRECTION_HYPOTHESIS_ONLY",
+                  "source_trial_index": best.get("trial_index"),
+                  "matched_predictions": count, "direction_error_rate_percent": error,
+                  "limitations": "Forecast errors do not prove a parameter change will improve trades."}
     anchor = best["params"]
     seen = {tuple(sorted(row["params"].items())) for row in history
             if _valid_params(row.get("params"))}

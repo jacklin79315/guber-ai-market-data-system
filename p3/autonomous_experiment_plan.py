@@ -62,3 +62,35 @@ def compare_research_trials(baseline, candidate):
         "independent_validation_performed": False,
         "eligible_for_promotion": False,
     }
+
+
+def compare_iteration_records(baseline, candidate):
+    """Reject mismatched research contexts before any metric comparison.
+
+    Same strategy/window is necessary but not sufficient: symbol, fees,
+    slippage, and data fingerprints must also be explicitly equal.
+    """
+    if not isinstance(baseline, dict) or not isinstance(candidate, dict):
+        raise ValueError("iteration records must be dictionaries")
+    required = ("strategy", "research_window", "symbol", "fee_rate",
+                "slippage_rate", "data_fingerprint")
+    missing = [key for key in required
+               if key not in baseline or key not in candidate
+               or baseline[key] is None or candidate[key] is None]
+    if missing:
+        return {"status": "BLOCKED_MISSING_COMPARISON_CONTEXT",
+                "missing_context": missing,
+                "candidate_better_in_research": None,
+                "independent_validation_performed": False,
+                "eligible_for_promotion": False}
+    mismatched = [key for key in required if baseline[key] != candidate[key]]
+    if mismatched:
+        return {"status": "BLOCKED_MISMATCHED_COMPARISON_CONTEXT",
+                "mismatched_context": mismatched,
+                "candidate_better_in_research": None,
+                "independent_validation_performed": False,
+                "eligible_for_promotion": False}
+    result = compare_research_trials(baseline.get("metrics"),
+                                     candidate.get("metrics"))
+    result["comparison_context_verified"] = True
+    return result

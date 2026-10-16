@@ -45,6 +45,10 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
     structure_diagnosis = diagnose_price_range_predictions(
         decision_result.get("price_range_predictions", []), candles,
         HORIZON_BARS[strategy], research)
+    from .direction_error_diagnostics import diagnose_direction_predictions
+    direction_diagnosis = diagnose_direction_predictions(
+        decision_result.get("direction_predictions", []), candles,
+        HORIZON_BARS[strategy], research)
     diagnosis = diagnose_drawdown(replay)
     eligible_diagnosis = diagnose_eligible_trades(replay)
     return {
@@ -58,6 +62,7 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
         "drawdown_failure_diagnosis": diagnosis,
         "eligible_trade_diagnosis": eligible_diagnosis,
         "structure_prediction_diagnostics": structure_diagnosis,
+        "direction_prediction_diagnostics": direction_diagnosis,
         "research_signal_count": len(replay["signals"]),
         "research_trade_events": len(replay["events"]),
         "research_trades": metrics["normal_closed_trades"],

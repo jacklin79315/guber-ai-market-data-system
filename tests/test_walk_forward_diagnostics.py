@@ -47,6 +47,20 @@ class EligibleTradeDiagnosisTests(unittest.TestCase):
         self.assertEqual(result["insufficient_cash_signals"], 4)
         self.assertFalse(result["eligible_for_candidate_selection"])
 
+    def test_entry_context_joins_by_lot_and_decision_timestamp(self):
+        replay = {"metrics": {"max_close_to_close_drawdown_percent": 10},
+                  "signals": [{"symbol": "BTCUSDT", "decision_time_ms": 100,
+                               "outcome": "FILLED"}],
+                  "events": [{"type": "ENTRY", "lot_id": 7, "symbol": "BTCUSDT",
+                              "decision_time_ms": 100, "entry_bar_exit_unresolved": True},
+                             {"type": "EXIT", "lot_id": 7, "side": "LONG",
+                              "net_pnl": -5, "planned_rr": 2.5, "reason": "SL"}]}
+        context = diagnose_eligible_trades(replay)["entry_context"]
+        self.assertEqual(context["matched_trades"], 1)
+        self.assertEqual(context["unmatched_trades"], 0)
+        self.assertEqual(context["mean_planned_rr"], 2.5)
+        self.assertEqual(context["entry_bar_exit_unresolved"], 1)
+
     def test_high_drawdown_excluded_from_learning_evidence(self):
         for dd in (35.01, 40, 40.01, 90):
             self.assertIsNone(diagnose_eligible_trades({"metrics": {

@@ -34,13 +34,18 @@ def generate_walk_forward_decisions(candles, features, strategy, research, *,
     interval = {"15m": 900000, "1h": 3600000,
                 "4h": 14400000, "1d": 86400000}[timeframe]
     X, y, up, down, times = build_supervised_examples(features, candles, horizon)
+    # Labels are complete only after the actual future candle has closed.
+    # Native close_time is inclusive (interval boundary - 1 ms).
+    by_close = {int(c["close_time"]): i for i, c in enumerate(candles)}
+    maturity = [int(candles[by_close[t] + horizon]["close_time"])
+                for t in times]
     rows = {int(f["close_time"]): f for f in features}
     decisions, checkpoints = {}, []
     start, end = research
     for begin, finish in monthly_checkpoints(start, end):
         # The last label candle must have closed before this model is fitted.
         train_indices = [i for i, t in enumerate(times)
-                         if t + horizon * interval < begin]
+                         if maturity[i] < begin]
         if len(train_indices) < 100 or len(set(y[train_indices])) < 2:
             checkpoints.append({"start_ms": begin, "end_ms": finish,
                                 "training_samples": len(train_indices),
@@ -61,8 +66,7 @@ def generate_walk_forward_decisions(candles, features, strategy, research, *,
         checkpoints.append({"start_ms": begin, "end_ms": finish,
                             "training_samples": len(train_indices),
                             "last_training_label_close_ms": (
-                                max(times[i] for i in train_indices)
-                                + horizon * interval),
+                                max(maturity[i] for i in train_indices)),
                             "decisions": n, "status": "FITTED"})
     return {"decisions": decisions, "checkpoints": checkpoints,
             "research_window": [start, end],

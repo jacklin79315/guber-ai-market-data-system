@@ -38,3 +38,11 @@
 - 不修改 Binance 原始資料、現有抓取／回補排程或 AI 模型。
 - P1 完成需有 iPhone Safari 與桌面截圖或實測證據、功能頁面驗收、登入／權限測試、建置與部署成功證據。
 - P0 依使用者最新決定已封版；P0 歷史未測風險保留但不再當作 P1 啟動阻擋條件。
+
+
+## 6. 實作進度紀錄（2026-10-17）
+- 已提交靜態前端骨架：`frontend/index.html`、`frontend/main.js`、`frontend/styles.css`。
+- 已新增 `frontend/auth.js`、`frontend/config.js`、`frontend/login.css`，包含 Supabase 電郵密碼登入、會話恢復、登出與手機登入版型。
+- **登入功能仍待配置公開金鑰與實際驗證；目前未連接 Supabase，未驗證管理員角色，不能視為 P1.1 完成。** 前端不可使用 secret/service_role key。
+- 原始完整 Logo 目前仍未成功提交 GitHub 二進位資產，頁面引用的 `frontend/assets/uber-logo-original.jpg` 尚不存在；不得使用替代 Logo。
+- 尚未完成實際資料串接、iPhone Safari 實測、建置驗證與正式部署；P1 整體仍為開發中。

@@ -75,6 +75,8 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
         "strategy": strategy, "research_window": list(research),
         "target_layer": target_layer, "iterations": history, "new_candidates_run": max(0, len(history) - 1),
         "stop_reason": stop_reason or "APPROVED_BATCH_BUDGET_REACHED",
+        "next_action": ("WAIT_FOR_EVIDENCE" if (stop_reason or "").startswith("WAIT_")
+                        else "REVIEW_RESEARCH_RESULTS"),
         "latest_hypothesis": diagnose_feedback_hypothesis(history),
         "decision_log": [
             {"trial_index": item["trial_index"],

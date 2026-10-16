@@ -113,6 +113,20 @@ jobs:
                                         f"signal counts: {audit['signal_counts']}; "
                                         f"ambiguous exits: {audit['ambiguous_exit_count']}.\n\n")
                               out.write('Audit only: not eligible for candidate selection or promotion.\n')
+                      for trial in result['iterations']:
+                          for key, title, groups_key in (
+                              ('trade_forecast_association', 'Direction forecast and trade outcomes', 'by_side_and_direction_alignment'),
+                              ('trade_structure_association', 'Predicted range and trade outcomes', 'by_side_and_entry_range')):
+                              diagnostic = trial.get(key) or {}
+                              if not diagnostic:
+                                  continue
+                              out.write(f"\\n### {title}: trial {trial['trial_index']}\\n\\n")
+                              out.write(f"Matched: {diagnostic.get('matched_trades')}; missing/invalid: {diagnostic.get('missing_or_invalid_trades')}.\\n\\n")
+                              out.write('| Group | Trades | Win rate % | Net PnL |\\n')
+                              out.write('|---|---:|---:|---:|\\n')
+                              for label, group in sorted((diagnostic.get(groups_key) or {}).items()):
+                                  out.write(f"| {label} | {group['closed']} | {group['win_rate_percent']:.2f} | {group['net_pnl']:.2f} |\\n")
+                              out.write('\\nDescriptive association only; not causal evidence or promotion eligibility.\\n')
                       out.write('\nHoldout untouched; research candidates are not qualified for promotion.\n')
                   if not results:
                       out.write('No completed research report.\n')

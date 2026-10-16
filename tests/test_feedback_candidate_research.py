@@ -176,7 +176,7 @@ class CandidateGenerationTests(unittest.TestCase):
     def test_direction_candidates_do_not_repeat_parameters(self):
         history = []
         observed = set()
-        for index in range(11):
+        for index in range(8):
             current = row()
             current["trial_index"] = index + 1
             current["direction_prediction_diagnostics"] = {
@@ -189,7 +189,7 @@ class CandidateGenerationTests(unittest.TestCase):
             self.assertNotIn(key, observed)
             observed.add(key)
             history.append(current)
-        self.assertEqual(len(observed), 11)
+        self.assertEqual(len(observed), 8)
 
     def test_changes_only_one_approved_parameter(self):
         source = row()

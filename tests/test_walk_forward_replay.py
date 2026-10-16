@@ -35,6 +35,30 @@ class WalkForwardReplayTests(unittest.TestCase):
         self.assertFalse(result["trade_feedback_optimization_performed"])
         self.assertFalse(result["eligible_for_promotion"])
 
+    def test_research_diagnosis_is_only_for_35_to_40_percent(self):
+        candles = [{"close_time": 1500}]
+        generated = {"decisions": {}, "checkpoints": []}
+        for dd, expected in ((35, False), (38, True), (40, True), (40.01, False)):
+            replayed = {
+                "metrics": {"normal_closed_trades": 0,
+                            "max_close_to_close_drawdown_percent": dd,
+                            "signal_counts": {}},
+                "signals": [], "events": [],
+                "equity_curve": [
+                    {"time_ms": 1, "equity": 10000, "open_lots": 0},
+                    {"time_ms": 2, "equity": 6200, "open_lots": 2}],
+            }
+            with patch("p3.walk_forward_replay.generate_walk_forward_decisions",
+                       return_value=generated), \\
+                 patch("p3.walk_forward_replay.replay_multi_positions",
+                       return_value=replayed):
+                result = replay_walk_forward_research(
+                    candles, [], "INTRADAY", (1000, 4000), symbol="BTCUSDT")
+            diagnosis = result["drawdown_failure_diagnosis"]
+            self.assertEqual(diagnosis is not None, expected)
+            if expected:
+                self.assertFalse(diagnosis["eligible_for_candidate_selection"])
+
     def test_rejects_missing_symbol(self):
         candles = [{"close_time": 1500, "symbol": "BTCUSDT"},
                    {"close_time": 2500, "symbol": "BTCUSDT"}]

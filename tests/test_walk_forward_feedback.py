@@ -37,7 +37,7 @@ class ResearchFeedbackTests(unittest.TestCase):
                        {"research_trading_metrics": metrics(2),
                         "research_trades": 8, "training_checkpoints": []}]):
             result = run_research_iterations([], [], "INTRADAY",
-                                             (100, 200), iterations=2)
+                                             (100, 200), iterations=2, symbol="BTCUSDT")
         self.assertEqual(len(result["iterations"]), 2)
         self.assertTrue(result["feedback_used_for_candidate_selection"])
         self.assertFalse(result["independent_validation_performed"])

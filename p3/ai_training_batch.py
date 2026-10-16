@@ -51,7 +51,7 @@ def choose_generation_parameters(db, symbol, strategy):
             or new_window[1] <= old_window[1]):
         raise ValueError("validation window must advance chronologically")
     history = db("GET", "ai_training_batch_trials", {
-        "select": "trial_index,status,validation_eligible,validation_score,params",
+        "select": "trial_index,status,validation_eligible,validation_score,params,validation_drawdown_percent,validation_annualized_return_percent,validation_win_rate_percent,validation_mean_score_q",
         "run_id": "eq." + parent_run, "symbol": "eq." + symbol,
         "strategy": "eq." + strategy, "order": "trial_index.asc",
         "limit": "100",

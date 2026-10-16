@@ -23,7 +23,7 @@ Five independent specialists:
 Brain adjudicator: APPROVE, RETURN, REJECT, WAIT, with attributable rationale. Diagnostic AI evaluates completed simulations and attributes errors to the responsible specialist. Each specialist may have independently promoted champion/challenger versions. No legacy 0–100 trade scoring.
 
 ## Holding horizon and capital model — revised decision
-The previous four fixed holding horizons and independent capital pools are **historical**, not binding current requirements. Later user decision: shared specialists and dynamically selected holding duration, with no compulsory four-category duration. The former four independent capital pools were explicitly abolished with the fixed horizons; do not reintroduce them. No leverage; no automated real-money order placement.
+The four fixed strategies and four capital pools have been **completely removed**. Do not revive them as execution modes, mandatory classifications, or funding ledgers. Shared specialists determine each proposal's time horizon dynamically. No leverage; no automated real-money order placement.
 
 ## Simulation invariants
 - Decisions only use information available at decision time.
@@ -36,7 +36,7 @@ The previous four fixed holding horizons and independent capital pools are **his
 - Support LONG, SHORT, WAIT in research; short execution must not be represented as executable spot trading without borrow/margin.
 
 ## Diagnostic learning
-Independent diagnostic AI examines immutable specialist predictions and completed simulated outcomes before assessing expert quality. Assign primary/secondary/shared causality with evidence; do not penalize statistically reasonable losses by default. Diagnostic AI itself is evaluated and can learn. No fixed Brain 0–100 decision score. Retain specialist/model quantitative evaluation and diagnostic scoring; historical model selection priority is annualized return > win rate > score, subject to risk eligibility and independent validation. Exact specialist score formulas are not yet verified. Measure predictive calibration, fill quality, risk, opportunity costs and portfolio outcomes. Avoid both indiscriminate WAIT and forced trades.
+Independent diagnostic AI examines immutable specialist predictions and completed simulated outcomes before assessing expert quality. Assign primary/secondary/shared causality with evidence; do not penalize statistically reasonable losses by default. Diagnostic AI itself is evaluated and can learn. No fixed Brain 0–100 decision score. Retain specialist/model quantitative evaluation and diagnostic scoring; annualized return, win rate, and expert diagnostics are observational/evaluation metrics, not a user-approved fixed ranking formula. Exact specialist score formulas are not yet verified. Measure predictive calibration, fill quality, risk, opportunity costs and portfolio outcomes. Avoid both indiscriminate WAIT and forced trades.
 
 ## Training and evaluation
 - Simulate chronological 24-month histories; iterative challenger research up to 100 rounds, not 100 independent identical replays.
@@ -56,3 +56,6 @@ No real-money auto-ordering feature is in scope.
 
 ## Frontend control plane
 Admin login/password and server-enforced authorization for changes to trading pairs, parameters, manual training and future LINE notification toggles. Separate persistent admin identity/roles, settings, training requests, notification settings, audit events, UI preferences. Existing market_data_watchlist remains the authoritative collection list. No direct browser access to service secrets and no frontend mutation of raw_candles. Display unavailable AI controls as disabled until actual backend support exists.
+
+## Explicitly retired criteria
+No annualized return >=10%, win rate >=70%, or score >65 gating. The current architecture is specialists + Brain + independent diagnostics and learning; there are no four predefined strategy tracks or corresponding capital pools.

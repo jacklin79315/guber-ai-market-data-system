@@ -20,13 +20,15 @@ def monthly_checkpoints(start_ms, end_ms):
 
 
 def generate_walk_forward_decisions(candles, features, strategy, research, *,
-                                    params=None, confidence_threshold=0.6):
+                                    params=None, confidence_threshold=0.6, symbol=None):
     """Return decisions and an auditable model-fit timeline.
 
     Future labels may be calculated in memory, but only labels completed
     before each checkpoint are ever passed into model.fit.
     """
     timeframe = STRATEGY_TIMEFRAMES[strategy]
+    if not symbol:
+        raise ValueError("symbol is required for native candle decisions")
     check_research_coverage(candles, features, research, timeframe=timeframe)
     horizon = HORIZON_BARS[strategy]
     interval = {"15m": 900000, "1h": 3600000,
@@ -53,7 +55,7 @@ def generate_walk_forward_decisions(candles, features, strategy, research, *,
             if not begin <= t < finish or t not in rows:
                 continue
             decisions[t] = model.decide(
-                candle["symbol"], rows[t],
+                symbol, rows[t],
                 confidence_threshold=confidence_threshold)
             n += 1
         checkpoints.append({"start_ms": begin, "end_ms": finish,

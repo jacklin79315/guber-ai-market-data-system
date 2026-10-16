@@ -112,6 +112,8 @@ def run_research_iterations(candles, features, strategy, research, *,
     history = []
     for index in range(iterations):
         hypothesis = diagnose_feedback_hypothesis(history)
+        from .autonomous_experiment_plan import propose_experiment
+        experiment_proposal = propose_experiment(hypothesis)
         params, feedback_source = _candidate_choice(history, candidates)
         if params is None:
             break
@@ -124,6 +126,7 @@ def run_research_iterations(candles, features, strategy, research, *,
             "eligible_trade_diagnosis": result.get("eligible_trade_diagnosis"),
             "trial_index": index + 1, "params": params, "metrics": metrics,
             "prior_feedback_hypothesis": hypothesis,
+            "autonomous_experiment_proposal": experiment_proposal,
             "research_rank": research_rank(metrics),
             "feedback_rank": feedback_rank(metrics),
             "selection_basis": ("PRIOR_RESEARCH_TRADING_FEEDBACK" if feedback_source

@@ -1,4 +1,5 @@
 import unittest
+from p3.autonomous_experiment_plan import assess_candidate_research
 from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows, classify_research_evidence
 from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate
 
@@ -16,6 +17,19 @@ def row(dd=10):
 
 
 class CandidateGenerationTests(unittest.TestCase):
+    def test_research_assessment_waits_for_model_evidence(self):
+        anchor = row()
+        candidate = row()
+        context = {"strategy": "INTRADAY", "research_window": [1, 2],
+                   "symbol": "BTCUSDT", "fee_rate": 0.001,
+                   "slippage_rate": 0.001, "data_fingerprint": "same"}
+        anchor.update(context)
+        candidate.update(context)
+        candidate["metrics"]["annualized_return_percent"] = -4
+        result = assess_candidate_research(anchor, candidate)
+        self.assertEqual(result["status"], "WAIT")
+        self.assertFalse(result["eligible_for_promotion"])
+
     def test_evidence_classifier_waits_for_complete_coverage(self):
         result = classify_research_evidence(
             {"entry_events": 2, "matched_both": 1}, {}, {}, [])

@@ -82,6 +82,11 @@ def audit_severe_drawdown(replay):
             "max_drawdown_percent": dd, "closed_trade_events": len(exits),
             "by_direction": groups, "by_exit_reason": reason_groups,
             "gross_winning_pnl": gross_wins, "gross_losing_pnl": gross_losses,
+            "closed_trade_net_pnl": gross_wins + gross_losses,
+            "realized_net_pnl": metrics.get("realized_net_pnl"),
+            "net_pnl_reconciliation_gap": (
+                metrics["realized_net_pnl"] - gross_wins - gross_losses
+                if type(metrics.get("realized_net_pnl")) in (int, float) else None),
             "worst_drawdown_episode": worst,
             "signal_counts": dict(metrics.get("signal_counts") or {}),
             "ambiguous_exit_count": metrics.get("ambiguous_exit_count"),

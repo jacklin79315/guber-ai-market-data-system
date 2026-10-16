@@ -41,6 +41,21 @@ class CandidateGenerationTests(unittest.TestCase):
                 symbol="BTCUSDT", fee_rate=0.001,
                 slippage_rate=0.001, max_new_candidates=11)
 
+    def test_comparable_research_improvement_is_not_promotion(self):
+        anchor, candidate = row(), row()
+        context = {"strategy": "INTRADAY", "research_window": [1, 2],
+                   "symbol": "BTCUSDT", "fee_rate": 0.001,
+                   "slippage_rate": 0.001, "data_fingerprint": "same",
+                   "research_evidence_status": {
+                       "status": "EVIDENCE_READY_FOR_COMPARATIVE_RESEARCH"}}
+        anchor.update(context)
+        candidate.update(context)
+        candidate["metrics"] = dict(candidate["metrics"], annualized_return_percent=-4)
+        result = assess_candidate_research(anchor, candidate)
+        self.assertEqual(result["status"], "IMPROVED_IN_RESEARCH_ONLY")
+        self.assertFalse(result["independent_validation_performed"])
+        self.assertFalse(result["eligible_for_promotion"])
+
     def test_research_assessment_waits_for_model_evidence(self):
         anchor = row()
         candidate = row()

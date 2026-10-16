@@ -27,4 +27,4 @@ jobs:
       - name: Check syntax
         run: python -m compileall -q p3/walk_forward_*.py tests/test_walk_forward_*.py
       - name: Walk-forward unit tests (no database access)
-        run: python -m unittest -v tests.test_walk_forward_research tests.test_walk_forward_decisions tests.test_walk_forward_replay tests.test_walk_forward_feedback tests.test_walk_forward_runner
+        run: python -m unittest -v tests.test_walk_forward_research tests.test_walk_forward_decisions tests.test_walk_forward_replay tests.test_walk_forward_feedback tests.test_walk_forward_diagnostics tests.test_walk_forward_runner

@@ -23,7 +23,7 @@ class WalkForwardReplayTests(unittest.TestCase):
              patch("p3.walk_forward_replay.replay_multi_positions",
                    return_value=replayed) as replay:
             result = replay_walk_forward_research(
-                candles, [], "INTRADAY", (start, end), fee_rate=0.001)
+                candles, [], "INTRADAY", (start, end), fee_rate=0.001, symbol="BTCUSDT")
         self.assertEqual(gen.call_count, 1)
         self.assertEqual(
             [x["close_time"] for x in replay.call_args.args[0]["BTCUSDT"]],
@@ -35,14 +35,14 @@ class WalkForwardReplayTests(unittest.TestCase):
         self.assertFalse(result["trade_feedback_optimization_performed"])
         self.assertFalse(result["eligible_for_promotion"])
 
-    def test_rejects_mixed_symbols(self):
+    def test_rejects_missing_symbol(self):
         candles = [{"close_time": 1500, "symbol": "BTCUSDT"},
-                   {"close_time": 2500, "symbol": "ETHUSDT"}]
+                   {"close_time": 2500, "symbol": "BTCUSDT"}]
         with patch("p3.walk_forward_replay.generate_walk_forward_decisions",
                    return_value={"decisions": {}, "checkpoints": []}):
-            with self.assertRaisesRegex(ValueError, "one symbol"):
+            with self.assertRaisesRegex(ValueError, "symbol must be provided"):
                 replay_walk_forward_research(
-                    candles, [], "INTRADAY", (1000, 4000))
+                    candles, [], "INTRADAY", (1000, 4000), symbol="BTCUSDT")
 
 
 if __name__ == "__main__":

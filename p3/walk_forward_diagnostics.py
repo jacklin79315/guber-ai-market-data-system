@@ -70,12 +70,38 @@ def diagnose_eligible_trades(replay):
     for row in by_side.values():
         row["win_rate_percent"] = (100 * row["wins"] / row["closed"]
                                    if row["closed"] else None)
+    # Pair only actual fills to their originating decision-close timestamp.
+    # This is descriptive context, never an inferred cause of PnL.
+    entries = {e.get("lot_id"): e for e in replay["events"]
+               if e.get("type") == "ENTRY" and e.get("lot_id") is not None}
+    signal_index = {(s.get("symbol"), s.get("decision_time_ms")): s
+                    for s in replay.get("signals", [])
+                    if s.get("outcome") == "FILLED"}
+    context = {"matched_trades": 0, "unmatched_trades": 0,
+               "planned_rr_sum": 0.0, "planned_rr_count": 0,
+               "entry_bar_exit_unresolved": 0}
+    for event in exits:
+        entry = entries.get(event.get("lot_id"))
+        signal = (signal_index.get((entry.get("symbol"), entry.get("decision_time_ms")))
+                  if entry else None)
+        if signal is None:
+            context["unmatched_trades"] += 1
+            continue
+        context["matched_trades"] += 1
+        context["entry_bar_exit_unresolved"] += bool(entry.get("entry_bar_exit_unresolved"))
+        planned_rr = event.get("planned_rr")
+        if type(planned_rr) in (int, float):
+            context["planned_rr_sum"] += planned_rr
+            context["planned_rr_count"] += 1
+    context["mean_planned_rr"] = (context["planned_rr_sum"] / context["planned_rr_count"]
+                                  if context["planned_rr_count"] else None)
     signal_counts = metrics.get("signal_counts") or {}
     return {
         "status": "DESCRIPTIVE_RESEARCH_EVIDENCE",
         "eligible_for_candidate_selection": False,
         "closed_trade_events": len(exits),
         "by_direction": by_side,
+        "entry_context": context,
         "missing_direction_events": missing_side,
         "insufficient_cash_signals": signal_counts.get("INSUFFICIENT_CASH"),
         "not_filled_signals": signal_counts.get("NOT_FILLED"),

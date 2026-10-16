@@ -199,6 +199,22 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(result["by_side_and_direction_alignment"]["SHORT:CONTRARY"]["net_pnl"], 4)
         self.assertFalse(result["eligible_for_candidate_selection"])
 
+    def test_structure_association_groups_entry_range(self):
+        from p3.walk_forward_diagnostics import diagnose_trade_structure_outcomes
+        trades = [
+            {"forecast_pair_complete": True, "side": "LONG", "entry_price": 100,
+             "predicted_lower_bound": 90, "predicted_upper_bound": 110, "net_pnl": 5},
+            {"forecast_pair_complete": True, "side": "SHORT", "entry_price": 120,
+             "predicted_lower_bound": 90, "predicted_upper_bound": 110, "net_pnl": -3},
+            {"forecast_pair_complete": True, "side": "LONG", "entry_price": 100,
+             "predicted_lower_bound": 110, "predicted_upper_bound": 90, "net_pnl": 2}]
+        result = diagnose_trade_structure_outcomes(trades)
+        self.assertEqual(result["matched_trades"], 2)
+        self.assertEqual(result["missing_or_invalid_trades"], 1)
+        self.assertEqual(result["by_side_and_entry_range"]["LONG:WITHIN_PREDICTED_RANGE"]["net_pnl"], 5)
+        self.assertEqual(result["by_side_and_entry_range"]["SHORT:ABOVE_PREDICTED_RANGE"]["net_pnl"], -3)
+        self.assertFalse(result["eligible_for_candidate_selection"])
+
     def test_rejects_disqualified_feedback(self):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],
                          "NO_ELIGIBLE_FEEDBACK")

@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from p3.feedback_candidate_research import run_feedback_candidate_research
 from p3.autonomous_experiment_plan import assess_candidate_research
-from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows, classify_research_evidence, audit_severe_drawdown
+from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows, classify_research_evidence, audit_severe_drawdown, diagnose_trade_prediction_outcomes
 from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate
 
 
@@ -183,6 +183,21 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(audit["normal_trades_reconciliation_gap"], 0)
         self.assertEqual(audit["realized_pnl_after_boundary_reconciliation_gap"], 0)
         self.assertFalse(audit["eligible_for_candidate_selection"])
+
+    def test_trade_forecast_alignment_is_descriptive_only(self):
+        trades = [
+            {"forecast_pair_complete": True, "side": "LONG",
+             "probability_up": 0.8, "net_pnl": -10},
+            {"forecast_pair_complete": True, "side": "SHORT",
+             "probability_up": 0.8, "net_pnl": 4},
+            {"forecast_pair_complete": False, "side": "LONG",
+             "probability_up": None, "net_pnl": 2}]
+        result = diagnose_trade_prediction_outcomes(trades)
+        self.assertEqual(result["matched_trades"], 2)
+        self.assertEqual(result["missing_or_invalid_trades"], 1)
+        self.assertEqual(result["by_side_and_direction_alignment"]["LONG:ALIGNED"]["net_pnl"], -10)
+        self.assertEqual(result["by_side_and_direction_alignment"]["SHORT:CONTRARY"]["net_pnl"], 4)
+        self.assertFalse(result["eligible_for_candidate_selection"])
 
     def test_rejects_disqualified_feedback(self):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],

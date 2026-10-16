@@ -24,7 +24,6 @@ def feedback_rank(metrics):
     if (type(trades) is not int or trades < 5
             or any(type(v) not in (int, float) or not math.isfinite(v) for v in vals)
             or not 0 <= vals[3] <= 100
-            or metrics.get("entry_bars_with_unresolved_exit", 0)
             or metrics.get("ambiguous_exit_count", 0)):
         return None
     annualized, win, quality, drawdown = vals

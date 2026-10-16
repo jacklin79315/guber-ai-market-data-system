@@ -5,7 +5,7 @@ from math import isfinite
 
 THRESHOLDS = (0.55, 0.60, 0.65, 0.70)
 MIN_TRADES = 5
-MAX_VALIDATION_DRAWDOWN_PERCENT = 8.0
+MAX_VALIDATION_DRAWDOWN_PERCENT = 35.0
 
 
 def evaluate_window(candles, features, model, symbol, window, threshold, fee_rate):

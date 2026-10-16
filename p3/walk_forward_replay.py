@@ -39,8 +39,9 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
         settle_at_end=True)
     metrics = replay["metrics"]
     # Diagnostic evidence is retained only for 35%-40% drawdown research runs.
-    from .walk_forward_diagnostics import diagnose_drawdown
+    from .walk_forward_diagnostics import diagnose_drawdown, diagnose_eligible_trades
     diagnosis = diagnose_drawdown(replay)
+    eligible_diagnosis = diagnose_eligible_trades(replay)
     return {
         "strategy": strategy,
         "timeframe": STRATEGY_TIMEFRAMES[strategy],
@@ -50,6 +51,7 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
         "research_decisions": len(decisions),
         "research_trading_metrics": metrics,
         "drawdown_failure_diagnosis": diagnosis,
+        "eligible_trade_diagnosis": eligible_diagnosis,
         "research_signal_count": len(replay["signals"]),
         "research_trade_events": len(replay["events"]),
         "research_trades": metrics["normal_closed_trades"],

@@ -9,6 +9,9 @@ Status: architecture baseline; not a claim that AI training or trading is deploy
 - Native Binance Spot closed K-lines only; independent 15m, 1h, 4h, 1d intervals; no synthetic 5m aggregation.
 - Ingestion/feature computation are separate from AI decision-making. No mutation of raw candles for training.
 
+## Advisory and workflow boundary
+The live system delivers a one-time advisory proposal; user chooses whether to trade. It does not place orders or monitor the user's actual holdings. Historical simulations still track simulated positions for evaluation. Specialist workflow: Entry → Reward → Win Probability / Time → Risk/Position → Brain. Each review can PASS, RETURN, or REJECT. RETURN goes to the original specialist; downstream specialists cannot mutate upstream outputs. Preserve revision and rationale history. Brain may select best one, up to two, or WAIT. Time specialist does not bear direct profit/loss blame.
+
 ## V2 AI roles
 Five independent specialists:
 1. Entry: propose entry price range and directional candidate.
@@ -19,8 +22,8 @@ Five independent specialists:
 
 Brain adjudicator: APPROVE, RETURN, REJECT, WAIT, with attributable rationale. Diagnostic AI evaluates completed simulations and attributes errors to the responsible specialist. Each specialist may have independently promoted champion/challenger versions. No legacy 0–100 trade scoring.
 
-## Four independent strategy horizons
-Intraday; 1–3 days; 1 week; 15–30 days. Each has independent finite capital and accounting; no leverage. No automated real-money order placement.
+## Holding horizon and capital model — revised decision
+The previous four fixed holding horizons and independent capital pools are **historical**, not binding current requirements. Later user decision: shared specialists and dynamically selected holding duration, with no compulsory four-category duration. Whether separate capital ledgers remain useful is unresolved. No leverage; no automated real-money order placement.
 
 ## Simulation invariants
 - Decisions only use information available at decision time.
@@ -31,6 +34,9 @@ Intraday; 1–3 days; 1 week; 15–30 days. Each has independent finite capital 
 - Same symbol, same timeframe: approved open entry ranges must not overlap. Different timeframes remain independent.
 - Model trading costs: spot fees and slippage.
 - Support LONG, SHORT, WAIT in research; short execution must not be represented as executable spot trading without borrow/margin.
+
+## Diagnostic learning
+Independent diagnostic AI examines immutable specialist predictions and completed simulated outcomes before assessing expert quality. Assign primary/secondary/shared causality with evidence; do not penalize statistically reasonable losses by default. Diagnostic AI itself is evaluated and can learn. No fixed 0–100 scoring or old return/failed-trade point rules; measure predictive calibration, fill quality, risk, opportunity costs and portfolio outcomes. Avoid both indiscriminate WAIT and forced trades.
 
 ## Training and evaluation
 - Simulate chronological 24-month histories; iterative challenger research up to 100 rounds, not 100 independent identical replays.
@@ -47,3 +53,6 @@ Intraday; 1–3 days; 1 week; 15–30 days. Each has independent finite capital 
 5. Add read-only training dashboard and monitoring.
 
 No real-money auto-ordering feature is in scope.
+
+## Frontend control plane
+Admin login/password and server-enforced authorization for changes to trading pairs, parameters, manual training and future LINE notification toggles. Separate persistent admin identity/roles, settings, training requests, notification settings, audit events, UI preferences. Existing market_data_watchlist remains the authoritative collection list. No direct browser access to service secrets and no frontend mutation of raw_candles. Display unavailable AI controls as disabled until actual backend support exists.

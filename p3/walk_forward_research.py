@@ -35,18 +35,27 @@ def check_research_coverage(candles, features, research, *, timeframe):
     start, end = research
     if not candles or not features:
         raise ValueError("missing research candles or features")
+    # Native Binance close_time is inclusive: bar ending at UTC boundary
+    # has close_time = boundary - 1 ms. Require every expected bar, not
+    # just matching counts (which can hide internal gaps).
+    expected = set(range(start + interval - 1, end, interval))
     candle_times = {int(c["close_time"]) for c in candles
                     if start <= int(c["close_time"]) < end}
     feature_times = {int(f["close_time"]) for f in features
                      if start <= int(f["close_time"]) < end}
-    expected = (end - start) // interval
-    if len(candle_times) < expected - 1 or len(feature_times) < expected - 1:
+    missing_candles = expected - candle_times
+    missing_features = expected - feature_times
+    unexpected_candles = candle_times - expected
+    unexpected_features = feature_times - expected
+    if (missing_candles or missing_features or unexpected_candles
+            or unexpected_features):
         raise ValueError(
-            f"insufficient 24-month native coverage: timeframe={timeframe}, "
-            f"expected~{expected}, candles={len(candle_times)}, "
-            f"features={len(feature_times)}")
-    if len(candle_times & feature_times) < expected - 1:
-        raise ValueError("research candle/feature timestamps are not aligned")
+            f"invalid 24-month native continuity/alignment: timeframe={timeframe}, "
+            f"expected={len(expected)}, missing_candles={len(missing_candles)}, "
+            f"missing_features={len(missing_features)}, "
+            f"unexpected_candles={len(unexpected_candles)}, "
+            f"unexpected_features={len(unexpected_features)}")
+
     return {"research_start_ms": start, "research_end_ms": end,
             "native_candles": len(candle_times),
             "matched_features": len(candle_times & feature_times)}

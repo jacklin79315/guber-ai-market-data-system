@@ -108,7 +108,7 @@ jobs:
                                   out.write(f"| {reason} | {group['closed']} | {group['net_pnl']:.2f} |\n")
                               out.write(f"\nGross winning PnL: {audit['gross_winning_pnl']:.2f}; "
                                         f"gross losing PnL: {audit['gross_losing_pnl']:.2f}; "
-                                        f"reconciliation gap: {audit.get('net_pnl_reconciliation_gap')}.\n\n")
+                                        f"raw gap: {audit.get('net_pnl_reconciliation_gap')}; boundary settlement: {audit.get('backtest_end_fees_net_pnl')}; adjusted gap: {audit.get('realized_pnl_after_boundary_reconciliation_gap')}.\n\n")
                               out.write(f"Worst episode: {audit.get('worst_drawdown_episode')}; "
                                         f"signal counts: {audit['signal_counts']}; "
                                         f"ambiguous exits: {audit['ambiguous_exit_count']}.\n\n")

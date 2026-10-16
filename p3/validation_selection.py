@@ -1,6 +1,7 @@
 """Validation-only candidate ranking, with an untouched final holdout."""
 from .validation_window_diagnostics import EMBARGO_MS
 from .multi_position_replay import replay_multi_positions
+from math import isfinite
 
 THRESHOLDS = (0.55, 0.60, 0.65, 0.70)
 MIN_TRADES = 5
@@ -79,8 +80,13 @@ def select_threshold(candles, features, model, symbol, validation_window, fee_ra
             "annualized_return_percent": metrics.get("annualized_return_percent"),
             "annualized_mark_to_market_return_percent": metrics.get("annualized_mark_to_market_return_percent"),
         })
-    eligible = [c for c in candidates if c["eligible"]]
-    winner = max(eligible, key=lambda c: (c["return_percent"] - c["drawdown_percent"],
-                                         c["return_percent"], c["threshold"])) if eligible else None
+    # Research ranking uses the agreed priority order; do not promote
+    # candidates with absent/non-finite realized annualized metrics.
+    priority = ("annualized_return_percent", "win_rate_percent", "mean_score_q")
+    eligible = [c for c in candidates if c["eligible"] and
+                all(isinstance(c[k], (int, float)) and not isinstance(c[k], bool)
+                    and isfinite(c[k]) for k in priority)]
+    winner = max(eligible, key=lambda c: tuple(c[k] for k in priority) +
+                 (c["threshold"],)) if eligible else None
     return {"selected_threshold": winner["threshold"] if winner else None,
             "candidates": candidates, "selection_source": "validation_only"}

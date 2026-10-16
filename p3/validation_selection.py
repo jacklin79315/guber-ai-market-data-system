@@ -16,7 +16,7 @@ def evaluate_window(candles, features, model, symbol, window, threshold, fee_rat
     rows = {int(row["close_time"]): row for row in features}
     decisions = {int(c["close_time"]): model.decide(symbol, rows[int(c["close_time"])], confidence_threshold=threshold)
                  for c in selected if int(c["close_time"]) in rows}
-    return replay_multi_positions({symbol: selected}, {symbol: decisions}, fee_rate=fee_rate)
+    return replay_multi_positions({symbol: selected}, {symbol: decisions}, fee_rate=fee_rate, settle_at_end=True)
 
 
 def diagnose_decision_flow(candles, features, model, symbol, window, threshold):
@@ -67,6 +67,9 @@ def select_threshold(candles, features, model, symbol, validation_window, fee_ra
             "threshold": threshold,
             "decision_flow": flow,
             "closed_trades": trades,
+            "normal_closed_trades": metrics.get("normal_closed_trades"),
+            "backtest_end_settlement_count": metrics.get("backtest_end_settlement_count"),
+            "backtest_end_settlement_percent": metrics.get("backtest_end_settlement_percent"),
             "eligible": trades >= MIN_TRADES and not metrics["execution_path_uncertain"] and metrics["max_close_to_close_drawdown_percent"] <= MAX_VALIDATION_DRAWDOWN_PERCENT,
             "return_percent": 100 * (metrics["final_mark_to_market_equity"] / 10000 - 1),
             "drawdown_percent": metrics["max_close_to_close_drawdown_percent"],

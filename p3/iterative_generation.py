@@ -5,6 +5,7 @@ Repeated use of the same validation window is explicitly blocked to prevent
 claiming artificial progress from repeated hyperparameter search.
 """
 import itertools
+from .adaptive_trial_selection import validated_rank
 
 ITERATIONS = (40, 60, 80, 100, 120, 140, 180, 220, 260, 300)
 RATES = (0.015, 0.025, 0.035, 0.05, 0.065, 0.075, 0.1, 0.125, 0.15, 0.175)
@@ -31,12 +32,12 @@ def propose_generation(history, *, current_validation_window,
     evaluated = [row for row in history
                  if row.get("status") == "COMPLETE"
                  and row.get("validation_eligible") is True
-                 and row.get("validation_score") is not None
+                 and validated_rank(row) is not None
                  and isinstance(row.get("params"), dict)]
     if not evaluated:
         return {"status": "WAIT", "reason": "no_eligible_parent", "candidates": []}
     parents = sorted(evaluated, key=lambda row: (
-        -float(row["validation_score"]), int(row.get("trial_index", 0))))[:5]
+        tuple(-v for v in validated_rank(row)), int(row.get("trial_index", 0))))[:5]
     seen = {_key(row["params"]) for row in history if isinstance(row.get("params"), dict)
             and set(row["params"]) >= {"max_iter", "learning_rate"}}
     proposals = []

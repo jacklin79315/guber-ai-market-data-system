@@ -215,6 +215,27 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(result["by_side_and_entry_range"]["SHORT:ABOVE_PREDICTED_RANGE"]["net_pnl"], -3)
         self.assertFalse(result["eligible_for_candidate_selection"])
 
+    def test_matured_trade_forecast_audit_excludes_unmatured_labels(self):
+        from p3.walk_forward_diagnostics import diagnose_trade_matured_forecasts
+        candles = [{"close_time": i, "close": 100 + i,
+                    "high": 101 + i, "low": 99 + i} for i in range(1, 6)]
+        trades = [
+            {"forecast_pair_complete": True, "decision_time_ms": 1,
+             "side": "LONG", "probability_up": 0.8,
+             "predicted_lower_bound": 98, "predicted_upper_bound": 104,
+             "net_pnl": -2, "planned_rr": 2},
+            {"forecast_pair_complete": True, "decision_time_ms": 4,
+             "side": "LONG", "probability_up": 0.8,
+             "predicted_lower_bound": 98, "predicted_upper_bound": 110,
+             "net_pnl": 2}]
+        result = diagnose_trade_matured_forecasts(trades, candles, 2, (1, 5))
+        self.assertEqual(result["matched_trades"], 1)
+        self.assertEqual(result["skipped"]["unmatured_horizon"], 1)
+        group = result["by_direction_and_range_accuracy"]["DIRECTION_CORRECT:RANGE_COVERED"]
+        self.assertEqual(group["net_pnl"], -2)
+        self.assertEqual(group["mean_planned_rr"], 2)
+        self.assertFalse(result["eligible_for_candidate_selection"])
+
     def test_rejects_disqualified_feedback(self):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],
                          "NO_ELIGIBLE_FEEDBACK")

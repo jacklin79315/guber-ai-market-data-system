@@ -8,10 +8,10 @@ class WalkForwardReplayTests(unittest.TestCase):
     def test_replay_passes_only_research_candles_and_preserves_boundaries(self):
         start, end = 1000, 4000
         candles = [
-            {"close_time": 500, "symbol": "BTCUSDT"},
-            {"close_time": 1500, "symbol": "BTCUSDT"},
-            {"close_time": 2500, "symbol": "BTCUSDT"},
-            {"close_time": 4500, "symbol": "BTCUSDT"},
+            {"close_time": 500},
+            {"close_time": 1500},
+            {"close_time": 2500},
+            {"close_time": 4500},
         ]
         generated = {"decisions": {1500: "WAIT", 2500: "WAIT"},
                      "checkpoints": [{"status": "FITTED"}]}
@@ -42,7 +42,7 @@ class WalkForwardReplayTests(unittest.TestCase):
                    return_value={"decisions": {}, "checkpoints": []}):
             with self.assertRaisesRegex(ValueError, "symbol must be provided"):
                 replay_walk_forward_research(
-                    candles, [], "INTRADAY", (1000, 4000), symbol="BTCUSDT")
+                    candles, [], "INTRADAY", (1000, 4000))
 
 
 if __name__ == "__main__":

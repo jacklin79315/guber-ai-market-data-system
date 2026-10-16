@@ -81,6 +81,20 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(proposal["status"], "CANDIDATE_READY")
         self.assertFalse(proposal["eligible_for_promotion"])
 
+    def test_severe_drawdown_structure_candidate_remains_research_only(self):
+        from p3.feedback_candidate_generator import next_structure_candidate
+        source = {"trial_index": 1, "params": dict(DEFAULT_LAYER_PARAMS),
+                  "metrics": dict(row(dd=90)["metrics"]),
+                  "structure_prediction_diagnostics": {
+                      "matched_predictions": 100,
+                      "mean_absolute_range_error": 0.02}}
+        proposal = next_structure_candidate([source])
+        self.assertEqual(proposal["status"], "CANDIDATE_READY")
+        self.assertEqual(proposal["target_layer"], "STRUCTURE")
+        self.assertFalse(proposal["eligible_for_promotion"])
+        self.assertEqual(sum(proposal["candidate"][key] != source["params"][key]
+                             for key in source["params"]), 1)
+
     def test_severe_drawdown_runs_bounded_candidate_research(self):
         candles = [{"close_time": 10, "close": 100}]
         features = [{"close_time": 10, "close_price": 100}]

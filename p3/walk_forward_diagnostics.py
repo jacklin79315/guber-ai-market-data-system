@@ -84,9 +84,20 @@ def audit_severe_drawdown(replay):
             "gross_winning_pnl": gross_wins, "gross_losing_pnl": gross_losses,
             "closed_trade_net_pnl": gross_wins + gross_losses,
             "realized_net_pnl": metrics.get("realized_net_pnl"),
+            "backtest_end_fees_net_pnl": metrics.get("backtest_end_fees_net_pnl"),
+            "normal_trades_net_pnl": metrics.get("normal_trades_net_pnl"),
             "net_pnl_reconciliation_gap": (
                 metrics["realized_net_pnl"] - gross_wins - gross_losses
                 if type(metrics.get("realized_net_pnl")) in (int, float) else None),
+            "normal_trades_reconciliation_gap": (
+                metrics["normal_trades_net_pnl"] - gross_wins - gross_losses
+                if type(metrics.get("normal_trades_net_pnl")) in (int, float) else None),
+            "realized_pnl_after_boundary_reconciliation_gap": (
+                metrics["realized_net_pnl"] - gross_wins - gross_losses
+                - metrics["backtest_end_fees_net_pnl"]
+                if type(metrics.get("realized_net_pnl")) in (int, float)
+                and type(metrics.get("backtest_end_fees_net_pnl")) in (int, float)
+                else None),
             "worst_drawdown_episode": worst,
             "signal_counts": dict(metrics.get("signal_counts") or {}),
             "ambiguous_exit_count": metrics.get("ambiguous_exit_count"),

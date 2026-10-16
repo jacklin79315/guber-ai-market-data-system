@@ -2,7 +2,11 @@ import unittest
 from p3.iterative_generation import propose_generation
 
 PARENT = {"status": "COMPLETE", "validation_eligible": True,
-          "validation_score": 2.0, "trial_index": 1,
+          "validation_score": None, "trial_index": 1,
+          "validation_drawdown_percent": 8,
+          "validation_annualized_return_percent": 20,
+          "validation_win_rate_percent": 75,
+          "validation_mean_score_q": 70,
           "params": {"max_iter": 120, "learning_rate": 0.05}}
 
 

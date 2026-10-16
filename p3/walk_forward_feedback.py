@@ -88,6 +88,10 @@ def run_research_iterations(candles, features, strategy, research, *,
                 max((h for h in history if h["research_rank"] is not None),
                     key=lambda h: h["research_rank"], default={})
                 .get("trial_index")),
-            "feedback_used_for_candidate_selection": any(\n                h["selection_basis"] == "PRIOR_RESEARCH_TRADING_FEEDBACK"\n                and any(research_rank(prev["metrics"]) is not None\n                        for prev in history[:i])\n                for i, h in enumerate(history)),
+            "feedback_used_for_candidate_selection": any(
+                h["selection_basis"] == "PRIOR_RESEARCH_TRADING_FEEDBACK"
+                and any(research_rank(prev["metrics"]) is not None
+                        for prev in history[:i])
+                for i, h in enumerate(history)),
             "independent_validation_performed": False,
             "eligible_for_promotion": False}

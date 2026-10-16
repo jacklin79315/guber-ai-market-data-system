@@ -1,5 +1,5 @@
 import unittest
-from p3.autonomous_experiment_plan import propose_experiment, compare_research_trials, compare_iteration_records
+from p3.autonomous_experiment_plan import propose_experiment, compare_research_trials, compare_iteration_records, research_data_fingerprint
 
 
 def metrics(annualized, dd=12):
@@ -49,6 +49,26 @@ class AutonomousExperimentPlanTests(unittest.TestCase):
             base, {k: v for k, v in candidate.items()
                    if k != "data_fingerprint"})
             ["status"], "BLOCKED_MISSING_COMPARISON_CONTEXT")
+
+    def test_research_fingerprint_ignores_holdout_and_row_order(self):
+        candles = [{"close_time": 120, "close": 2},
+                   {"close_time": 130, "close": 3},
+                   {"close_time": 210, "close": 4}]
+        features = [{"close_time": 120, "rsi": 50},
+                    {"close_time": 130, "rsi": 55},
+                    {"close_time": 210, "rsi": 60}]
+        first = research_data_fingerprint(candles, features, (100, 200))
+        self.assertEqual(first, research_data_fingerprint(
+            list(reversed(candles)), list(reversed(features)), (100, 200)))
+        self.assertEqual(first, research_data_fingerprint(
+            candles[:-1] + [{"close_time": 210, "close": 999}],
+            features, (100, 200)))
+        changed = [dict(features[0], rsi=40)] + features[1:]
+        self.assertNotEqual(first, research_data_fingerprint(
+            candles, changed, (100, 200)))
+        with self.assertRaises(ValueError):
+            research_data_fingerprint(candles + [candles[0]], features,
+                                      (100, 200))
 
     def test_high_drawdown_is_not_a_valid_candidate(self):
         result = compare_research_trials(metrics(-12), metrics(40))

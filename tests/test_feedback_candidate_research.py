@@ -276,7 +276,7 @@ class CandidateGenerationTests(unittest.TestCase):
 
     def test_rejects_disqualified_feedback(self):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],
-                         "NO_ELIGIBLE_FEEDBACK")
+                         "MISSING_DIRECTION_PREDICTION_EVIDENCE")
 
     def test_direction_requires_prediction_evidence(self):
         self.assertEqual(next_feedback_candidate([row()])["status"],

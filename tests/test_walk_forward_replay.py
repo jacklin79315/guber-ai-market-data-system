@@ -49,7 +49,7 @@ class WalkForwardReplayTests(unittest.TestCase):
                     {"time_ms": 2, "equity": 6200, "open_lots": 2}],
             }
             with patch("p3.walk_forward_replay.generate_walk_forward_decisions",
-                       return_value=generated), \\
+                       return_value=generated), \
                  patch("p3.walk_forward_replay.replay_multi_positions",
                        return_value=replayed):
                 result = replay_walk_forward_research(

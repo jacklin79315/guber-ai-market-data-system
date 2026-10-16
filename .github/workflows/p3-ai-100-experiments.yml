@@ -2,14 +2,7 @@ name: P3 24-Month Walk-Forward Research Pilot
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feature/p3b-paper-engine
-    paths:
-      - p3/walk_forward_feedback.py
-      - p3/walk_forward_training_entry.py
-      - tests/test_walk_forward_feedback.py
-      - .github/workflows/p3-ai-100-experiments.yml
+  # Research is manual-only; code pushes run unit tests instead.
 
 concurrency:
   group: p3-ai-research-${{ github.ref }}

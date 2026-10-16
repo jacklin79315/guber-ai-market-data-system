@@ -35,6 +35,12 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(result["new_candidates_run"], 0)
         self.assertEqual(result["stop_reason"], "WAIT_FOR_MODEL_EVIDENCE")
 
+    def test_batch_rejects_budget_above_ten(self):
+        with self.assertRaises(ValueError):
+            run_feedback_candidate_research([], [], "INTRADAY", (1, 20),
+                symbol="BTCUSDT", fee_rate=0.001,
+                slippage_rate=0.001, max_new_candidates=11)
+
     def test_research_assessment_waits_for_model_evidence(self):
         anchor = row()
         candidate = row()

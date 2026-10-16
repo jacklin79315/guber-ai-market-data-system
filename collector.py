@@ -121,6 +121,20 @@ def run_backfill(sym, interval, years, kind):
     except Exception as e:
         finish(jid,"FAILED",a,b,c,str(e)[:2000]); LOG.exception("%s %s %s",kind,sym,interval)
 
+def completed_initial(sym, interval, requested_at):
+    """Use durable successful jobs to resume initial backfills after restart."""
+    rows=db("GET","ingestion_jobs",{
+        "select":"id,completed_at",
+        "symbol":"eq."+sym,
+        "timeframe":"eq."+interval,
+        "job_type":"eq.INITIAL_BACKFILL",
+        "status":"eq.SUCCEEDED",
+        "completed_at":"gte."+requested_at,
+        "order":"completed_at.desc",
+        "limit":"1",
+    })
+    return bool(rows)
+
 def main():
     # In-memory scheduling state; all writes are idempotent, and full audits repeat daily.
     seen_add={}; last_recent=None; last_daily=None
@@ -133,7 +147,11 @@ def main():
                 sym=item["symbol"]; intervals=[i for i in item["intervals"] if i in INTERVAL_MS]
                 marker=(item["id"],item["backfill_requested_at"])
                 if seen_add.get(item["id"])!=marker:
-                    for interval in intervals: run_backfill(sym,interval,item["lookback_years"],"INITIAL_BACKFILL")
+                    for interval in intervals:
+                        if completed_initial(sym, interval, item["backfill_requested_at"]):
+                            LOG.info("INITIAL_BACKFILL already completed %s %s", sym, interval)
+                        else:
+                            run_backfill(sym,interval,item["lookback_years"],"INITIAL_BACKFILL")
                     seen_add[item["id"]]=marker
             tick=(local.date().isoformat(),local.hour,local.minute//15)
             if local.minute%15==0 and tick!=last_recent:

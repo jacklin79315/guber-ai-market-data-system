@@ -138,6 +138,47 @@ def diagnose_trade_prediction_outcomes(trades):
             "limitations": "Prediction direction versus trade outcome is association, not causal attribution."}
 
 
+
+def diagnose_trade_structure_outcomes(trades):
+    """Descriptive entry location relative to predicted price bounds."""
+    groups = {}
+    missing = 0
+    for trade in trades:
+        entry = trade.get("entry_price")
+        low = trade.get("predicted_lower_bound")
+        high = trade.get("predicted_upper_bound")
+        pnl = trade.get("net_pnl")
+        side = trade.get("side")
+        if (not trade.get("forecast_pair_complete")
+                or any(type(v) not in (int, float) for v in (entry, low, high, pnl))
+                or not 0 < low < high or not entry > 0
+                or side not in ("LONG", "SHORT")):
+            missing += 1
+            continue
+        zone = ("BELOW_PREDICTED_RANGE" if entry < low else
+                "ABOVE_PREDICTED_RANGE" if entry > high else
+                "WITHIN_PREDICTED_RANGE")
+        key = side + ":" + zone
+        group = groups.setdefault(key, {"closed": 0, "wins": 0, "losses": 0,
+                                        "net_pnl": 0.0})
+        group["closed"] += 1
+        group["wins"] += pnl > 0
+        group["losses"] += pnl < 0
+        group["net_pnl"] += pnl
+    for group in groups.values():
+        group["win_rate_percent"] = 100 * group["wins"] / group["closed"]
+        group["sample_size_warning"] = group["closed"] < 5
+    return {"status": "TRADE_STRUCTURE_ASSOCIATION_ONLY",
+            "matched_trades": sum(g["closed"] for g in groups.values()),
+            "missing_or_invalid_trades": missing,
+            "by_side_and_entry_range": groups,
+            "eligible_for_candidate_selection": False,
+            "limitations": ("Predicted bounds describe future price range, not "
+                            "entry-time support or resistance; associations do "
+                            "not establish a causal trading failure.")}
+
+
+
 def diagnose_eligible_trades(replay):
     """Descriptive trade evidence for research with drawdown <=35%.
 

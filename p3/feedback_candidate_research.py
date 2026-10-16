@@ -77,6 +77,19 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
         "stop_reason": stop_reason or "APPROVED_BATCH_BUDGET_REACHED",
         "next_action": ("WAIT_FOR_EVIDENCE" if (stop_reason or "").startswith("WAIT_")
                         else "REVIEW_RESEARCH_RESULTS"),
+        "research_summary": {
+            "baseline_trials": 1 if history else 0,
+            "candidate_trials": max(0, len(history) - 1),
+            "improved_in_research": sum(
+                (item.get("research_candidate_assessment") or {}).get("status")
+                == "IMPROVED_IN_RESEARCH_ONLY" for item in history),
+            "rejected_in_research": sum(
+                (item.get("research_candidate_assessment") or {}).get("status")
+                == "REJECTED_IN_RESEARCH" for item in history),
+            "inconclusive_candidates": sum(
+                (item.get("research_candidate_assessment") or {}).get("status")
+                == "WAIT" for item in history),
+        },
         "latest_hypothesis": diagnose_feedback_hypothesis(history),
         "decision_log": [
             {"trial_index": item["trial_index"],

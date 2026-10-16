@@ -38,3 +38,11 @@ P0.1～P0.4 均為**部分通過**，P0 尚不可封版。保留原始行情與�
 - 28 組 market_features 均存在，與 raw_candles 同鍵對齊的孤兒特徵 0 筆；sma_200 為 NULL 的 feature 0 筆。每組前 200 根 raw 未寫入 feature，與既定暖機設計一致。指標公式獨立重算仍待驗收。
 - 三個 public SECURITY DEFINER RPC 確認 authenticated 有執行權限、anon 無權限；三個函式原始碼均有 auth.uid() 及 app_user_roles 管理員檢查。安全 Advisor 警告仍存在，需評估是否收回舊 RPC 權限或留待前端重建；不可單憑警告判定已被非管理員繞過。
 - ai_v2 的資金上限、bundle role 與 active bundle 三類 trigger 均存在，但尚未執行隔離交易的負向測試，**P0.1 尚未封版**。
+
+
+## P0 續測：公式及保護機制（2026-10-17）
+- 由 BTCUSDT 1h 最近 200 根原始收盤價直接在 SQL 重新計算：SMA20=81901.874、SMA200=82633.0675，均與 market_features 最新一根完全一致。
+- 全表檢查 bb_middle=sma_20、bb_upper>=bb_middle、bb_lower<=bb_middle、atr_14>=0、0<=rsi_12<=100，違規 0 筆。
+- ai_v2.active_model_bundle 負向插入測試：未經批准的 bundle 被 trigger 拒絕，錯誤文字符合預期，測試資料未留存。
+- ai_v2.sim_positions 負向插入測試：不存在的模擬帳戶被 trigger 拒絕，錯誤文字符合預期，測試資料未留存。
+- 80% 資金上限及同交易對區間重疊仍待建立完整隔離測試資料驗證；MACD/RSI/ATR/KDJ 等需獨立公式數值核對。不可據此宣告 P0 封版。

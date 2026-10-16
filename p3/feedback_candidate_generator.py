@@ -3,7 +3,7 @@
 Only eligible trade feedback can anchor new candidates. No holdout or live orders.
 """
 import math
-from .walk_forward_feedback import exploration_rank, diagnose_feedback_hypothesis
+from .walk_forward_feedback import feedback_rank, exploration_rank, diagnose_feedback_hypothesis
 
 ITER_VALUES = (60, 80, 100, 120, 160, 200)
 RATE_VALUES = (0.025, 0.05, 0.10)
@@ -82,7 +82,7 @@ def diagnose_structure_evidence(history):
     forecast from a valid forecast stopped by the market path.
     """
     eligible = [row for row in history
-                if feedback_rank(row.get("metrics") or {}) is not None
+                if exploration_rank(row.get("metrics") or {}) is not None
                 and _valid_params(row.get("params"))]
     if not eligible:
         return {"status": "NO_ELIGIBLE_FEEDBACK"}

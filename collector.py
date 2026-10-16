@@ -11,6 +11,37 @@ KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 HEAD = {"apikey": KEY, "Authorization": "Bearer " + KEY, "Content-Type": "application/json"}
 INTERVAL_MS = {"15m":900000, "1h":3600000, "4h":14400000, "1d":86400000}
 SESSION = requests.Session()
+# Reconcile abandoned jobs after hard stops without touching candle data.
+# 24h is deliberately conservative for long historical backfills.
+STALE_JOB_HOURS = 24
+ACTIVE_JOB_IDS = set()
+LAST_RECONCILE = 0
+
+def reconcile_stale_jobs():
+    """Close old RUNNING rows; never close a job active in this process."""
+    cutoff = (dt.datetime.now(dt.timezone.utc) -
+              dt.timedelta(hours=STALE_JOB_HOURS)).isoformat()
+    params = {"status": "eq.RUNNING", "started_at": "lt." + cutoff,
+              "select": "id", "limit": "1000"}
+    candidates = db("GET", "ingestion_jobs", params)
+    closed = 0
+    for item in candidates:
+        jid = item["id"]
+        if jid in ACTIVE_JOB_IDS:
+            continue
+        # Compare-and-set: a completed row will not be changed.
+        db("PATCH", "ingestion_jobs",
+           {"id": "eq." + str(jid), "status": "eq.RUNNING",
+            "started_at": "lt." + cutoff},
+           {"status": "FAILED",
+            "error_message": "AUTO_RECOVERY: stale RUNNING job; worker interrupted or heartbeat unavailable",
+            "completed_at": dt.datetime.now(dt.timezone.utc).isoformat()},
+           {"Prefer": "return=minimal"})
+        closed += 1
+    if closed:
+        LOG.warning("stale ingestion jobs reconciled: %s", closed)
+    return closed
+
 
 def api(path, params):
     for attempt in range(5):
@@ -43,10 +74,15 @@ def log_issue(sym, interval, ts, kind, expected=None, observed=None):
     db("POST","data_quality_issues",payload={"source":"BINANCE","market":"SPOT","symbol":sym,"timeframe":interval,"open_time":ts,"issue_type":kind,"expected_payload":expected,"observed_payload":observed},extra={"Prefer":"return=minimal"})
 
 def job(sym, interval, kind):
-    return db("POST","ingestion_jobs",payload={"job_type":kind,"symbol":sym,"timeframe":interval,"status":"RUNNING","started_at":dt.datetime.now(dt.timezone.utc).isoformat()},extra={"Prefer":"return=representation"})[0]["id"]
+    jid = db("POST","ingestion_jobs",payload={"job_type":kind,"symbol":sym,"timeframe":interval,"status":"RUNNING","started_at":dt.datetime.now(dt.timezone.utc).isoformat()},extra={"Prefer":"return=representation"})[0]["id"]
+    ACTIVE_JOB_IDS.add(jid)
+    return jid
 
 def finish(jobid, status, inserted=0, duplicates=0, issues=0, error=None):
-    db("PATCH","ingestion_jobs",{"id":"eq."+str(jobid)},{"status":status,"inserted_count":inserted,"duplicate_count":duplicates,"issue_count":issues,"error_message":error,"completed_at":dt.datetime.now(dt.timezone.utc).isoformat()},{"Prefer":"return=minimal"})
+    try:
+        db("PATCH","ingestion_jobs",{"id":"eq."+str(jobid)},{"status":status,"inserted_count":inserted,"duplicate_count":duplicates,"issue_count":issues,"error_message":error,"completed_at":dt.datetime.now(dt.timezone.utc).isoformat()},{"Prefer":"return=minimal"})
+    finally:
+        ACTIVE_JOB_IDS.discard(jobid)
 
 def native_rows(sym, interval, start=None, limit=1000):
     p = {"symbol":sym,"interval":interval,"limit":limit}
@@ -138,8 +174,12 @@ def completed_initial(sym, interval, requested_at):
 def main():
     # In-memory scheduling state; all writes are idempotent, and full audits repeat daily.
     seen_add={}; last_recent=None; last_daily=None
+    global LAST_RECONCILE
     while True:
         try:
+            if time.monotonic() - LAST_RECONCILE >= 3600:
+                reconcile_stale_jobs()
+                LAST_RECONCILE = time.monotonic()
             local=dt.datetime.now(ZoneInfo("Asia/Taipei"))
             watch=active()
             for item in watch:

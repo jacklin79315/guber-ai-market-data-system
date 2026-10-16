@@ -50,7 +50,7 @@
 - P1.1 登入權限、P1.2 總覽、P1.3 商品資料、P1.4 訓練控制、P1.5 專家模型、P1.6 設定通知；未完成的 AI 功能須標示尚未啟用。
 - 詳見 [P1_FRONTEND_DESIGN_SPEC_2026-10-17.md](docs/P1_FRONTEND_DESIGN_SPEC_2026-10-17.md)。
 
-**下一步**：確認現有前端程式位置與部署方式；建立 P1 前端骨架與登入授權；安全地接入只讀資料健康與商品監測；不可影響現有行情抓取。此刻未獨立複驗 GitHub 全部程式、Supabase 即時狀態及 Railway 最新部署。
+**P1 進度更新（2026-10-17）**：已提交 `frontend/index.html`、`main.js`、`styles.css`、`login.css`、`auth.js`、`config.js`、`data.js` 及 `README.md`。已具備繁體中文深色響應式介面、Supabase 電郵密碼驗證程式基礎、登入關閉式保護，以及原生行情只讀查詢。**尚未完成管理員身分綁定、公開金鑰配置、原始 Logo GitHub 資產、實際登入驗收、iPhone Safari 實測及 Railway 前端部署。**使用者指定管理員登入名稱 `guber`，密碼不得寫入任何 GitHub 文件、程式或部署變數明文。Supabase Auth 需確認可登入的電子郵件及管理員角色。\n\n**現場查核**：Supabase `public` 5 表與 `ai_v2` 20 表仍存在；`raw_candles` 目前有已登入者 SELECT policy，Railway `native-candle-collector` 最新部署為 SUCCESS（2026-10-16T23:51:34Z），但前端服務尚未建立。\n\n**下一步**：完成管理員電子郵件／權限綁定、設定安全公開金鑰、實測行情只讀資料、加入完整原始 Logo、驗收 iOS Safari，再獨立部署前端；不可影響現有抓取服務。
 
 **環境參考**：GitHub `jacklin79315/guber-ai-market-data-system` (`main`)；Supabase `xqtsmrzxixkecvaovzfy`（`public`、`ai_v2`）；Railway `1b703a9c-07fb-48ca-a5e5-def4c9531e34`（`native-candle-collector`）。
 

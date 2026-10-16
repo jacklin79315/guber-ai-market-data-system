@@ -1,4 +1,5 @@
 import unittest
+from p3.walk_forward_diagnostics import audit_prediction_coverage
 from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate
 
 
@@ -15,6 +16,16 @@ def row(dd=10):
 
 
 class CandidateGenerationTests(unittest.TestCase):
+    def test_forecast_coverage_counts_missing_entries(self):
+        replay = {"events": [{"type": "ENTRY", "decision_time_ms": 10},
+                             {"type": "ENTRY", "decision_time_ms": 20}]}
+        audit = audit_prediction_coverage(
+            replay, [{"decision_time_ms": 10}], [{"decision_time_ms": 20}])
+        self.assertEqual(audit["entry_events"], 2)
+        self.assertEqual(audit["matched_both"], 0)
+        self.assertEqual(audit["missing_direction"], 1)
+        self.assertFalse(audit["eligible_for_candidate_selection"])
+
     def test_rejects_disqualified_feedback(self):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],
                          "NO_ELIGIBLE_FEEDBACK")

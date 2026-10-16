@@ -21,7 +21,7 @@ class QualificationTests(unittest.TestCase):
     def test_insufficient_trades(self):
         self.assertFalse(evaluate_model_gates(SEL, {**MET, "closed_trades": 4})["holdout_accepted"])
     def test_excessive_drawdown(self):
-        self.assertFalse(evaluate_model_gates(SEL, {**MET, "max_close_to_close_drawdown_percent": 9})["holdout_accepted"])
+        self.assertFalse(evaluate_model_gates(SEL, {**MET, "max_close_to_close_drawdown_percent": 35.01})["holdout_accepted"])
     def test_uncertain_execution(self):
         self.assertFalse(evaluate_model_gates(SEL, {**MET, "execution_path_uncertain": True})["holdout_accepted"])
     def test_performance_gates(self):

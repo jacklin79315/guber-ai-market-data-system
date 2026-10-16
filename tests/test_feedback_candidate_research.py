@@ -19,6 +19,10 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],
                          "NO_ELIGIBLE_FEEDBACK")
 
+    def test_direction_requires_prediction_evidence(self):
+        self.assertEqual(next_feedback_candidate([row()])["status"],
+                         "MISSING_DIRECTION_PREDICTION_EVIDENCE")
+
     def test_structure_requires_evidence(self):
         self.assertEqual(next_structure_candidate([row()])["status"],
                          "MISSING_STRUCTURE_PREDICTION_EVIDENCE")
@@ -39,7 +43,10 @@ class CandidateGenerationTests(unittest.TestCase):
                          "MISSING_STRUCTURE_PREDICTION_EVIDENCE")
 
     def test_changes_only_one_approved_parameter(self):
-        choice = next_feedback_candidate([row()])
+        source = row()
+        source["direction_prediction_diagnostics"] = {
+            "matched_predictions": 10, "direction_error_rate_percent": 40.0}
+        choice = next_feedback_candidate([source])
         self.assertEqual(choice["status"], "CANDIDATE_READY")
         changed = [key for key in DEFAULT_LAYER_PARAMS
                    if choice["candidate"][key] != DEFAULT_LAYER_PARAMS[key]]

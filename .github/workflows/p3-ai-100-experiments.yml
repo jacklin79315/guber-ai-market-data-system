@@ -27,7 +27,7 @@ jobs:
       matrix:
         strategy: [INTRADAY, ONE_TO_THREE_DAYS, ONE_WEEK, FIFTEEN_TO_THIRTY_DAYS]
     env:
-      TRAINING_ITERATIONS: '5'
+      TRAINING_ITERATIONS: '10'
       TRAINING_BATCH_STRATEGY: ${{ matrix.strategy }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -72,6 +72,7 @@ jobs:
                       for trial in result['iterations']:
                           m = trial['metrics']
                           out.write(f"| {trial['trial_index']} | {trial['trade_count']} | {m.get('annualized_return_percent')} | {m.get('win_rate_percent')} | {m.get('max_close_to_close_drawdown_percent')} | {trial['selection_basis']} |\n")
+                      out.write(f"\nFeedback used: {result.get('feedback_used_for_candidate_selection')}; best observed trial: {result.get('best_observed_trial_index')}.\n")
                       out.write('\nHoldout untouched; research candidates are not qualified for promotion.\n')
                   if not results:
                       out.write('No completed research report.\n')

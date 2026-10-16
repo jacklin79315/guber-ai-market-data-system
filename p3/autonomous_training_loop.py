@@ -132,15 +132,15 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
             # Eligibility and selection remain unchanged.
             observed = winner if winner is not None else max(
                 selection["candidates"],
-                key=lambda c: (c["return_percent"] - c["drawdown_percent"],
-                               c["return_percent"], c["threshold"]),
+                key=lambda c: (c.get("annualized_return_percent") or float("-inf"),
+                               c.get("win_rate_percent") or float("-inf"),
+                               c.get("mean_score_q") or float("-inf"), c["threshold"]),
                 default=None)
             training_samples = trained["coverage"]["train"]["samples"]
             validation_samples = trained["coverage"]["validation"]["samples"]
         except Exception as exc:
             error = str(exc)
-        score = (winner["return_percent"] - winner["drawdown_percent"]
-                 if winner is not None else None)
+        score = None  # Deprecated DB field; not used for ranking.
         result = {"trial_index": index + 1, "params": params,
                   "status": "COMPLETE" if error is None else "FAILED",
                   "validation_eligible": winner is not None,
@@ -249,10 +249,10 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     # Explain baseline-to-best progress using the unchanged validation score.
     qualified = [h for h in history if h["status"] == "COMPLETE"
                  and h.get("validation_eligible") is True
-                 and h.get("validation_score") is not None]
+                 and validated_rank(h) is not None]
     if qualified:
         baseline_trial = qualified[0]
-        champion_trial = max(qualified, key=lambda h: h["validation_score"])
+        champion_trial = max(qualified, key=validated_rank)
         compare_fields = {
             "annualized_return_percent": "validation_annualized_return_percent",
             "win_rate_percent": "validation_win_rate_percent",
@@ -292,7 +292,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         "strategy_score": best_observed.get("validation_mean_score_q"),
         "closed_trades": best_observed.get("validation_trades"),
         "validation_eligible": best_observed.get("validation_eligible") is True,
-        "ranking_basis": "observational_legacy_not_qualification",
+        "ranking_basis": "annualized_win_rate_quality_observation",
     } if best_observed else None)
     successful = [h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None]
     best = max(successful, key=lambda h: h["validation_score"], default=None)

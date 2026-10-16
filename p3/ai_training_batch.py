@@ -167,8 +167,7 @@ def run_batch(db, *, symbol, strategy, years):
             record.update({
                 "status": "COMPLETE",
                 "validation_eligible": winner is not None,
-                "validation_score": (winner["return_percent"] - winner["drawdown_percent"])
-                                    if winner else None,
+                "validation_score": None,  # Deprecated scalar, retained as nullable DB field.
                 "validation_annualized_return_percent": winner["annualized_return_percent"] if winner else None,
                 "validation_win_rate_percent": winner["win_rate_percent"] if winner else None,
                 "validation_mean_score_q": winner["mean_score_q"] if winner else None,

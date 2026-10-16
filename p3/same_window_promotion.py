@@ -52,8 +52,9 @@ def decide_generation_promotion(champion, challenger, *,
         return {"status": "REJECT", "reason": "no_priority_order_improvement",
                 "champion_rank": old_rank, "challenger_rank": new_rank,
                 "research_promoted": False}
-    if challenger["drawdown_percent"] > champion["drawdown_percent"]:
-        return {"status": "REJECT", "reason": "drawdown_worsened",
+    if (challenger["drawdown_percent"] > champion["drawdown_percent"]
+            and challenger["drawdown_percent"] > 8):
+        return {"status": "REJECT", "reason": "drawdown_worsened_outside_best_tier",
                 "champion_rank": old_rank, "challenger_rank": new_rank,
                 "research_promoted": False}
     return {"status": "RESEARCH_CANDIDATE", "reason": "same_window_improvement",

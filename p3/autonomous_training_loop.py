@@ -246,7 +246,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 "selection_policy_unchanged": True,
             }, allow_nan=False), flush=True)
         previous_complete = trial
-    # Explain baseline-to-best progress using the unchanged validation score.
+    # Explain baseline-to-best progress using approved validation metric ordering.
     qualified = [h for h in history if h["status"] == "COMPLETE"
                  and h.get("validation_eligible") is True
                  and validated_rank(h) is not None]

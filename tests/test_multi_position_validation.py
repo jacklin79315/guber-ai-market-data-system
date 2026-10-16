@@ -24,7 +24,9 @@ class MultiPositionValidationTests(unittest.TestCase):
         result = evaluate_multi_lot_window(
             bars, features, FakeModel(), "BTCUSDT", (begin, begin + 120 * DAY),
             0.6, 0.0)
-        self.assertEqual(result["open_lots"], 3)
+        self.assertEqual(result["open_lots"], 0)
+        self.assertEqual(result["metrics"]["backtest_end_settlement_count"], 3)
+        self.assertEqual(result["metrics"]["closed_trades"], 3)
         self.assertEqual(result["coverage"]["selected_candles"], 4)
         self.assertEqual(result["metrics"]["signal_counts"]["FILLED"], 3)
 

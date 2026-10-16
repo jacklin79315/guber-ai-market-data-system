@@ -40,7 +40,7 @@ def generate_walk_forward_decisions(candles, features, strategy, research, *,
     maturity = [int(candles[by_close[t] + horizon]["close_time"])
                 for t in times]
     rows = {int(f["close_time"]): f for f in features}
-    decisions, checkpoints = {}, []
+    decisions, checkpoints, price_range_predictions = {}, [], []
     start, end = research
     for begin, finish in monthly_checkpoints(start, end):
         # The last label candle must have closed before this model is fitted.
@@ -62,6 +62,9 @@ def generate_walk_forward_decisions(candles, features, strategy, research, *,
             decisions[t] = model.decide(
                 symbol, rows[t],
                 confidence_threshold=confidence_threshold)
+            if hasattr(model, "predict_price_levels"):
+                levels = model.predict_price_levels(rows[t])
+                price_range_predictions.append({"decision_time_ms": t, **levels})
             n += 1
         checkpoints.append({"start_ms": begin, "end_ms": finish,
                             "training_samples": len(train_indices),
@@ -69,6 +72,7 @@ def generate_walk_forward_decisions(candles, features, strategy, research, *,
                                 max(maturity[i] for i in train_indices)),
                             "decisions": n, "status": "FITTED"})
     return {"decisions": decisions, "checkpoints": checkpoints,
+            "price_range_predictions": price_range_predictions,
             "research_window": [start, end],
             "strategy": strategy, "timeframe": timeframe,
             "independent_validation_performed": False,

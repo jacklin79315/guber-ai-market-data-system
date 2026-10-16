@@ -109,6 +109,9 @@ def run_research_iterations(candles, features, strategy, research, *,
                             candidates=DEFAULT_CANDIDATES, symbol=None):
     if type(iterations) is not int or not 1 <= iterations <= len(candidates):
         raise ValueError("iterations must be within the available candidate grid")
+    from .autonomous_experiment_plan import (research_data_fingerprint,
+                                             compare_iteration_records)
+    fingerprint = research_data_fingerprint(candles, features, research)
     history = []
     for index in range(iterations):
         hypothesis = diagnose_feedback_hypothesis(history)
@@ -125,6 +128,9 @@ def run_research_iterations(candles, features, strategy, research, *,
             "drawdown_failure_diagnosis": result.get("drawdown_failure_diagnosis"),
             "eligible_trade_diagnosis": result.get("eligible_trade_diagnosis"),
             "trial_index": index + 1, "params": params, "metrics": metrics,
+            "strategy": strategy, "research_window": list(research),
+            "symbol": symbol, "fee_rate": fee_rate,
+            "slippage_rate": slippage_rate, "data_fingerprint": fingerprint,
             "prior_feedback_hypothesis": hypothesis,
             "autonomous_experiment_proposal": experiment_proposal,
             "research_rank": research_rank(metrics),
@@ -136,6 +142,13 @@ def run_research_iterations(candles, features, strategy, research, *,
             "checkpoints": result["training_checkpoints"],
             "eligible_for_promotion": False,
         })
+        if feedback_source is not None:
+            baseline = next(row for row in history
+                            if row["trial_index"] == feedback_source)
+            history[-1]["paired_research_comparison"] = compare_iteration_records(
+                baseline, history[-1])
+        else:
+            history[-1]["paired_research_comparison"] = None
     ranked = [h for h in history if h["feedback_rank"] is not None]
     qualified = [h for h in history if h["research_rank"] is not None]
     return {

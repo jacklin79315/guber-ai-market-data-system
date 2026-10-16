@@ -47,18 +47,42 @@ def audit_severe_drawdown(replay):
         return None
     exits = [e for e in replay.get("events", []) if e.get("type") == "EXIT"]
     groups = {}
+    reason_groups = {}
+    gross_wins = gross_losses = 0.0
     for e in exits:
         group = groups.setdefault(e.get("side") or "UNKNOWN",
             {"closed": 0, "losses": 0, "stop_losses": 0, "net_pnl": 0.0})
         group["closed"] += 1
+        reason = e.get("reason") or "UNKNOWN"
+        reason_group = reason_groups.setdefault(reason, {"closed": 0, "net_pnl": 0.0})
+        reason_group["closed"] += 1
         pnl = e.get("net_pnl")
         if type(pnl) in (int, float):
             group["losses"] += pnl < 0
             group["net_pnl"] += pnl
-        group["stop_losses"] += e.get("reason") == "SL"
+            reason_group["net_pnl"] += pnl
+            gross_wins += max(0, pnl)
+            gross_losses += min(0, pnl)
+        group["stop_losses"] += reason == "SL"
+    curve = replay.get("equity_curve") or []
+    peak = peak_time = worst = None
+    for point in curve:
+        equity = point.get("equity")
+        if type(equity) not in (int, float):
+            continue
+        if peak is None or equity > peak:
+            peak, peak_time = equity, point.get("time_ms")
+        if peak and peak > 0:
+            drop = 100 * (peak - equity) / peak
+            if worst is None or drop > worst["drawdown_percent"]:
+                worst = {"drawdown_percent": drop, "peak_time_ms": peak_time,
+                         "trough_time_ms": point.get("time_ms"),
+                         "open_lots_at_trough": point.get("open_lots")}
     return {"status": "SEVERE_DRAWDOWN_AUDIT_ONLY",
             "max_drawdown_percent": dd, "closed_trade_events": len(exits),
-            "by_direction": groups,
+            "by_direction": groups, "by_exit_reason": reason_groups,
+            "gross_winning_pnl": gross_wins, "gross_losing_pnl": gross_losses,
+            "worst_drawdown_episode": worst,
             "signal_counts": dict(metrics.get("signal_counts") or {}),
             "ambiguous_exit_count": metrics.get("ambiguous_exit_count"),
             "unresolved_entry_bar_count": metrics.get("entry_bars_with_unresolved_exit"),

@@ -91,6 +91,28 @@ jobs:
                           m = trial['metrics']
                           out.write(f"| {trial['trial_index']} | {m.get('normal_closed_trades')} | {m.get('annualized_return_percent')} | {m.get('win_rate_percent')} | {m.get('max_close_to_close_drawdown_percent')} | {trial['selection']['status']} |\n")
                       out.write(f"\nCandidates run: {result.get('new_candidates_run')}; stop reason: {result.get('stop_reason')}.\n")
+                      for trial in result['iterations']:
+                          audit = trial.get('severe_drawdown_audit')
+                          if audit:
+                              out.write(f"\\n### Severe drawdown audit: trial {trial['trial_index']}\\n\\n")
+                              out.write(f"Status: {audit['status']}; drawdown: {audit['max_drawdown_percent']:.2f}%; "
+                                        f"closed exits: {audit['closed_trade_events']}.\\n\\n")
+                              out.write('| Direction | Closed | Losses | Stop exits | Net PnL |\\n')
+                              out.write('|---|---:|---:|---:|---:|\\n')
+                              for side, group in sorted(audit['by_direction'].items()):
+                                  out.write(f"| {side} | {group['closed']} | {group['losses']} | "
+                                            f"{group['stop_losses']} | {group['net_pnl']:.2f} |\\n")
+                              out.write('\\n| Exit reason | Closed | Net PnL |\\n')
+                              out.write('|---|---:|---:|\\n')
+                              for reason, group in sorted(audit['by_exit_reason'].items()):
+                                  out.write(f"| {reason} | {group['closed']} | {group['net_pnl']:.2f} |\\n")
+                              out.write(f"\\nGross winning PnL: {audit['gross_winning_pnl']:.2f}; "
+                                        f"gross losing PnL: {audit['gross_losing_pnl']:.2f}; "
+                                        f"reconciliation gap: {audit.get('net_pnl_reconciliation_gap')}.\\n\\n")
+                              out.write(f"Worst episode: {audit.get('worst_drawdown_episode')}; "
+                                        f"signal counts: {audit['signal_counts']}; "
+                                        f"ambiguous exits: {audit['ambiguous_exit_count']}.\\n\\n")
+                              out.write('Audit only: not eligible for candidate selection or promotion.\\n')
                       out.write('\nHoldout untouched; research candidates are not qualified for promotion.\n')
                   if not results:
                       out.write('No completed research report.\n')

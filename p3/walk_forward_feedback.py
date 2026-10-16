@@ -67,6 +67,39 @@ def _candidate_choice(history, candidates):
     return choice, best["trial_index"] if "trial_index" in best else None
 
 
+
+def diagnose_feedback_hypothesis(history):
+    """Produce an auditable hypothesis from eligible prior trade evidence only.
+
+    No causal claim, parameter mutation, or new model policy is authorized.
+    """
+    eligible = [row for row in history if feedback_rank(row["metrics"]) is not None]
+    if not eligible:
+        return {"status": "NO_ELIGIBLE_FEEDBACK", "source_trial_index": None,
+                "hypothesis": None, "evidence": None}
+    best = max(eligible, key=lambda row: feedback_rank(row["metrics"]))
+    evidence = best.get("eligible_trade_diagnosis") or {}
+    groups = evidence.get("by_direction") or {}
+    comparable = [(side, group) for side, group in groups.items()
+                  if group.get("closed", 0) >= 5]
+    if not comparable:
+        return {"status": "INSUFFICIENT_TRADE_EVIDENCE",
+                "source_trial_index": best.get("trial_index"),
+                "hypothesis": None,
+                "evidence": {"direction_samples": {side: g.get("closed", 0)
+                                                   for side, g in groups.items()}}}
+    side, group = min(comparable, key=lambda pair: (
+        pair[1].get("win_rate_percent", 0), pair[0]))
+    return {"status": "TESTABLE_HYPOTHESIS_ONLY",
+            "source_trial_index": best.get("trial_index"),
+            "hypothesis": "REVIEW_DIRECTION_OUTCOMES_" + side,
+            "evidence": {"side": side, "closed": group["closed"],
+                         "win_rate_percent": group.get("win_rate_percent"),
+                         "net_pnl": group.get("net_pnl")},
+            "limitations": "Descriptive association, not proof of model error; "
+                           "no model or risk rules changed."}
+
+
 def select_research_candidate(history, candidates=DEFAULT_CANDIDATES):
     return _candidate_choice(history, candidates)[0]
 
@@ -78,6 +111,7 @@ def run_research_iterations(candles, features, strategy, research, *,
         raise ValueError("iterations must be within the available candidate grid")
     history = []
     for index in range(iterations):
+        hypothesis = diagnose_feedback_hypothesis(history)
         params, feedback_source = _candidate_choice(history, candidates)
         if params is None:
             break
@@ -89,6 +123,7 @@ def run_research_iterations(candles, features, strategy, research, *,
             "drawdown_failure_diagnosis": result.get("drawdown_failure_diagnosis"),
             "eligible_trade_diagnosis": result.get("eligible_trade_diagnosis"),
             "trial_index": index + 1, "params": params, "metrics": metrics,
+            "prior_feedback_hypothesis": hypothesis,
             "research_rank": research_rank(metrics),
             "feedback_rank": feedback_rank(metrics),
             "selection_basis": ("PRIOR_RESEARCH_TRADING_FEEDBACK" if feedback_source
@@ -110,6 +145,7 @@ def run_research_iterations(candles, features, strategy, research, *,
             max(ranked, key=lambda h: h["feedback_rank"])["trial_index"]
             if ranked else None),
         "candidate_grid_exhausted": len(history) == len(candidates),
+        "latest_feedback_hypothesis": diagnose_feedback_hypothesis(history),
         "feedback_used_for_candidate_selection": any(
             h["feedback_source_trial_index"] is not None for h in history),
         "independent_validation_performed": False,

@@ -1,5 +1,5 @@
 import unittest
-from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows
+from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows, classify_research_evidence
 from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate
 
 
@@ -16,6 +16,21 @@ def row(dd=10):
 
 
 class CandidateGenerationTests(unittest.TestCase):
+    def test_evidence_classifier_waits_for_complete_coverage(self):
+        result = classify_research_evidence(
+            {"entry_events": 2, "matched_both": 1}, {}, {}, [])
+        self.assertEqual(result["status"], "WAIT")
+        self.assertFalse(result["eligible_for_candidate_selection"])
+
+    def test_evidence_classifier_requires_both_matured_models(self):
+        result = classify_research_evidence(
+            {"entry_events": 1, "matched_both": 1},
+            {"status": "RESEARCH_DIRECTION_EVALUATION",
+             "matched_predictions": 5, "direction_error_rate_percent": 40},
+            {"status": "INSUFFICIENT_STRUCTURE_PREDICTION_EVIDENCE"},
+            [{"forecast_pair_complete": True}])
+        self.assertEqual(result["reason"], "INSUFFICIENT_MATURED_MODEL_LABELS")
+
     def test_trade_prediction_rows_join_by_decision_time(self):
         replay = {"events": [
             {"type": "ENTRY", "lot_id": 4, "decision_time_ms": 10, "side": "LONG"},

@@ -192,6 +192,8 @@ class CandidateGenerationTests(unittest.TestCase):
             observed.add(key)
             history.append(current)
         self.assertEqual(len(observed), 8)
+        self.assertEqual(next_feedback_candidate(history)["status"],
+                         "APPROVED_NEIGHBORHOOD_EXHAUSTED")
 
     def test_changes_only_one_approved_parameter(self):
         source = row()

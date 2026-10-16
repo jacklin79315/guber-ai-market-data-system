@@ -18,13 +18,13 @@ def metrics(annualized, *, trades=8, dd=2):
 class ResearchFeedbackTests(unittest.TestCase):
     def test_risky_loss_guides_feedback_but_is_not_qualified(self):
         self.assertIsNone(research_rank(metrics(-20, dd=41)))
-        self.assertIsNotNone(feedback_rank(metrics(-20, dd=41)))
+        self.assertIsNone(feedback_rank(metrics(-20, dd=41)))
         self.assertIsNone(feedback_rank(metrics(100, trades=0)))
 
     def test_unresolved_entry_bars_are_diagnostics_not_invalid_trades(self):
         row = metrics(-22, dd=55)
         row["entry_bars_with_unresolved_exit"] = 27
-        self.assertIsNotNone(feedback_rank(row))
+        self.assertIsNone(feedback_rank(row))
         self.assertIsNone(research_rank(row))
 
     def test_ambiguous_exits_remain_disqualified_for_feedback(self):
@@ -48,7 +48,14 @@ class ResearchFeedbackTests(unittest.TestCase):
                 {"max_iter": 160, "learning_rate": 0.10})
         history = [{"params": grid[0], "metrics": metrics(-25, dd=60)},
                    {"params": grid[1], "metrics": metrics(-15, dd=45)}]
-        self.assertEqual(select_research_candidate(history, grid), grid[3])
+        self.assertEqual(select_research_candidate(history, grid), grid[2])
+
+    def test_drawdown_risk_boundaries(self):
+        self.assertEqual(feedback_rank(metrics(20, dd=2)), feedback_rank(metrics(20, dd=8)))
+        self.assertIsNotNone(feedback_rank(metrics(20, dd=35)))
+        self.assertIsNone(feedback_rank(metrics(20, dd=35.01)))
+        self.assertIsNone(feedback_rank(metrics(20, dd=40)))
+        self.assertIsNone(feedback_rank(metrics(20, dd=40.01)))
 
     def test_loop_never_promotes_research_results(self):
         with patch("p3.walk_forward_feedback.replay_walk_forward_research",
@@ -59,9 +66,9 @@ class ResearchFeedbackTests(unittest.TestCase):
                         "research_trades": 8, "training_checkpoints": []}]):
             result = run_research_iterations([], [], "INTRADAY",
                                              (100, 200), iterations=2, symbol="BTCUSDT")
-        self.assertTrue(result["feedback_used_for_candidate_selection"])
+        self.assertFalse(result["feedback_used_for_candidate_selection"])
         self.assertIsNone(result["best_research_trial_index"])
-        self.assertIsNotNone(result["best_observed_trial_index"])
+        self.assertIsNone(result["best_observed_trial_index"])
         self.assertFalse(result["independent_validation_performed"])
         self.assertFalse(result["eligible_for_promotion"])
 

@@ -63,6 +63,8 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(fake_replay.calls, 2)
         self.assertEqual(result["stop_reason"], "WAIT_FOR_MODEL_EVIDENCE")
         self.assertEqual(result["new_candidates_run"], 1)
+        self.assertEqual(result["research_summary"]["candidate_trials"], 1)
+        self.assertEqual(result["research_summary"]["inconclusive_candidates"], 1)
 
     def test_batch_rejects_budget_above_ten(self):
         with self.assertRaises(ValueError):

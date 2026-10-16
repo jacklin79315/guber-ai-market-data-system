@@ -86,7 +86,8 @@ class ResearchFeedbackTests(unittest.TestCase):
                         "research_trades": 8, "training_checkpoints": []},
                        {"research_trading_metrics": metrics(-10, dd=42),
                         "research_trades": 8, "training_checkpoints": []}]):
-            result = run_research_iterations([], [], "INTRADAY",
+            result = run_research_iterations([{"close_time": 150, "close": 1}],
+                                             [{"close_time": 150, "rsi_12": 50}], "INTRADAY",
                                              (100, 200), iterations=2, symbol="BTCUSDT")
         self.assertFalse(result["feedback_used_for_candidate_selection"])
         self.assertIsNone(result["best_research_trial_index"])

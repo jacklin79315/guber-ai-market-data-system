@@ -20,13 +20,12 @@ def compare_generations(parent, child, *, parent_window, child_window):
         return {"status": "WAIT", "reason": "no_eligible_models",
                 "parent_eligible": len(a), "child_eligible": len(b)}
     best_a = max(a, key=validated_rank)
-    best_b = max(b, key=lambda r: float(r["validation_score"]))
+    best_b = max(b, key=validated_rank)
     return {
         "status": "RESEARCH_COMPARISON_ONLY",
         "parent_best_validation_score": validated_rank(best_a),
         "child_best_validation_score": validated_rank(best_b),
-        "raw_score_difference": float(best_b["validation_score"]) -
-                                float(best_a["validation_score"]),
+        "raw_score_difference": None,
         "parent_eligible": len(a), "child_eligible": len(b),
         "is_apples_to_apples": False,
         "reason": "different_validation_windows_require_common_out_of_sample_evaluation",

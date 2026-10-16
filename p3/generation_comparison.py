@@ -1,4 +1,5 @@
 """Generation comparison is descriptive, never automatic model promotion."""
+from .adaptive_trial_selection import validated_rank
 
 
 def compare_generations(parent, child, *, parent_window, child_window):
@@ -13,17 +14,17 @@ def compare_generations(parent, child, *, parent_window, child_window):
     def eligible(rows):
         return [r for r in rows if r.get("status") == "COMPLETE"
                 and r.get("validation_eligible") is True
-                and r.get("validation_score") is not None]
+                and validated_rank(r) is not None]
     a, b = eligible(parent), eligible(child)
     if not a or not b:
         return {"status": "WAIT", "reason": "no_eligible_models",
                 "parent_eligible": len(a), "child_eligible": len(b)}
-    best_a = max(a, key=lambda r: float(r["validation_score"]))
+    best_a = max(a, key=validated_rank)
     best_b = max(b, key=lambda r: float(r["validation_score"]))
     return {
         "status": "RESEARCH_COMPARISON_ONLY",
-        "parent_best_validation_score": float(best_a["validation_score"]),
-        "child_best_validation_score": float(best_b["validation_score"]),
+        "parent_best_validation_score": validated_rank(best_a),
+        "child_best_validation_score": validated_rank(best_b),
         "raw_score_difference": float(best_b["validation_score"]) -
                                 float(best_a["validation_score"]),
         "parent_eligible": len(a), "child_eligible": len(b),

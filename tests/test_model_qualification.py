@@ -36,17 +36,13 @@ class QualificationTests(unittest.TestCase):
                 del missing[key]
                 self.assertFalse(evaluate_model_gates(SEL, missing)["holdout_accepted"])
 
-    def test_synthetic_settlement_requires_explicit_policy(self):
-        metrics = {**MET, "normal_closed_trades": 6,
+    def test_synthetic_settlement_is_not_a_trade_or_a_veto(self):
+        metrics = {**MET, "normal_closed_trades": 8,
                    "backtest_end_settlement_count": 2,
-                   "backtest_end_settlement_percent": 25.0}
-        pending = evaluate_model_gates(SEL, metrics)
-        self.assertFalse(pending["holdout_accepted"])
-        self.assertEqual(pending["settlement_policy_status"], "WAIT_SETTLEMENT_RATIO_POLICY")
-        self.assertTrue(evaluate_model_gates(
-            SEL, metrics, max_end_settlement_percent=25)["holdout_accepted"])
-        self.assertFalse(evaluate_model_gates(
-            SEL, metrics, max_end_settlement_percent=20)["holdout_accepted"])
+                   "backtest_end_settlement_percent": 20.0}
+        result = evaluate_model_gates(SEL, metrics)
+        self.assertTrue(result["holdout_accepted"])
+        self.assertEqual(result["settlement_policy_status"], "PASS")
 
     def test_missing_or_inconsistent_settlement_audit_fails_closed(self):
         self.assertFalse(evaluate_model_gates(SEL, {

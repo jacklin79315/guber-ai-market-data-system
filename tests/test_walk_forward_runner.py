@@ -5,6 +5,14 @@ from p3.walk_forward_runner import run_four_strategy_research
 
 
 class RunnerTests(unittest.TestCase):
+    def test_rejects_future_research_before_loading_data(self):
+        with patch("p3.walk_forward_runner.load_fee_rate") as fee:
+            with self.assertRaisesRegex(ValueError, "fully closed"):
+                run_four_strategy_research(
+                    lambda *a, **kw: None, symbol="BTCUSDT",
+                    holdout_start_ms=4102444800000)
+        fee.assert_not_called()
+
     def test_four_strategies_and_explicit_holdout(self):
         with patch("p3.walk_forward_runner.load_fee_rate", return_value=0.001), \
              patch("p3.walk_forward_runner.load_native_candles",

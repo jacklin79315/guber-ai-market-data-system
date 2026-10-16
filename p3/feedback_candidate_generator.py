@@ -61,3 +61,52 @@ def next_feedback_candidate(history):
                         "eligible_for_promotion": False}
     return {"status": "APPROVED_NEIGHBORHOOD_EXHAUSTED",
             "candidate": None, "source_trial_index": best.get("trial_index")}
+
+
+
+def diagnose_structure_evidence(history):
+    """Audit observed stop exits for eligible trials; not a causal explanation."""
+    eligible = [row for row in history
+                if feedback_rank(row.get("metrics") or {}) is not None
+                and _valid_params(row.get("params"))]
+    if not eligible:
+        return {"status": "NO_ELIGIBLE_FEEDBACK"}
+    best = max(eligible, key=lambda row: feedback_rank(row["metrics"]))
+    evidence = best.get("eligible_trade_diagnosis") or {}
+    groups = evidence.get("by_direction") or {}
+    count = sum(int(g.get("closed", 0)) for g in groups.values())
+    stops = sum(int(g.get("stop_losses", 0)) for g in groups.values())
+    if count < 5 or stops == 0:
+        return {"status": "INSUFFICIENT_STRUCTURE_EVIDENCE",
+                "observed_exits": count, "stop_exits": stops}
+    return {"status": "STRUCTURE_HYPOTHESIS_ONLY",
+            "source_trial_index": best.get("trial_index"),
+            "observed_exits": count, "stop_exits": stops,
+            "hypothesis": "REVIEW_PREDICTED_PRICE_RANGES",
+            "limitations": "Stop exits alone do not prove price-model error."}
+
+
+def next_structure_candidate(history):
+    """Use eligible stop-exit evidence to propose a structure-only experiment."""
+    hypothesis = diagnose_structure_evidence(history)
+    if hypothesis["status"] != "STRUCTURE_HYPOTHESIS_ONLY":
+        return {"status": hypothesis["status"], "candidate": None}
+    anchor_row = next(row for row in history
+                      if row.get("trial_index") == hypothesis["source_trial_index"])
+    anchor = anchor_row["params"]
+    seen = {tuple(sorted(row["params"].items())) for row in history
+            if _valid_params(row.get("params"))}
+    for field, values in (("structure_max_iter", ITER_VALUES),
+                          ("structure_learning_rate", RATE_VALUES)):
+        for value in sorted(values, key=lambda v: (abs(v - anchor[field]), v)):
+            if value == anchor[field]:
+                continue
+            candidate = dict(anchor, **{field: value})
+            if tuple(sorted(candidate.items())) not in seen:
+                return {"status": "CANDIDATE_READY", "candidate": candidate,
+                        "changed_field": field, "old_value": anchor[field],
+                        "new_value": value, "target_layer": "STRUCTURE",
+                        "source_trial_index": hypothesis["source_trial_index"],
+                        "hypothesis": hypothesis,
+                        "eligible_for_promotion": False}
+    return {"status": "APPROVED_NEIGHBORHOOD_EXHAUSTED", "candidate": None}

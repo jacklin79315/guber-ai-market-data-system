@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from .ai_training_pipeline import _add_months, chronological_windows, DAY_MS, train_horizon
 from .validation_selection import select_threshold
 from .fee_schedule import load_fee_rate
-from .adaptive_trial_selection import next_candidate, next_layer_candidate
+from .adaptive_trial_selection import next_candidate, next_layer_candidate, validated_rank
 from .ai_training_batch import PARAMETERS
 from .ai_feature_history import load_native_features
 from .native_history_replay import load_native_candles
@@ -72,8 +72,8 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
     for index in range(len(history), iterations):
         params = next_layer_candidate(history) or next_candidate(candidates, history)
         if params is None:
-            best = max((h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None),
-                       key=lambda h: h["validation_score"], default=None)
+            best = max((h for h in history if h["status"] == "COMPLETE" and validated_rank(h) is not None),
+                       key=validated_rank, default=None)
             if best is None:
                 raise RuntimeError("no successful iterations to refine")
             anchor = best["params"]
@@ -270,7 +270,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
             "baseline_trial_index": baseline_trial["trial_index"],
             "best_trial_index": champion_trial["trial_index"],
             "metric_deltas": differences,
-            "selection_basis": "existing_validation_score",
+            "selection_basis": "annualized_win_rate_quality",
             "cause_of_improvement": "not_established",
             "holdout_used": False,
         }, allow_nan=False), flush=True)
@@ -292,7 +292,7 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         "strategy_score": best_observed.get("validation_mean_score_q"),
         "closed_trades": best_observed.get("validation_trades"),
         "validation_eligible": best_observed.get("validation_eligible") is True,
-        "ranking_basis": "existing_validation_return_minus_drawdown",
+        "ranking_basis": "observational_legacy_not_qualification",
     } if best_observed else None)
     successful = [h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None]
     best = max(successful, key=lambda h: h["validation_score"], default=None)
@@ -306,12 +306,12 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                 "outer_validation_used": True,
                 "holdout_used": False}
     baseline = successful[0]
-    improvement = (float(best["validation_score"]) - float(baseline["validation_score"])
+    improvement = (tuple(validated_rank(best)[i] - validated_rank(baseline)[i] for i in range(3))
                    if best is not None and baseline is not None else None)
     return {"status": "ITERATIONS_COMPLETE", "strategy": strategy,
             "run_id": run_id, "iterations": len(history), "successful": len(successful),
-            "baseline_score": baseline["validation_score"] if baseline else None,
-            "best_score": best["validation_score"] if best else None,
+            "baseline_score": validated_rank(baseline) if baseline else None,
+            "best_score": validated_rank(best) if best else None,
             "improvement_vs_first_successful": improvement,
             "best": best, "best_observed_performance": observed_performance,
             "outer_validation_used": True, "holdout_used": False}

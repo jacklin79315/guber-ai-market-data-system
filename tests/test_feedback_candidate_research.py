@@ -30,6 +30,19 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(result["status"], "WAIT")
         self.assertFalse(result["eligible_for_promotion"])
 
+    def test_candidate_rejected_on_lower_research_rank(self):
+        anchor, candidate = row(), row()
+        context = {"strategy": "INTRADAY", "research_window": [1, 2],
+                   "symbol": "BTCUSDT", "fee_rate": 0.001,
+                   "slippage_rate": 0.001, "data_fingerprint": "same",
+                   "research_evidence_status": {
+                       "status": "EVIDENCE_READY_FOR_COMPARATIVE_RESEARCH"}}
+        anchor.update(context)
+        candidate.update(context)
+        candidate["metrics"] = dict(candidate["metrics"], annualized_return_percent=-6)
+        self.assertEqual(assess_candidate_research(anchor, candidate)["status"],
+                         "REJECTED_IN_RESEARCH")
+
     def test_evidence_classifier_waits_for_complete_coverage(self):
         result = classify_research_evidence(
             {"entry_events": 2, "matched_both": 1}, {}, {}, [])

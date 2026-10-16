@@ -8,13 +8,13 @@ from .ai_training_pipeline import _add_months, DAY_MS
 
 
 def research_window(holdout_start_ms, *, months=24):
-    """Return the closed 24-month research interval before independent holdout.
+    """Return a closed research interval before independent holdout.
 
     The caller must supply the independent holdout boundary explicitly.
     Never derive it from the end of the training data or overlap holdout.
     """
-    if months != 24:
-        raise ValueError("approved research duration is 24 months")
+    if type(months) is not int or months < 1 or months > 24:
+        raise ValueError("research duration must be an integer from 1 to 24 months")
     if not isinstance(holdout_start_ms, int) or isinstance(holdout_start_ms, bool):
         raise TypeError("holdout_start_ms must be an integer UTC millisecond timestamp")
     if holdout_start_ms <= 0 or holdout_start_ms % DAY_MS:
@@ -50,7 +50,7 @@ def check_research_coverage(candles, features, research, *, timeframe):
     if (missing_candles or missing_features or unexpected_candles
             or unexpected_features):
         raise ValueError(
-            f"invalid 24-month native continuity/alignment: timeframe={timeframe}, "
+            f"invalid native continuity/alignment: timeframe={timeframe}, "
             f"expected={len(expected)}, missing_candles={len(missing_candles)}, "
             f"missing_features={len(missing_features)}, "
             f"unexpected_candles={len(unexpected_candles)}, "

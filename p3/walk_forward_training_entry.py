@@ -29,7 +29,7 @@ def resolve_research_months(mode, strategy, custom=None):
             raise ValueError("custom research months must be 1-24")
         return months
     raise ValueError("research mode must be fast, full or custom")
-from .walk_forward_feedback import run_research_iterations
+from .feedback_candidate_research import run_feedback_candidate_research
 from .training_settings import load_training_settings
 from .fee_schedule import load_fee_rate
 
@@ -39,8 +39,8 @@ def main():
     strategy = os.environ["TRAINING_BATCH_STRATEGY"]
     timeframe = STRATEGY_TIMEFRAMES[strategy]
     iterations = int(os.environ.get("TRAINING_ITERATIONS", "10"))
-    if iterations not in (5, 10):
-        raise ValueError("Research pilot supports five or ten iterations")
+    if not 1 <= iterations <= 10:
+        raise ValueError("Research pilot supports one to ten candidates")
     symbol = settings["symbol"]
     candles = load_native_candles(db, symbol, timeframe)
     features = load_native_features(db, symbol, timeframe)
@@ -50,9 +50,9 @@ def main():
     months = resolve_research_months(mode, strategy,
                                      os.environ.get("RESEARCH_CUSTOM_MONTHS"))
     research = research_window(holdout_start, months=months)
-    result = run_research_iterations(
-        candles, features, strategy, research, iterations=iterations,
-        fee_rate=load_fee_rate(db), symbol=symbol)
+    result = run_feedback_candidate_research(
+        candles, features, strategy, research, max_new_candidates=iterations,
+        fee_rate=load_fee_rate(db), slippage_rate=0.0, symbol=symbol)
     print(json.dumps({"status": "RESEARCH_COMPLETE", "symbol": symbol,
         "timeframe": timeframe, "research_mode": mode,
         "research_months": months, "holdout_start_ms": holdout_start,

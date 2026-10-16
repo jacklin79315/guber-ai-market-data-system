@@ -27,9 +27,11 @@ class BacktestEndSettlementTests(unittest.TestCase):
         self.assertAlmostEqual(a.cash, 9990)
         self.assertEqual(result["metrics"]["backtest_end_settlement_count"], 1)
         self.assertEqual(result["metrics"]["normal_closed_trades"], 0)
+        self.assertEqual(result["metrics"]["closed_trades"], 0)
+        self.assertAlmostEqual(result["metrics"]["realized_net_pnl"], -10)
         self.assertEqual(result["metrics"]["backtest_end_settlement_percent"], 100)
-        self.assertEqual(result["metrics"]["win_rate_percent"], 0)
-        self.assertLess(result["metrics"]["mean_score_q"], 50)
+        self.assertIsNone(result["metrics"]["win_rate_percent"])
+        self.assertIsNone(result["metrics"]["mean_score_q"])
         self.assertAlmostEqual(result["metrics"]["annualized_return_percent"],
                                result["metrics"]["annualized_mark_to_market_return_percent"])
 

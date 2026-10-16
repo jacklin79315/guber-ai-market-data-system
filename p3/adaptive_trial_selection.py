@@ -3,6 +3,22 @@
 Only validation-eligible completed trials guide the next candidate. When there
 is no usable feedback, explore the remaining grid deterministically.
 """
+import math
+
+
+def validated_rank(trial):
+    """Only completed, eligible, finite validation trading results can guide learning."""
+    keys = ("validation_annualized_return_percent", "validation_win_rate_percent", "validation_mean_score_q")
+    values = [trial.get(key) for key in keys]
+    dd = trial.get("validation_drawdown_percent")
+    if (trial.get("status") != "COMPLETE" or trial.get("validation_eligible") is not True
+            or not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in values)
+            or not isinstance(dd, (int, float)) or isinstance(dd, bool) or not math.isfinite(dd)
+            or not 0 <= dd <= 35):
+        return None
+    return tuple(values)
+
+
 def next_candidate(candidates, trials):
     seen = {tuple(sorted(t["params"].items())) for t in trials}
     remaining = [p for p in candidates if tuple(sorted(p.items())) not in seen]
@@ -10,10 +26,10 @@ def next_candidate(candidates, trials):
         return None
     eligible = [t for t in trials if t.get("status") == "COMPLETE"
                 and t.get("validation_eligible") is True
-                and t.get("validation_score") is not None]
+                and validated_rank(t) is not None]
     if not eligible:
         return remaining[0]
-    best = max(eligible, key=lambda t: float(t["validation_score"]))
+    best = max(eligible, key=validated_rank)
     anchor = best["params"]
     # Independent-layer winners do not carry legacy shared parameter keys.
     anchor_iter = anchor.get("max_iter", anchor.get("direction_max_iter"))

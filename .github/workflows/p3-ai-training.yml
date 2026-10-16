@@ -1,12 +1,7 @@
 name: P3 AI Training and Holdout Replay
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/p3-ai-training.yml'
-  schedule:
-    - cron: '17 */6 * * *'
+  # Legacy 16/4/4 holdout workflow: manual-only while 24-month research is active.
   workflow_dispatch:
 
 permissions:

@@ -21,7 +21,7 @@ DEFAULT_CANDIDATES = (
 
 
 def feedback_rank(metrics):
-    """Research-only loss-aware ranking; high drawdown is penalized, not ignored."""
+    """Research-only ranking; 35%-40% is diagnosis-only and >40% excluded."""
     fields = ("annualized_return_percent", "win_rate_percent", "mean_score_q",
               "max_close_to_close_drawdown_percent")
     vals = [metrics.get(key) for key in fields]
@@ -86,6 +86,7 @@ def run_research_iterations(candles, features, strategy, research, *,
             fee_rate=fee_rate, slippage_rate=slippage_rate, symbol=symbol)
         metrics = result["research_trading_metrics"]
         history.append({
+            "drawdown_failure_diagnosis": result.get("drawdown_failure_diagnosis"),
             "trial_index": index + 1, "params": params, "metrics": metrics,
             "research_rank": research_rank(metrics),
             "feedback_rank": feedback_rank(metrics),

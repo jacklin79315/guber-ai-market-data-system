@@ -89,8 +89,8 @@ jobs:
                       out.write('|---:|---:|---:|---:|---:|---|\n')
                       for trial in result['iterations']:
                           m = trial['metrics']
-                          out.write(f"| {trial['trial_index']} | {trial['trade_count']} | {m.get('annualized_return_percent')} | {m.get('win_rate_percent')} | {m.get('max_close_to_close_drawdown_percent')} | {trial['selection_basis']} |\n")
-                      out.write(f"\nFeedback used: {result.get('feedback_used_for_candidate_selection')}; best observed trial: {result.get('best_observed_trial_index')}.\n")
+                          out.write(f"| {trial['trial_index']} | {m.get('normal_closed_trades')} | {m.get('annualized_return_percent')} | {m.get('win_rate_percent')} | {m.get('max_close_to_close_drawdown_percent')} | {trial['selection']['status']} |\n")
+                      out.write(f"\nCandidates run: {result.get('new_candidates_run')}; stop reason: {result.get('stop_reason')}.\n")
                       out.write('\nHoldout untouched; research candidates are not qualified for promotion.\n')
                   if not results:
                       out.write('No completed research report.\n')

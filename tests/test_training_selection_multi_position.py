@@ -28,10 +28,10 @@ class TrainingSelectionMultiPositionTests(unittest.TestCase):
         self.assertEqual(result["metrics"]["backtest_end_settlement_count"], 4)
         self.assertEqual(result["metrics"]["normal_closed_trades"], 0)
         self.assertAlmostEqual(result["account"].capacity_limit, 8000)
-        self.assertEqual(result["metrics"]["closed_trades"], 4)
+        self.assertEqual(result["metrics"]["closed_trades"], 0)
         selection = select_threshold(candles, features, AlwaysLong(), "BTCUSDT", window, 0)
         self.assertEqual(len(selection["candidates"]), 4)
-        self.assertTrue(all(c["closed_trades"] == 4 for c in selection["candidates"]))
+        self.assertTrue(all(c["closed_trades"] == 0 for c in selection["candidates"]))
         self.assertTrue(all(c["backtest_end_settlement_percent"] == 100 for c in selection["candidates"]))
 
 

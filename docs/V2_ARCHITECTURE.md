@@ -23,7 +23,7 @@ Five independent specialists:
 Brain adjudicator: APPROVE, RETURN, REJECT, WAIT, with attributable rationale. Diagnostic AI evaluates completed simulations and attributes errors to the responsible specialist. Each specialist may have independently promoted champion/challenger versions. No legacy 0–100 trade scoring.
 
 ## Holding horizon and capital model — revised decision
-The previous four fixed holding horizons and independent capital pools are **historical**, not binding current requirements. Later user decision: shared specialists and dynamically selected holding duration, with no compulsory four-category duration. Whether separate capital ledgers remain useful is unresolved. No leverage; no automated real-money order placement.
+The previous four fixed holding horizons and independent capital pools are **historical**, not binding current requirements. Later user decision: shared specialists and dynamically selected holding duration, with no compulsory four-category duration. The former four independent capital pools were explicitly abolished with the fixed horizons; do not reintroduce them. No leverage; no automated real-money order placement.
 
 ## Simulation invariants
 - Decisions only use information available at decision time.
@@ -36,7 +36,7 @@ The previous four fixed holding horizons and independent capital pools are **his
 - Support LONG, SHORT, WAIT in research; short execution must not be represented as executable spot trading without borrow/margin.
 
 ## Diagnostic learning
-Independent diagnostic AI examines immutable specialist predictions and completed simulated outcomes before assessing expert quality. Assign primary/secondary/shared causality with evidence; do not penalize statistically reasonable losses by default. Diagnostic AI itself is evaluated and can learn. No fixed 0–100 scoring or old return/failed-trade point rules; measure predictive calibration, fill quality, risk, opportunity costs and portfolio outcomes. Avoid both indiscriminate WAIT and forced trades.
+Independent diagnostic AI examines immutable specialist predictions and completed simulated outcomes before assessing expert quality. Assign primary/secondary/shared causality with evidence; do not penalize statistically reasonable losses by default. Diagnostic AI itself is evaluated and can learn. No fixed Brain 0–100 decision score. Retain specialist/model quantitative evaluation and diagnostic scoring; historical model selection priority is annualized return > win rate > score, subject to risk eligibility and independent validation. Exact specialist score formulas are not yet verified. Measure predictive calibration, fill quality, risk, opportunity costs and portfolio outcomes. Avoid both indiscriminate WAIT and forced trades.
 
 ## Training and evaluation
 - Simulate chronological 24-month histories; iterative challenger research up to 100 rounds, not 100 independent identical replays.

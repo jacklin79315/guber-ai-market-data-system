@@ -39,6 +39,34 @@ def diagnose_drawdown(replay):
     }
 
 
+def audit_severe_drawdown(replay):
+    """Audit >40% drawdown without creating candidate feedback."""
+    metrics = replay["metrics"]
+    dd = metrics.get("max_close_to_close_drawdown_percent")
+    if type(dd) not in (int, float) or not dd > 40:
+        return None
+    exits = [e for e in replay.get("events", []) if e.get("type") == "EXIT"]
+    groups = {}
+    for e in exits:
+        group = groups.setdefault(e.get("side") or "UNKNOWN",
+            {"closed": 0, "losses": 0, "stop_losses": 0, "net_pnl": 0.0})
+        group["closed"] += 1
+        pnl = e.get("net_pnl")
+        if type(pnl) in (int, float):
+            group["losses"] += pnl < 0
+            group["net_pnl"] += pnl
+        group["stop_losses"] += e.get("reason") == "SL"
+    return {"status": "SEVERE_DRAWDOWN_AUDIT_ONLY",
+            "max_drawdown_percent": dd, "closed_trade_events": len(exits),
+            "by_direction": groups,
+            "signal_counts": dict(metrics.get("signal_counts") or {}),
+            "ambiguous_exit_count": metrics.get("ambiguous_exit_count"),
+            "unresolved_entry_bar_count": metrics.get("entry_bars_with_unresolved_exit"),
+            "eligible_for_candidate_selection": False,
+            "eligible_for_promotion": False,
+            "limitations": "Descriptive audit only; no candidate generation or causal attribution."}
+
+
 def diagnose_eligible_trades(replay):
     """Descriptive trade evidence for research with drawdown <=35%.
 

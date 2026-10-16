@@ -107,6 +107,37 @@ def audit_severe_drawdown(replay):
             "limitations": "Descriptive audit only; no candidate generation or causal attribution."}
 
 
+def diagnose_trade_prediction_outcomes(trades):
+    """Descriptive forecast/trade alignment; never infer causal losses."""
+    groups = {}
+    matched = 0
+    missing = 0
+    for trade in trades:
+        if not trade.get("forecast_pair_complete"):
+            missing += 1
+            continue
+        side = trade.get("side")
+        probability = trade.get("probability_up")
+        pnl = trade.get("net_pnl")
+        if side not in ("LONG", "SHORT") or type(probability) not in (int, float) or not 0 <= probability <= 1 or type(pnl) not in (int, float):
+            missing += 1
+            continue
+        aligned = (probability >= 0.5) if side == "LONG" else (probability < 0.5)
+        key = ("LONG" if side == "LONG" else "SHORT") + (":ALIGNED" if aligned else ":CONTRARY")
+        group = groups.setdefault(key, {"closed": 0, "wins": 0, "losses": 0, "net_pnl": 0.0})
+        group["closed"] += 1
+        group["wins"] += pnl > 0
+        group["losses"] += pnl < 0
+        group["net_pnl"] += pnl
+        matched += 1
+    for group in groups.values():
+        group["win_rate_percent"] = 100 * group["wins"] / group["closed"]
+    return {"status": "TRADE_FORECAST_ASSOCIATION_ONLY", "matched_trades": matched,
+            "missing_or_invalid_trades": missing, "by_side_and_direction_alignment": groups,
+            "eligible_for_candidate_selection": False,
+            "limitations": "Prediction direction versus trade outcome is association, not causal attribution."}
+
+
 def diagnose_eligible_trades(replay):
     """Descriptive trade evidence for research with drawdown <=35%.
 

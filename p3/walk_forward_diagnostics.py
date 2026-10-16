@@ -95,6 +95,36 @@ def diagnose_eligible_trades(replay):
             context["planned_rr_count"] += 1
     context["mean_planned_rr"] = (context["planned_rr_sum"] / context["planned_rr_count"]
                                   if context["planned_rr_count"] else None)
+    # Compare observed outcomes by actual entry-side and entry-bar ambiguity.
+    # No new trading thresholds or inferred market regime.
+    entry_condition_groups = {}
+    for event in exits:
+        entry = entries.get(event.get("lot_id"))
+        signal = (signal_index.get((entry.get("symbol"), entry.get("decision_time_ms")))
+                  if entry else None)
+        if not entry or not signal:
+            continue
+        side = event.get("side")
+        if side not in ("LONG", "SHORT"):
+            continue
+        unresolved = bool(entry.get("entry_bar_exit_unresolved"))
+        key = f"{side}:{'ENTRY_BAR_UNRESOLVED' if unresolved else 'ENTRY_BAR_CLEAR'}"
+        group = entry_condition_groups.setdefault(
+            key, {"trades": 0, "wins": 0, "losses": 0, "stops": 0,
+                  "net_pnl": 0.0, "missing_pnl": 0})
+        group["trades"] += 1
+        pnl = event.get("net_pnl")
+        if type(pnl) in (int, float):
+            group["wins"] += pnl > 0
+            group["losses"] += pnl < 0
+            group["net_pnl"] += pnl
+        else:
+            group["missing_pnl"] += 1
+        group["stops"] += event.get("reason") == "SL"
+    for group in entry_condition_groups.values():
+        n = group["trades"] - group["missing_pnl"]
+        group["win_rate_percent"] = 100 * group["wins"] / n if n else None
+        group["sample_size_warning"] = n < 5
     signal_counts = metrics.get("signal_counts") or {}
     return {
         "status": "DESCRIPTIVE_RESEARCH_EVIDENCE",
@@ -102,6 +132,7 @@ def diagnose_eligible_trades(replay):
         "closed_trade_events": len(exits),
         "by_direction": by_side,
         "entry_context": context,
+        "entry_condition_groups": entry_condition_groups,
         "missing_direction_events": missing_side,
         "insufficient_cash_signals": signal_counts.get("INSUFFICIENT_CASH"),
         "not_filled_signals": signal_counts.get("NOT_FILLED"),

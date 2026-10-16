@@ -91,6 +91,18 @@ jobs:
                           m = trial['metrics']
                           out.write(f"| {trial['trial_index']} | {m.get('normal_closed_trades')} | {m.get('annualized_return_percent')} | {m.get('win_rate_percent')} | {m.get('max_close_to_close_drawdown_percent')} | {trial['selection']['status']} |\n")
                       out.write(f"\nCandidates run: {result.get('new_candidates_run')}; stop reason: {result.get('stop_reason')}.\n")
+                      summary = result.get('research_summary') or {}
+                      out.write(f"\\nExploration improved: {summary.get('exploration_improved', 0)}; "
+                                f"not improved: {summary.get('exploration_not_improved', 0)}. "
+                                "Exploration is not risk qualification.\\n")
+                      out.write('| Trial | Research exploration | Strict feedback qualified |\\n')
+                      out.write('|---:|---|---|\\n')
+                      for trial in result['iterations']:
+                          comparison = trial.get('exploration_comparison') or {}
+                          out.write(f"| {trial['trial_index']} | "
+                                    f"{comparison.get('candidate_better_in_research', 'BASELINE')} | "
+                                    f"{trial.get('feedback_rank') is not None} |\\n")
+
                       for trial in result['iterations']:
                           audit = trial.get('severe_drawdown_audit')
                           if audit:

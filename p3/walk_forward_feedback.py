@@ -40,6 +40,26 @@ def feedback_rank(metrics):
     return (annualized, win, quality, -max(0, drawdown - 8))
 
 
+
+def exploration_rank(metrics):
+    """Research-only candidate ranking regardless of drawdown severity.
+
+    High drawdown remains disqualifying for qualification and promotion.
+    """
+    fields = ("annualized_return_percent", "win_rate_percent", "mean_score_q",
+              "max_close_to_close_drawdown_percent")
+    vals = [metrics.get(key) for key in fields]
+    trades = metrics.get("normal_closed_trades")
+    if (type(trades) is not int or trades < 5
+            or any(type(v) not in (int, float) or not math.isfinite(v) for v in vals)
+            or not 0 <= vals[3] <= 100
+            or metrics.get("ambiguous_exit_count", 0)):
+        return None
+    annualized, win, quality, drawdown = vals
+    return (annualized, win, quality, -max(0, drawdown - 8))
+
+
+
 def research_rank(metrics):
     """Conservative research qualification; never a holdout promotion gate."""
     rank = feedback_rank(metrics)

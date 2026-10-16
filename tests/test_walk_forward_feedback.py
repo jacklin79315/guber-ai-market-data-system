@@ -21,6 +21,17 @@ class ResearchFeedbackTests(unittest.TestCase):
         self.assertIsNotNone(feedback_rank(metrics(-20, dd=41)))
         self.assertIsNone(feedback_rank(metrics(100, trades=0)))
 
+    def test_unresolved_entry_bars_are_diagnostics_not_invalid_trades(self):
+        row = metrics(-22, dd=55)
+        row["entry_bars_with_unresolved_exit"] = 27
+        self.assertIsNotNone(feedback_rank(row))
+        self.assertIsNone(research_rank(row))
+
+    def test_ambiguous_exits_remain_disqualified_for_feedback(self):
+        row = metrics(-22, dd=20)
+        row["ambiguous_exit_count"] = 1
+        self.assertIsNone(feedback_rank(row))
+
     def test_best_trade_result_changes_next_candidate(self):
         grid = ({"max_iter": 80, "learning_rate": 0.05},
                 {"max_iter": 160, "learning_rate": 0.05},

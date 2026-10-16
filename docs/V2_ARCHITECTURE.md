@@ -15,15 +15,15 @@ The live system delivers a one-time advisory proposal; user chooses whether to t
 ## V2 AI roles
 Five independent specialists:
 1. Entry: propose entry price range and directional candidate.
-2. Reward: propose take-profit range and expected reward/risk.
-3. Win Probability: estimate calibrated probability with uncertainty.
-4. Risk/Position: stop-loss range and affordable position sizing.
+2. Reward: owns both take-profit (TP) and stop-loss (SL) ranges, and expected reward/risk.
+3. Win Probability: estimate calibrated probability with uncertainty using proposed entry, TP/SL and time assumptions; assess the share and severity of losing trades, not win rate alone.
+4. Risk/Position: position sizing, exposure and loss budgeting based on Reward's TP/SL; may RETURN for revision but cannot overwrite Reward's SL.
 5. Time: estimate holding duration; cannot veto a trade.
 
 Brain adjudicator: APPROVE, RETURN, REJECT, WAIT, with attributable rationale. Diagnostic AI evaluates completed simulations and attributes errors to the responsible specialist. Each specialist may have independently promoted champion/challenger versions. No legacy 0–100 trade scoring.
 
 ## Holding horizon and capital model — revised decision
-The four fixed strategies and four capital pools have been **completely removed**. Do not revive them as execution modes, mandatory classifications, or funding ledgers. Shared specialists determine each proposal's time horizon dynamically. No leverage; no automated real-money order placement.
+The four fixed strategies and four capital pools have been **completely removed**. Do not revive them as execution modes, mandatory classifications, or funding ledgers. Shared specialists determine each proposal's time horizon dynamically. Use one 10,000-unit initial simulated account (currency unit pending explicit confirmation); Risk/Position manages allocation and exposure. No leverage; no automated real-money order placement.
 
 ## Simulation invariants
 - Decisions only use information available at decision time.
@@ -46,11 +46,11 @@ Independent diagnostic AI examines immutable specialist predictions and complete
 - Require reproducible seeds, data/version lineage, run logs, and explicit promotion decisions.
 
 ## Delivery sequence
-1. Define and test V2 storage schema without changing the protected market-data layer.
+1. Protect and validate the market-data layer, and build the authenticated, operational frontend control center **before implementing experts and Brain**.
 2. Implement typed market-data adapter and chronological simulator.
-3. Implement five expert contracts, brain, WAIT, and diagnostic attribution.
+3. Implement five expert contracts, Brain, WAIT, and diagnostic attribution.
 4. Implement iterative challenger training and objective evaluation.
-5. Add read-only training dashboard and monitoring.
+5. Extend the already deployed frontend with training, diagnostics, performance and version controls.
 
 No real-money auto-ordering feature is in scope.
 
@@ -59,3 +59,6 @@ Admin login/password and server-enforced authorization for changes to trading pa
 
 ## Explicitly retired criteria
 No annualized return >=10%, win rate >=70%, or score >65 gating. The current architecture is specialists + Brain + independent diagnostics and learning; there are no four predefined strategy tracks or corresponding capital pools.
+
+## Current user decisions superseding prior scoring language
+Legacy scoring scheme is entirely removed: no Brain 0–100 points, no historical win/loss/return point scheme, no 10% annualized / 70% win rate / >65 score gate, and no fixed ranking of annualized return > win rate > score. Keep objective outcome and forecast-quality measurements without treating them as the retired scoring system. Private advisor only: suggest opportunities and notify the user, who independently decides and manually trades. Do not read or track actual holdings. Historical simulator must track **simulated** holdings only. No four strategies or four pools.

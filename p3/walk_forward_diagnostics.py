@@ -159,3 +159,35 @@ def audit_prediction_coverage(replay, direction_predictions, structure_predictio
             "missing_structure": total - matched_structure,
             "status": "COVERAGE_AUDIT_ONLY",
             "eligible_for_candidate_selection": False}
+
+
+def trade_prediction_rows(replay, direction_predictions, structure_predictions):
+    """Match ordinary exits to decision-time predictions; descriptive only."""
+    entries = {e["lot_id"]: e for e in replay["events"]
+               if e.get("type") == "ENTRY" and e.get("lot_id") is not None}
+    directions = {p["decision_time_ms"]: p for p in direction_predictions}
+    structures = {p["decision_time_ms"]: p for p in structure_predictions}
+    rows = []
+    for exit_event in replay["events"]:
+        if exit_event.get("type") != "EXIT":
+            continue
+        entry = entries.get(exit_event.get("lot_id"))
+        if entry is None:
+            continue
+        t = entry.get("decision_time_ms")
+        direction = directions.get(t, {})
+        structure = structures.get(t, {})
+        rows.append({
+            "lot_id": exit_event["lot_id"],
+            "decision_time_ms": t,
+            "side": entry.get("side"),
+            "entry_price": exit_event.get("entry_price"),
+            "exit_price": exit_event.get("exit_price"),
+            "net_pnl": exit_event.get("net_pnl"),
+            "exit_reason": exit_event.get("reason"),
+            "probability_up": direction.get("probability_up"),
+            "predicted_upper_bound": structure.get("predicted_upper_bound"),
+            "predicted_lower_bound": structure.get("predicted_lower_bound"),
+            "forecast_pair_complete": bool(direction) and bool(structure),
+        })
+    return rows

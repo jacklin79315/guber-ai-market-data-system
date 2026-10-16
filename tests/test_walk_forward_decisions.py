@@ -39,7 +39,8 @@ class WalkForwardDecisionTests(unittest.TestCase):
         X = np.ones((n, 20))
         y = np.asarray([i % 2 for i in range(n)])
         values = np.ones(n)
-        candles = [{"close_time": t, "symbol": "BTCUSDT"} for t in times]
+        candles = [{"close_time": t} for t in range(
+            start - 200 * interval, end + 17 * interval, interval)]
         features = [{"close_time": t} for t in times]
         _FakeModel.fit_sizes = []
         with patch("p3.walk_forward_decisions.check_research_coverage"), \

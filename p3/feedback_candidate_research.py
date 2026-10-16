@@ -7,7 +7,7 @@ from .autonomous_experiment_plan import (
 from .feedback_candidate_generator import (
     DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate)
 from .walk_forward_feedback import (
-    replay_walk_forward_research, feedback_rank, diagnose_feedback_hypothesis)
+    replay_walk_forward_research, feedback_rank, exploration_rank, diagnose_feedback_hypothesis)
 
 
 def run_feedback_candidate_research(candles, features, strategy, research, *,
@@ -29,9 +29,6 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
         else:
             if (history[-1].get("research_evidence_status") or {}).get("status") != "EVIDENCE_READY_FOR_COMPARATIVE_RESEARCH":
                 stop_reason = "WAIT_FOR_MODEL_EVIDENCE"
-                break
-            if (history[-1].get("research_candidate_assessment") or {}).get("status") == "WAIT":
-                stop_reason = "WAIT_FOR_RESEARCH_EVIDENCE"
                 break
             selection = (next_feedback_candidate(history) if target_layer == "DIRECTION"
                          else next_structure_candidate(history))
@@ -61,6 +58,7 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
             "matured_trade_forecast_audit": result.get("matured_trade_forecast_audit"),
             "checkpoints": result["training_checkpoints"],
             "feedback_rank": feedback_rank(metrics),
+            "exploration_rank": exploration_rank(metrics),
             "eligible_for_promotion": False,
         }
         if index:
@@ -71,9 +69,19 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
                 raise ValueError("missing comparison anchor")
             row["paired_research_comparison"] = compare_iteration_records(anchor, row)
             row["research_candidate_assessment"] = assess_candidate_research(anchor, row)
+            anchor_rank = exploration_rank(anchor["metrics"])
+            current_rank = exploration_rank(metrics)
+            row["exploration_comparison"] = {
+                "status": ("RESEARCH_ONLY_COMPARABLE" if anchor_rank is not None and current_rank is not None
+                           else "INSUFFICIENT_RESEARCH_METRICS"),
+                "candidate_better_in_research": (current_rank > anchor_rank
+                    if anchor_rank is not None and current_rank is not None else None),
+                "eligible_for_promotion": False}
+
         else:
             row["paired_research_comparison"] = None
             row["research_candidate_assessment"] = None
+            row["exploration_comparison"] = None
         history.append(row)
     return {
         "strategy": strategy, "research_window": list(research),

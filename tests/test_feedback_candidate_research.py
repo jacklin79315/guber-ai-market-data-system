@@ -35,6 +35,31 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(result["new_candidates_run"], 0)
         self.assertEqual(result["stop_reason"], "WAIT_FOR_MODEL_EVIDENCE")
 
+    def test_batch_stops_after_inconclusive_candidate(self):
+        candles = [{"close_time": 10, "close": 100}]
+        features = [{"close_time": 10, "close_price": 100}]
+        def fake_replay(*args, **kwargs):
+            fake_replay.calls += 1
+            evidence = ("EVIDENCE_READY_FOR_COMPARATIVE_RESEARCH"
+                        if fake_replay.calls == 1 else "WAIT")
+            return {"research_trading_metrics": dict(row()["metrics"]),
+                    "research_evidence_status": {"status": evidence},
+                    "direction_prediction_diagnostics": {
+                        "matched_predictions": 10, "direction_error_rate_percent": 40},
+                    "structure_prediction_diagnostics": {
+                        "matched_predictions": 10, "mean_absolute_range_error": 0.02},
+                    "training_checkpoints": []}
+        fake_replay.calls = 0
+        with patch("p3.feedback_candidate_research.replay_walk_forward_research",
+                   side_effect=fake_replay):
+            result = run_feedback_candidate_research(
+                candles, features, "INTRADAY", (1, 20),
+                symbol="BTCUSDT", fee_rate=0.001,
+                slippage_rate=0.001, max_new_candidates=10)
+        self.assertEqual(fake_replay.calls, 2)
+        self.assertEqual(result["stop_reason"], "WAIT_FOR_MODEL_EVIDENCE")
+        self.assertEqual(result["new_candidates_run"], 1)
+
     def test_batch_rejects_budget_above_ten(self):
         with self.assertRaises(ValueError):
             run_feedback_candidate_research([], [], "INTRADAY", (1, 20),

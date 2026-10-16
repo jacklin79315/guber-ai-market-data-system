@@ -4,6 +4,7 @@ import os
 from .ai_training_pipeline import train_horizon
 from .validation_selection import select_threshold
 from .same_window_promotion import decide_generation_promotion
+from .adaptive_trial_selection import validated_rank
 
 
 def compare_current_generation(db, *, symbol, strategy, years, candles, features,
@@ -15,11 +16,12 @@ def compare_current_generation(db, *, symbol, strategy, years, candles, features
                 "research_promoted": False}
     parent_run = os.environ["TRAINING_PARENT_RUN_ID"]
     parents = db("GET", "ai_training_batch_trials", {
-        "select": "params,validation_score,trial_index",
+        "select": "params,validation_score,trial_index,status,validation_eligible,validation_drawdown_percent,validation_annualized_return_percent,validation_win_rate_percent,validation_mean_score_q",
         "run_id": "eq." + parent_run, "symbol": "eq." + symbol,
         "strategy": "eq." + strategy, "validation_eligible": "eq.true",
-        "order": "validation_score.desc,trial_index.asc", "limit": "1",
+        "order": "trial_index.asc", "limit": "100",
     })
+    parents = sorted((p for p in parents if validated_rank(p) is not None), key=validated_rank, reverse=True)
     if not parents:
         return {"status": "WAIT", "reason": "no_parent_champion",
                 "research_promoted": False}

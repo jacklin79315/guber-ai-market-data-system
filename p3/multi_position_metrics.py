@@ -13,8 +13,9 @@ def summarize_multi_position(result, *, score_k=2.0):
     events = result["events"]
     signals = result.get("signals", [])
     boundary_trades = [t for t in trades if t.get("reason") == "BACKTEST_END_SETTLEMENT"]
-    profits = [t["net_pnl"] for t in trades]
-    scores = [50 + 50 * tanh(t["reward_p"] / score_k) for t in trades]
+    completed = [t for t in trades if t.get("reason") != "BACKTEST_END_SETTLEMENT"]
+    profits = [t["net_pnl"] for t in completed]
+    scores = [50 + 50 * tanh(t["reward_p"] / score_k) for t in completed]
     peak = INITIAL_EQUITY
     drawdown = 0.0
     for point in curve:
@@ -27,13 +28,16 @@ def summarize_multi_position(result, *, score_k=2.0):
     counts = {name: sum(s["outcome"] == name for s in signals)
               for name in ("WAIT", "FILLED", "NOT_FILLED", "INSUFFICIENT_CASH")}
     return {
-        "closed_trades": len(trades),
-        "normal_closed_trades": len(trades) - len(boundary_trades),
+        "closed_trades": len(completed),
+        "total_settlement_records": len(trades),
+        "normal_closed_trades": len(completed),
         "backtest_end_settlement_count": len(boundary_trades),
         "backtest_end_settlement_percent": 100 * len(boundary_trades) / len(trades) if trades else 0.0,
         "open_lots": len(account.positions),
         "available_cash": account.cash,
-        "realized_net_pnl": sum(profits),
+        "realized_net_pnl": account.realized_net_pnl,
+        "normal_trades_net_pnl": sum(profits),
+        "backtest_end_fees_net_pnl": sum(t["net_pnl"] for t in boundary_trades),
         "win_rate_percent": 100 * sum(p > 0 for p in profits) / len(profits) if profits else None,
         "mean_score_q": sum(scores) / len(scores) if scores else None,
         "final_mark_to_market_equity": final,

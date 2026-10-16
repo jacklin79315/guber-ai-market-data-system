@@ -179,6 +179,79 @@ def diagnose_trade_structure_outcomes(trades):
 
 
 
+
+def diagnose_trade_matured_forecasts(trades, candles, horizon_bars, research):
+    """Compare closed trades with realized forecast-horizon direction/range.
+
+    Ex-post research evidence only. Labels must mature strictly before the
+    research boundary; never feed these outcomes into point-in-time decisions.
+    """
+    import math
+    start, end = research
+    ordered = sorted(candles, key=lambda c: int(c["close_time"]))
+    by_time = {int(c["close_time"]): i for i, c in enumerate(ordered)}
+    if len(by_time) != len(ordered) or type(horizon_bars) is not int or horizon_bars < 1:
+        raise ValueError("invalid candle timeline or horizon")
+    groups = {}
+    skipped = {"missing_prediction": 0, "unmatured_horizon": 0, "invalid_values": 0}
+    for trade in trades:
+        t = trade.get("decision_time_ms")
+        i = by_time.get(t)
+        if not trade.get("forecast_pair_complete") or i is None or not start <= t < end:
+            skipped["missing_prediction"] += 1
+            continue
+        if i + horizon_bars >= len(ordered) or int(ordered[i + horizon_bars]["close_time"]) >= end:
+            skipped["unmatured_horizon"] += 1
+            continue
+        try:
+            p = float(trade["probability_up"])
+            upper = float(trade["predicted_upper_bound"])
+            lower = float(trade["predicted_lower_bound"])
+            reference = float(ordered[i]["close"])
+            final = float(ordered[i + horizon_bars]["close"])
+            future = ordered[i + 1:i + horizon_bars + 1]
+            high = max(float(c["high"]) for c in future)
+            low = min(float(c["low"]) for c in future)
+            pnl = float(trade["net_pnl"])
+        except (TypeError, ValueError, KeyError):
+            skipped["invalid_values"] += 1
+            continue
+        if (not all(math.isfinite(v) for v in (p, upper, lower, reference, final, high, low, pnl))
+                or not 0 <= p <= 1 or not 0 < lower < upper or reference <= 0
+                or trade.get("side") not in ("LONG", "SHORT")):
+            skipped["invalid_values"] += 1
+            continue
+        direction_correct = (p >= 0.5) == (final > reference)
+        range_covered = lower <= low and high <= upper
+        key = ("DIRECTION_CORRECT" if direction_correct else "DIRECTION_WRONG") + ":" + (
+            "RANGE_COVERED" if range_covered else "RANGE_MISSED")
+        group = groups.setdefault(key, {"closed": 0, "wins": 0, "losses": 0,
+                                        "net_pnl": 0.0, "sum_planned_rr": 0.0,
+                                        "planned_rr_count": 0})
+        group["closed"] += 1
+        group["wins"] += pnl > 0
+        group["losses"] += pnl < 0
+        group["net_pnl"] += pnl
+        rr = trade.get("planned_rr")
+        if type(rr) in (int, float) and math.isfinite(rr) and rr > 0:
+            group["sum_planned_rr"] += rr
+            group["planned_rr_count"] += 1
+    for group in groups.values():
+        group["win_rate_percent"] = 100 * group["wins"] / group["closed"]
+        group["mean_planned_rr"] = (group["sum_planned_rr"] / group["planned_rr_count"]
+                                    if group["planned_rr_count"] else None)
+        group["sample_size_warning"] = group["closed"] < 5
+    return {"status": "MATURED_TRADE_FORECAST_AUDIT_ONLY",
+            "matched_trades": sum(g["closed"] for g in groups.values()),
+            "skipped": skipped, "by_direction_and_range_accuracy": groups,
+            "independent_validation_performed": False,
+            "eligible_for_candidate_selection": False,
+            "limitations": ("Future-horizon outcomes are ex-post research labels, "
+                            "not contemporaneous information or causal loss attribution. "
+                            "Range coverage requires both realized high and low inside bounds.")}
+
+
+
 def diagnose_eligible_trades(replay):
     """Descriptive trade evidence for research with drawdown <=35%.
 

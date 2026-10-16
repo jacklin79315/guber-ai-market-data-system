@@ -4,6 +4,8 @@ This module does not generate parameter candidates, fit models, touch holdout,
 or promote a model. Candidate-generation bounds require separate approval.
 """
 from math import isfinite
+import hashlib
+import json
 
 
 def propose_experiment(hypothesis):
@@ -94,3 +96,29 @@ def compare_iteration_records(baseline, candidate):
                                      candidate.get("metrics"))
     result["comparison_context_verified"] = True
     return result
+
+
+def research_data_fingerprint(candles, features, research):
+    """Hash the actual research-window source rows, excluding holdout.
+
+    Order-independent across rows; sensitive to values and missing rows.
+    """
+    start, end = research
+    if not isinstance(start, int) or not isinstance(end, int) or start >= end:
+        raise ValueError("invalid research window")
+    digest = hashlib.sha256()
+    for name, rows in (("candles", candles), ("features", features)):
+        selected = [row for row in rows
+                    if start <= int(row["close_time"]) < end]
+        if not selected:
+            raise ValueError("missing research rows: " + name)
+        selected.sort(key=lambda row: int(row["close_time"]))
+        times = [int(row["close_time"]) for row in selected]
+        if len(times) != len(set(times)):
+            raise ValueError("duplicate research timestamps: " + name)
+        digest.update(name.encode("ascii") + b"\\n")
+        for row in selected:
+            digest.update(json.dumps(row, sort_keys=True, separators=(",", ":"),
+                                     default=str, allow_nan=False).encode("utf-8"))
+            digest.update(b"\\n")
+    return digest.hexdigest()

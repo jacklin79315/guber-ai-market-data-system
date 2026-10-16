@@ -9,7 +9,9 @@ class AdaptiveLayerSelectionTests(unittest.TestCase):
 
     def test_requires_diagnostics(self):
         trials = [{"status": "COMPLETE", "validation_eligible": True,
-                   "validation_score": 2.0,
+                   "validation_score": None, "validation_drawdown_percent": 8,
+                   "validation_annualized_return_percent": 12, "validation_win_rate_percent": 75,
+                   "validation_mean_score_q": 68,
                    "params": {"max_iter": 100, "learning_rate": 0.1}}]
         self.assertIsNone(next_layer_candidate(trials))
 
@@ -33,7 +35,9 @@ class AdaptiveLayerSelectionTests(unittest.TestCase):
                    "params": {"max_iter": 100, "learning_rate": 0.1},
                    "diagnostics": diag},
                   {"status": "COMPLETE", "validation_eligible": True,
-                   "validation_score": 3.0,
+                   "validation_score": None, "validation_drawdown_percent": 8,
+                   "validation_annualized_return_percent": 15, "validation_win_rate_percent": 75,
+                   "validation_mean_score_q": 68,
                    "params": {"direction_max_iter": 120,
                               "direction_learning_rate": 0.1,
                               "structure_max_iter": 100,

@@ -21,15 +21,22 @@ class CandidateGenerationTests(unittest.TestCase):
 
     def test_structure_requires_evidence(self):
         self.assertEqual(next_structure_candidate([row()])["status"],
-                         "INSUFFICIENT_STRUCTURE_EVIDENCE")
+                         "MISSING_STRUCTURE_PREDICTION_EVIDENCE")
 
     def test_structure_changes_only_structure_parameter(self):
         source = row()
-        source["eligible_trade_diagnosis"]["by_direction"]["LONG"]["stop_losses"] = 5
+        source["structure_prediction_diagnostics"] = {
+            "matched_predictions": 10, "mean_absolute_range_error": 0.02}
         choice = next_structure_candidate([source])
         self.assertEqual(choice["status"], "CANDIDATE_READY")
         self.assertEqual(choice["target_layer"], "STRUCTURE")
         self.assertTrue(choice["changed_field"].startswith("structure_"))
+
+    def test_stop_events_alone_cannot_trigger_structure_tuning(self):
+        source = row()
+        source["eligible_trade_diagnosis"]["by_direction"]["LONG"]["stop_losses"] = 10
+        self.assertEqual(next_structure_candidate([source])["status"],
+                         "MISSING_STRUCTURE_PREDICTION_EVIDENCE")
 
     def test_changes_only_one_approved_parameter(self):
         choice = next_feedback_candidate([row()])

@@ -36,6 +36,8 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(result["stop_reason"], "WAIT_FOR_MODEL_EVIDENCE")
         self.assertEqual(result["next_action"], "WAIT_FOR_EVIDENCE")
         self.assertEqual(len(result["decision_log"]), replay.call_count)
+        self.assertEqual(result["research_summary"]["candidate_trials"], 0)
+        self.assertEqual(result["research_summary"]["inconclusive_candidates"], 0)
 
     def test_batch_stops_after_inconclusive_candidate(self):
         candles = [{"close_time": 10, "close": 100}]

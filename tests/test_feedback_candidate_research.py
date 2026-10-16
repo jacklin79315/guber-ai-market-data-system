@@ -1,4 +1,6 @@
 import unittest
+from unittest.mock import patch
+from p3.feedback_candidate_research import run_feedback_candidate_research
 from p3.autonomous_experiment_plan import assess_candidate_research
 from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows, classify_research_evidence
 from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate
@@ -17,6 +19,22 @@ def row(dd=10):
 
 
 class CandidateGenerationTests(unittest.TestCase):
+    def test_batch_stops_at_baseline_without_model_evidence(self):
+        candles = [{"close_time": 10, "close": 100}]
+        features = [{"close_time": 10, "close_price": 100}]
+        fake = {"research_trading_metrics": row()["metrics"],
+                "research_evidence_status": {"status": "WAIT"},
+                "training_checkpoints": []}
+        with patch("p3.feedback_candidate_research.replay_walk_forward_research",
+                   return_value=fake) as replay:
+            result = run_feedback_candidate_research(
+                candles, features, "INTRADAY", (1, 20),
+                symbol="BTCUSDT", fee_rate=0.001,
+                slippage_rate=0.001, max_new_candidates=10)
+        self.assertEqual(replay.call_count, 1)
+        self.assertEqual(result["new_candidates_run"], 0)
+        self.assertEqual(result["stop_reason"], "WAIT_FOR_MODEL_EVIDENCE")
+
     def test_research_assessment_waits_for_model_evidence(self):
         anchor = row()
         candidate = row()

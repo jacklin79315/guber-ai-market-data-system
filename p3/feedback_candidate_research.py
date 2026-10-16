@@ -102,6 +102,12 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
             "rejected_in_research": sum(
                 (item.get("research_candidate_assessment") or {}).get("status")
                 == "REJECTED_IN_RESEARCH" for item in history),
+            "exploration_improved": sum(
+                (item.get("exploration_comparison") or {}).get("candidate_better_in_research") is True
+                for item in history),
+            "exploration_not_improved": sum(
+                (item.get("exploration_comparison") or {}).get("candidate_better_in_research") is False
+                for item in history),
             "inconclusive_candidates": sum(
                 (item.get("research_candidate_assessment") or {}).get("status")
                 == "WAIT" for item in history),
@@ -112,6 +118,8 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
              "selection_status": item["selection"]["status"],
              "assessment_status": (item["research_candidate_assessment"] or {}).get("status"),
              "feedback_eligible": item["feedback_rank"] is not None,
+             "exploration_eligible": item["exploration_rank"] is not None,
+             "exploration_better": (item.get("exploration_comparison") or {}).get("candidate_better_in_research"),
              "eligible_for_promotion": False}
             for item in history],
         "independent_validation_performed": False,

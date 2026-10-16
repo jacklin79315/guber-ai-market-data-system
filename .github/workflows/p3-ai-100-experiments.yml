@@ -1,30 +1,7 @@
-name: P3 AI 100 Experiment Batch
+name: P3 24-Month Walk-Forward Research Pilot
 
 on:
   workflow_dispatch:
-    inputs:
-      iterations:
-        description: 'Sequential feedback iterations per strategy (5, 10 or 100)'
-        required: true
-        type: choice
-        options:
-          - '5'
-          - '10'
-          - '100'
-        default: '100'
-      generation:
-        description: 'Generation number (1 for baseline)'
-        required: true
-        default: '1'
-      parent_run_id:
-        description: 'Previous generation GitHub run ID; required for generation 2+'
-        required: false
-      previous_validation_window:
-        description: 'Previous validation [start_ms,end_ms] JSON'
-        required: false
-      current_validation_window:
-        description: 'New validation [start_ms,end_ms] JSON'
-        required: false
 
 concurrency:
   group: p3-ai-research-${{ github.ref }}
@@ -42,11 +19,7 @@ jobs:
       matrix:
         strategy: [INTRADAY, ONE_TO_THREE_DAYS, ONE_WEEK, FIFTEEN_TO_THIRTY_DAYS]
     env:
-      TRAINING_GENERATION: ${{ inputs.generation || '1' }}
-      TRAINING_ITERATIONS: ${{ inputs.iterations || '100' }}
-      TRAINING_PARENT_RUN_ID: ${{ inputs.parent_run_id }}
-      TRAINING_PARENT_VALIDATION_WINDOW: ${{ inputs.previous_validation_window }}
-      TRAINING_CURRENT_VALIDATION_WINDOW: ${{ inputs.current_validation_window }}
+      TRAINING_ITERATIONS: '5'
       TRAINING_BATCH_STRATEGY: ${{ matrix.strategy }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -57,57 +30,47 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Validate experiment grid
-        run: python -m unittest tests.test_independent_model_params tests.test_adaptive_layer_selection tests.test_indicator_interaction_learning tests.test_adaptive_trial_selection tests.test_ai_training_batch tests.test_iterative_generation tests.test_generation_comparison tests.test_same_window_promotion tests.test_generation_evaluator tests.test_generation_readiness tests.test_training_data_quality tests.test_autonomous_generation_planner tests.test_research_lease_policy tests.test_research_job_guard tests.test_multi_position_replay tests.test_validation_window_diagnostics
-      - name: Run sequential feedback-driven learning iterations
+      - name: Run 24-month walk-forward research pilot
         shell: bash
         run: |
           set -o pipefail
-          python -m p3.autonomous_training_loop | tee batch-results.jsonl
-      - name: Publish learning scores in GitHub Actions summary
+          python -m p3.walk_forward_training_entry | tee batch-results.jsonl
+      - name: Summarize research trades
         if: always()
         shell: bash
         run: |
           python - <<'PY'
           import json, os, pathlib
-          file = pathlib.Path('batch-results.jsonl')
+          path = pathlib.Path('batch-results.jsonl')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
-              out.write('## Autonomous learning results\n\n')
-              if not file.exists():
-                  out.write('No result file was produced.\n')
+              out.write('## 24-month walk-forward research (not holdout)\n\n')
+              if not path.exists():
+                  out.write('No research results. Inspect logs.\n')
               else:
                   results = []
-                  for line in file.read_text().splitlines():
+                  for line in path.read_text().splitlines():
                       try:
-                          item = json.loads(line)
-                          if item.get('status') == 'ITERATION_RESULT':
-                              results.append(item)
-                      except (ValueError, TypeError):
+                          row = json.loads(line)
+                          if row.get('status') == 'RESEARCH_COMPLETE':
+                              results.append(row)
+                      except ValueError:
                           pass
-                  out.write('| Iteration | Status | Annualized % | Return % | Annualized MTM % | Win rate % | Mean trade score | Drawdown % | Trades | Eligible | Parameters |\n')
-                  out.write('|---:|---|---:|---:|---:|---:|---:|---:|---:|---|---|\n')
-                  for item in results:
-                      out.write(f"| {item['trial_index']} | {item['status']} | {item.get('validation_annualized_return_percent')} | {item.get('validation_return_percent')} | {item.get('validation_annualized_mark_to_market_return_percent')} | {item.get('validation_win_rate_percent')} | {item.get('validation_mean_score_q')} | {item.get('validation_drawdown_percent')} | {item.get('validation_trades')} | {item.get('validation_eligible')} | `{json.dumps(item['params'])}` |\n")
+                  for result in results:
+                      out.write('Strategy: ' + result['strategy'] + '\n\n')
+                      out.write('| Trial | Closed trades | Annualized % | Win rate % | Max drawdown % | Feedback source |\n')
+                      out.write('|---:|---:|---:|---:|---:|---|\n')
+                      for trial in result['iterations']:
+                          m = trial['metrics']
+                          out.write(f"| {trial['trial_index']} | {trial['trade_count']} | {m.get('annualized_return_percent')} | {m.get('win_rate_percent')} | {m.get('max_close_to_close_drawdown_percent')} | {trial['selection_basis']} |\n")
+                      out.write('\nHoldout untouched; research candidates are not qualified for promotion.\n')
                   if not results:
-                      out.write('No completed iteration results were found; inspect the job log.\n')
-                  else:
-                      completed = [x for x in results if x['status'] == 'COMPLETE']
-                      from p3.adaptive_trial_selection import validated_rank
-                      eligible = [x for x in completed if validated_rank(x) is not None]
-                      out.write(f"\nCompleted {len(completed)} of {len(results)} iterations.\n")
-                      if eligible:
-                          first = eligible[0]
-                          best = max(eligible, key=validated_rank)
-                          out.write(f"\nFirst eligible annualized/win/quality: {validated_rank(first)}; best: {validated_rank(best)}.\n")
-                          out.write("\nThese are validation-only trading replay results, not holdout or live-trading proof.\n")
-                      else:
-                          out.write("\nNo validation-eligible trading models; review the recorded replay metrics.\n")
+                      out.write('No completed research report.\n')
           PY
-      - name: Preserve every experiment result
+      - name: Preserve research results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ai-batch-${{ matrix.strategy }}-${{ github.run_id }}
+          name: walk-forward-${{ matrix.strategy }}-${{ github.run_id }}
           path: batch-results.jsonl
           retention-days: 90
           if-no-files-found: ignore

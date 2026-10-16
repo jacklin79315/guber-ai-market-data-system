@@ -30,6 +30,8 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Test loss-aware feedback selection
+        run: python -m unittest tests.test_walk_forward_feedback
       - name: Run 24-month walk-forward research pilot
         shell: bash
         run: |

@@ -40,6 +40,11 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
     metrics = replay["metrics"]
     # Diagnostic evidence is retained only for 35%-40% drawdown research runs.
     from .walk_forward_diagnostics import diagnose_drawdown, diagnose_eligible_trades
+    from .forecast_error_diagnostics import diagnose_price_range_predictions
+    from .ai_decision_model import HORIZON_BARS
+    structure_diagnosis = diagnose_price_range_predictions(
+        decision_result.get("price_range_predictions", []), candles,
+        HORIZON_BARS[strategy], research)
     diagnosis = diagnose_drawdown(replay)
     eligible_diagnosis = diagnose_eligible_trades(replay)
     return {
@@ -52,6 +57,7 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
         "research_trading_metrics": metrics,
         "drawdown_failure_diagnosis": diagnosis,
         "eligible_trade_diagnosis": eligible_diagnosis,
+        "structure_prediction_diagnostics": structure_diagnosis,
         "research_signal_count": len(replay["signals"]),
         "research_trade_events": len(replay["events"]),
         "research_trades": metrics["normal_closed_trades"],

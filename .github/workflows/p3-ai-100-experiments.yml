@@ -2,6 +2,29 @@ name: P3 24-Month Walk-Forward Research Pilot
 
 on:
   workflow_dispatch:
+    inputs:
+      research_mode:
+        description: 'Research window mode (fast: 6/12/18/24; full: 24; custom: per-strategy months)'
+        type: choice
+        options: [fast, full, custom]
+        default: fast
+        required: true
+      intraday_months:
+        description: 'Custom INTRADAY months (1-24)'
+        type: string
+        default: '6'
+      one_to_three_days_months:
+        description: 'Custom ONE_TO_THREE_DAYS months (1-24)'
+        type: string
+        default: '12'
+      one_week_months:
+        description: 'Custom ONE_WEEK months (1-24)'
+        type: string
+        default: '18'
+      fifteen_to_thirty_days_months:
+        description: 'Custom FIFTEEN_TO_THIRTY_DAYS months (1-24)'
+        type: string
+        default: '24'
   # Research is manual-only; code pushes run unit tests instead.
 
 concurrency:
@@ -21,6 +44,8 @@ jobs:
         strategy: [INTRADAY, ONE_TO_THREE_DAYS, ONE_WEEK, FIFTEEN_TO_THIRTY_DAYS]
     env:
       TRAINING_ITERATIONS: '10'
+      RESEARCH_MODE: ${{ inputs.research_mode || 'full' }}
+      RESEARCH_CUSTOM_MONTHS: ${{ matrix.strategy == 'INTRADAY' && inputs.intraday_months || matrix.strategy == 'ONE_TO_THREE_DAYS' && inputs.one_to_three_days_months || matrix.strategy == 'ONE_WEEK' && inputs.one_week_months || inputs.fifteen_to_thirty_days_months }}
       TRAINING_BATCH_STRATEGY: ${{ matrix.strategy }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -33,7 +58,7 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Test loss-aware feedback selection
         run: python -m unittest tests.test_walk_forward_feedback
-      - name: Run 24-month walk-forward research pilot
+      - name: Run selected-window walk-forward research pilot
         shell: bash
         run: |
           set -o pipefail
@@ -46,7 +71,7 @@ jobs:
           import json, os, pathlib
           path = pathlib.Path('batch-results.jsonl')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
-              out.write('## 24-month walk-forward research (not holdout)\n\n')
+              out.write('## Walk-forward research (not holdout)\n\n')
               if not path.exists():
                   out.write('No research results. Inspect logs.\n')
               else:
@@ -59,7 +84,7 @@ jobs:
                       except ValueError:
                           pass
                   for result in results:
-                      out.write('Strategy: ' + result['strategy'] + '\n\n')
+                      out.write('Strategy: ' + result['strategy'] + f"; mode: {result.get('research_mode')}; months: {result.get('research_months')}" + '\n\n')
                       out.write('| Trial | Closed trades | Annualized % | Win rate % | Max drawdown % | Feedback source |\n')
                       out.write('|---:|---:|---:|---:|---:|---|\n')
                       for trial in result['iterations']:

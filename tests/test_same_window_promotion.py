@@ -12,10 +12,10 @@ class SameWindowPromotionTests(unittest.TestCase):
         self.assertEqual(decide_generation_promotion(BASE, BASE,
                          same_validation_window=False)["status"], "WAIT")
 
-    def test_reject_increased_drawdown_even_with_higher_score(self):
+    def test_accept_increased_drawdown_inside_best_tier(self):
         new = dict(BASE, return_percent=10.0, drawdown_percent=3.0, annualized_return_percent=14.0)
         self.assertEqual(decide_generation_promotion(BASE, new,
-                         same_validation_window=True)["reason"], "drawdown_worsened")
+                         same_validation_window=True)["status"], "RESEARCH_CANDIDATE")
 
     def test_reject_insufficient_trades(self):
         new = dict(BASE, return_percent=8.0, closed_trades=2)

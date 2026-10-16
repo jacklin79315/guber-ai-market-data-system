@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 from p3.walk_forward_feedback import (
     feedback_rank, research_rank, select_research_candidate,
-    run_research_iterations)
+    run_research_iterations, diagnose_feedback_hypothesis)
 
 
 def metrics(annualized, *, trades=8, dd=2):
@@ -56,6 +56,28 @@ class ResearchFeedbackTests(unittest.TestCase):
         self.assertIsNone(feedback_rank(metrics(20, dd=35.01)))
         self.assertIsNone(feedback_rank(metrics(20, dd=40)))
         self.assertIsNone(feedback_rank(metrics(20, dd=40.01)))
+
+    def test_hypothesis_uses_only_eligible_trade_evidence(self):
+        blocked = {"trial_index": 1, "params": {}, "metrics": metrics(100, dd=41),
+                   "eligible_trade_diagnosis": {"by_direction": {
+                       "LONG": {"closed": 20, "win_rate_percent": 0, "net_pnl": -500}}}}
+        good = {"trial_index": 2, "params": {}, "metrics": metrics(-2, dd=20),
+                "eligible_trade_diagnosis": {"by_direction": {
+                    "SHORT": {"closed": 8, "win_rate_percent": 25, "net_pnl": -30},
+                    "LONG": {"closed": 3, "win_rate_percent": 0, "net_pnl": -40}}}}
+        result = diagnose_feedback_hypothesis([blocked, good])
+        self.assertEqual(result["source_trial_index"], 2)
+        self.assertEqual(result["hypothesis"], "REVIEW_DIRECTION_OUTCOMES_SHORT")
+        self.assertEqual(result["evidence"]["closed"], 8)
+        self.assertEqual(diagnose_feedback_hypothesis([blocked])["status"],
+                         "NO_ELIGIBLE_FEEDBACK")
+
+    def test_hypothesis_requires_minimum_direction_sample(self):
+        history = [{"trial_index": 1, "metrics": metrics(1, dd=10),
+                    "eligible_trade_diagnosis": {"by_direction": {
+                        "LONG": {"closed": 2, "win_rate_percent": 0}}}}]
+        self.assertEqual(diagnose_feedback_hypothesis(history)["status"],
+                         "INSUFFICIENT_TRADE_EVIDENCE")
 
     def test_loop_never_promotes_research_results(self):
         with patch("p3.walk_forward_feedback.replay_walk_forward_research",

@@ -12,6 +12,11 @@ DEFAULT_CANDIDATES = (
     {"max_iter": 160, "learning_rate": 0.05},
     {"max_iter": 80, "learning_rate": 0.10},
     {"max_iter": 160, "learning_rate": 0.10},
+    {"max_iter": 60, "learning_rate": 0.025},
+    {"max_iter": 100, "learning_rate": 0.025},
+    {"max_iter": 140, "learning_rate": 0.025},
+    {"max_iter": 200, "learning_rate": 0.05},
+    {"max_iter": 200, "learning_rate": 0.10},
 )
 
 

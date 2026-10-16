@@ -1,0 +1,30 @@
+name: P3 24-Month Walk-Forward Unit Tests
+
+on:
+  push:
+    branches:
+      - feature/p3b-paper-engine
+    paths:
+      - 'p3/walk_forward_*.py'
+      - 'tests/test_walk_forward_*.py'
+      - '.github/workflows/p3-walk-forward-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Check syntax
+        run: python -m compileall -q p3/walk_forward_*.py tests/test_walk_forward_*.py
+      - name: Walk-forward unit tests (no database access)
+        run: python -m unittest -v tests.test_walk_forward_research tests.test_walk_forward_decisions tests.test_walk_forward_replay tests.test_walk_forward_feedback tests.test_walk_forward_runner

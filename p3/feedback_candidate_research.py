@@ -76,6 +76,13 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
         "target_layer": target_layer, "iterations": history, "new_candidates_run": max(0, len(history) - 1),
         "stop_reason": stop_reason or "APPROVED_BATCH_BUDGET_REACHED",
         "latest_hypothesis": diagnose_feedback_hypothesis(history),
+        "decision_log": [
+            {"trial_index": item["trial_index"],
+             "selection_status": item["selection"]["status"],
+             "assessment_status": (item["research_candidate_assessment"] or {}).get("status"),
+             "feedback_eligible": item["feedback_rank"] is not None,
+             "eligible_for_promotion": False}
+            for item in history],
         "independent_validation_performed": False,
         "eligible_for_promotion": False,
     }

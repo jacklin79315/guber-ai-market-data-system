@@ -169,6 +169,21 @@ class CandidateGenerationTests(unittest.TestCase):
             "metrics": {"max_close_to_close_drawdown_percent": 39},
             "events": []}))
 
+    def test_severe_audit_reconciles_boundary_settlement(self):
+        replay = {"metrics": {
+            "max_close_to_close_drawdown_percent": 63,
+            "realized_net_pnl": -104,
+            "normal_trades_net_pnl": -100,
+            "backtest_end_fees_net_pnl": -4},
+            "events": [{"type": "EXIT", "side": "SHORT",
+                        "net_pnl": -100, "reason": "SL"},
+                       {"type": "BACKTEST_END_SETTLEMENT", "net_pnl": -4}]}
+        audit = audit_severe_drawdown(replay)
+        self.assertEqual(audit["net_pnl_reconciliation_gap"], -4)
+        self.assertEqual(audit["normal_trades_reconciliation_gap"], 0)
+        self.assertEqual(audit["realized_pnl_after_boundary_reconciliation_gap"], 0)
+        self.assertFalse(audit["eligible_for_candidate_selection"])
+
     def test_rejects_disqualified_feedback(self):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],
                          "NO_ELIGIBLE_FEEDBACK")

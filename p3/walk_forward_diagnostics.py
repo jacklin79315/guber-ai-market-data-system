@@ -141,3 +141,21 @@ def diagnose_eligible_trades(replay):
         "limitations": ("Observed outcomes only; no proven causality or market-regime "
                         "attribution. Missing direction and small samples reduce confidence."),
     }
+
+
+def audit_prediction_coverage(replay, direction_predictions, structure_predictions):
+    """Count matched historical decisions without inferring loss causes."""
+    entries = [e for e in replay["events"] if e.get("type") == "ENTRY"]
+    direction_times = {p["decision_time_ms"] for p in direction_predictions}
+    structure_times = {p["decision_time_ms"] for p in structure_predictions}
+    total = len(entries)
+    matched_direction = sum(e.get("decision_time_ms") in direction_times for e in entries)
+    matched_structure = sum(e.get("decision_time_ms") in structure_times for e in entries)
+    both = sum(e.get("decision_time_ms") in direction_times
+               and e.get("decision_time_ms") in structure_times for e in entries)
+    return {"entry_events": total, "matched_direction": matched_direction,
+            "matched_structure": matched_structure, "matched_both": both,
+            "missing_direction": total - matched_direction,
+            "missing_structure": total - matched_structure,
+            "status": "COVERAGE_AUDIT_ONLY",
+            "eligible_for_candidate_selection": False}

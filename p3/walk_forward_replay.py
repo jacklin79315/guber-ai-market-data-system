@@ -59,6 +59,8 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
         decision_result.get('price_range_predictions', []))
     from .walk_forward_diagnostics import diagnose_trade_prediction_outcomes
     trade_forecast_association = diagnose_trade_prediction_outcomes(trade_rows)
+    from .walk_forward_diagnostics import diagnose_trade_structure_outcomes
+    trade_structure_association = diagnose_trade_structure_outcomes(trade_rows)
     from .walk_forward_diagnostics import classify_research_evidence
     evidence_status = classify_research_evidence(prediction_coverage, direction_diagnosis, structure_diagnosis, trade_rows)
     from .walk_forward_diagnostics import audit_severe_drawdown
@@ -81,6 +83,7 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
         "prediction_coverage_audit": prediction_coverage,
         "trade_prediction_records": trade_rows,
         "trade_forecast_association": trade_forecast_association,
+        "trade_structure_association": trade_structure_association,
         "research_evidence_status": evidence_status,
         "research_signal_count": len(replay["signals"]),
         "research_trade_events": len(replay["events"]),

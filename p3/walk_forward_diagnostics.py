@@ -398,6 +398,7 @@ def trade_prediction_rows(replay, direction_predictions, structure_predictions):
             "exit_price": exit_event.get("exit_price"),
             "net_pnl": exit_event.get("net_pnl"),
             "exit_reason": exit_event.get("reason"),
+            "planned_rr": exit_event.get("planned_rr"),
             "probability_up": direction.get("probability_up"),
             "predicted_upper_bound": structure.get("predicted_upper_bound"),
             "predicted_lower_bound": structure.get("predicted_lower_bound"),

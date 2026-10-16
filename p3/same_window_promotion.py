@@ -6,12 +6,13 @@ caller supplies their results; this module never uses holdout for selection.
 
 import math
 from .model_qualification import (MIN_ANNUALIZED_RETURN_PERCENT,
-                                  MIN_WIN_RATE_PERCENT, MIN_MEAN_SCORE_Q)
+                                  MIN_WIN_RATE_PERCENT, MIN_MEAN_SCORE_Q,
+                                  MAX_HOLDOUT_DRAWDOWN_PERCENT)
 
 
 def decide_generation_promotion(champion, challenger, *,
                                 same_validation_window, min_trades=5,
-                                max_drawdown_percent=8.0):
+                                max_drawdown_percent=MAX_HOLDOUT_DRAWDOWN_PERCENT):
     """Research promotion only; no production activation or trading."""
     if not same_validation_window:
         return {"status": "WAIT", "reason": "different_evaluation_windows",

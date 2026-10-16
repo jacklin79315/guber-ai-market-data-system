@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from p3.feedback_candidate_research import run_feedback_candidate_research
 from p3.autonomous_experiment_plan import assess_candidate_research
-from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows, classify_research_evidence
+from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows, classify_research_evidence, audit_severe_drawdown
 from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate
 
 
@@ -151,6 +151,21 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(audit["matched_both"], 0)
         self.assertEqual(audit["missing_direction"], 1)
         self.assertFalse(audit["eligible_for_candidate_selection"])
+
+    def test_severe_drawdown_audit_cannot_enable_feedback(self):
+        replay = {"metrics": {"max_close_to_close_drawdown_percent": 91.6,
+                              "signal_counts": {"INSUFFICIENT_CASH": 6264},
+                              "ambiguous_exit_count": 4},
+                  "events": [{"type": "EXIT", "side": "LONG",
+                              "net_pnl": -10, "reason": "SL"}]}
+        audit = audit_severe_drawdown(replay)
+        self.assertEqual(audit["status"], "SEVERE_DRAWDOWN_AUDIT_ONLY")
+        self.assertEqual(audit["by_direction"]["LONG"]["losses"], 1)
+        self.assertEqual(audit["signal_counts"]["INSUFFICIENT_CASH"], 6264)
+        self.assertFalse(audit["eligible_for_candidate_selection"])
+        self.assertIsNone(audit_severe_drawdown({
+            "metrics": {"max_close_to_close_drawdown_percent": 39},
+            "events": []}))
 
     def test_rejects_disqualified_feedback(self):
         self.assertEqual(next_feedback_candidate([row(41)])["status"],

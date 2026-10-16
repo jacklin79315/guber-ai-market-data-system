@@ -27,7 +27,7 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
             params = dict(DEFAULT_LAYER_PARAMS)
             selection = {"status": "BASELINE"}
         else:
-            if history[-1].get("research_candidate_assessment", {}).get("status") == "WAIT":
+            if (history[-1].get("research_candidate_assessment") or {}).get("status") == "WAIT":
                 stop_reason = "WAIT_FOR_RESEARCH_EVIDENCE"
                 break
             selection = (next_feedback_candidate(history) if target_layer == "DIRECTION"

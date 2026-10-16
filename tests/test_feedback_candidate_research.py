@@ -173,6 +173,24 @@ class CandidateGenerationTests(unittest.TestCase):
         self.assertEqual(next_structure_candidate([source])["status"],
                          "MISSING_STRUCTURE_PREDICTION_EVIDENCE")
 
+    def test_direction_candidates_do_not_repeat_parameters(self):
+        history = []
+        observed = set()
+        for index in range(11):
+            current = row()
+            current["trial_index"] = index + 1
+            current["direction_prediction_diagnostics"] = {
+                "matched_predictions": 10, "direction_error_rate_percent": 40.0}
+            if index:
+                choice = next_feedback_candidate(history)
+                self.assertEqual(choice["status"], "CANDIDATE_READY")
+                current["params"] = choice["candidate"]
+            key = tuple(sorted(current["params"].items()))
+            self.assertNotIn(key, observed)
+            observed.add(key)
+            history.append(current)
+        self.assertEqual(len(observed), 11)
+
     def test_changes_only_one_approved_parameter(self):
         source = row()
         source["direction_prediction_diagnostics"] = {

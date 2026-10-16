@@ -30,6 +30,10 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
             if (history[-1].get("research_evidence_status") or {}).get("status") != "EVIDENCE_READY_FOR_COMPARATIVE_RESEARCH":
                 stop_reason = "WAIT_FOR_MODEL_EVIDENCE"
                 break
+            if ((history[-1].get("research_candidate_assessment") or {}).get("status") == "WAIT"
+                    and exploration_rank(history[-1]["metrics"]) is None):
+                stop_reason = "WAIT_FOR_RESEARCH_EVIDENCE"
+                break
             selection = (next_feedback_candidate(history) if target_layer == "DIRECTION"
                          else next_structure_candidate(history))
             params = selection["candidate"]

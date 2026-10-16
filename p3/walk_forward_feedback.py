@@ -32,8 +32,12 @@ def feedback_rank(metrics):
             or metrics.get("ambiguous_exit_count", 0)):
         return None
     annualized, win, quality, drawdown = vals
-    # Drawdown above 35% must reduce research priority even when returns improve.
-    return (annualized - 2 * max(0, drawdown - 35), -drawdown, win, quality)
+    # >40%: excluded from all candidate selection and feedback learning.
+    # >35%-40%: retained only for failure diagnosis, never an optimization anchor.
+    if drawdown > 35:
+        return None
+    # 0%-8% is a single best risk tier; do not reward lower drawdown within it.
+    return (annualized, win, quality, -max(0, drawdown - 8))
 
 
 def research_rank(metrics):

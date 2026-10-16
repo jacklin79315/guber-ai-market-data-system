@@ -18,7 +18,9 @@ class AdaptiveLayerSelectionTests(unittest.TestCase):
     def test_explores_direction_without_mutating_baseline(self):
         base = {"max_iter": 100, "learning_rate": 0.1}
         trials = [{"status": "COMPLETE", "validation_eligible": True,
-                   "validation_score": 2.0, "params": base,
+                   "validation_score": None, "validation_drawdown_percent": 8,
+                   "validation_annualized_return_percent": 12, "validation_win_rate_percent": 75,
+                   "validation_mean_score_q": 68, "params": base,
                    "diagnostics": {"direction_brier_score": 0.2,
                                    "upside_mae_percent": 1.0,
                                    "downside_mae_percent": 1.2}}]
@@ -31,7 +33,9 @@ class AdaptiveLayerSelectionTests(unittest.TestCase):
         diag = {"direction_brier_score": 0.2,
                 "upside_mae_percent": 1.0, "downside_mae_percent": 1.2}
         trials = [{"status": "COMPLETE", "validation_eligible": True,
-                   "validation_score": 2.0,
+                   "validation_score": None, "validation_drawdown_percent": 8,
+                   "validation_annualized_return_percent": 12, "validation_win_rate_percent": 75,
+                   "validation_mean_score_q": 68,
                    "params": {"max_iter": 100, "learning_rate": 0.1},
                    "diagnostics": diag},
                   {"status": "COMPLETE", "validation_eligible": True,

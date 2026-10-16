@@ -281,8 +281,9 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
                        and h.get("validation_drawdown_percent") is not None]
     best_observed = max(
         observed_trials,
-        key=lambda h: (h["validation_return_percent"] - h["validation_drawdown_percent"],
-                       h["validation_return_percent"]),
+        key=lambda h: (h.get("validation_annualized_return_percent") or float("-inf"),
+                       h.get("validation_win_rate_percent") or float("-inf"),
+                       h.get("validation_mean_score_q") or float("-inf")),
         default=None,
     )
     observed_performance = ({
@@ -294,8 +295,8 @@ def run_iterations(db, *, symbol, strategy, years, iterations=5):
         "validation_eligible": best_observed.get("validation_eligible") is True,
         "ranking_basis": "annualized_win_rate_quality_observation",
     } if best_observed else None)
-    successful = [h for h in history if h["status"] == "COMPLETE" and h.get("validation_score") is not None]
-    best = max(successful, key=lambda h: h["validation_score"], default=None)
+    successful = [h for h in history if validated_rank(h) is not None]
+    best = max(successful, key=validated_rank, default=None)
     if not successful:
         return {"status": "ITERATIONS_COMPLETE_NO_ELIGIBLE_MODEL",
                 "strategy": strategy, "run_id": run_id,

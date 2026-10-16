@@ -1,5 +1,5 @@
 import unittest
-from p3.autonomous_experiment_plan import propose_experiment, compare_research_trials
+from p3.autonomous_experiment_plan import propose_experiment, compare_research_trials, compare_iteration_records
 
 
 def metrics(annualized, dd=12):
@@ -33,6 +33,22 @@ class AutonomousExperimentPlanTests(unittest.TestCase):
                          ["annualized_return_percent"], 7)
         self.assertFalse(result["independent_validation_performed"])
         self.assertFalse(result["eligible_for_promotion"])
+
+    def test_comparison_requires_matching_context(self):
+        base = {"strategy": "INTRADAY", "research_window": [100, 200],
+                "symbol": "BTCUSDT", "fee_rate": 0.001,
+                "slippage_rate": 0.0005, "data_fingerprint": "abc",
+                "metrics": metrics(-12)}
+        candidate = dict(base, metrics=metrics(-5))
+        self.assertTrue(compare_iteration_records(base, candidate)
+                        ["candidate_better_in_research"])
+        self.assertEqual(compare_iteration_records(
+            base, dict(candidate, research_window=[110, 200]))
+            ["status"], "BLOCKED_MISMATCHED_COMPARISON_CONTEXT")
+        self.assertEqual(compare_iteration_records(
+            base, {k: v for k, v in candidate.items()
+                   if k != "data_fingerprint"})
+            ["status"], "BLOCKED_MISSING_COMPARISON_CONTEXT")
 
     def test_high_drawdown_is_not_a_valid_candidate(self):
         result = compare_research_trials(metrics(-12), metrics(40))

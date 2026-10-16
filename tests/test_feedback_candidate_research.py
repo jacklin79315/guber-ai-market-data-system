@@ -161,6 +161,8 @@ class CandidateGenerationTests(unittest.TestCase):
         audit = audit_severe_drawdown(replay)
         self.assertEqual(audit["status"], "SEVERE_DRAWDOWN_AUDIT_ONLY")
         self.assertEqual(audit["by_direction"]["LONG"]["losses"], 1)
+        self.assertEqual(audit["by_exit_reason"]["SL"]["closed"], 1)
+        self.assertEqual(audit["gross_losing_pnl"], -10)
         self.assertEqual(audit["signal_counts"]["INSUFFICIENT_CASH"], 6264)
         self.assertFalse(audit["eligible_for_candidate_selection"])
         self.assertIsNone(audit_severe_drawdown({

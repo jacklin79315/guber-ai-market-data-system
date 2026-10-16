@@ -47,7 +47,7 @@ class WalkForwardDecisionTests(unittest.TestCase):
                    return_value=(X, y, values, values, times)), \
              patch("p3.walk_forward_decisions.HorizonModel", _FakeModel):
             result = generate_walk_forward_decisions(
-                candles, features, "INTRADAY", (start, end))
+                candles, features, "INTRADAY", (start, end), symbol="BTCUSDT")
         for item in result["checkpoints"]:
             if item["status"] == "FITTED":
                 self.assertLess(item["last_training_label_close_ms"],

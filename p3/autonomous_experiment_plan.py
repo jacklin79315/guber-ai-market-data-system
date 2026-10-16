@@ -122,3 +122,21 @@ def research_data_fingerprint(candles, features, research):
                                      default=str, allow_nan=False).encode("utf-8"))
             digest.update(b"\\n")
     return digest.hexdigest()
+
+
+def assess_candidate_research(anchor, candidate):
+    """Classify same-data improvement; never authorize promotion."""
+    result = compare_iteration_records(anchor, candidate)
+    if result["status"] != "RESEARCH_COMPARABLE":
+        state = "WAIT"
+    elif any((row.get("research_evidence_status") or {}).get("status")
+             != "EVIDENCE_READY_FOR_COMPARATIVE_RESEARCH"
+             for row in (anchor, candidate)):
+        state = "WAIT"
+    elif result["candidate_better_in_research"]:
+        state = "IMPROVED_IN_RESEARCH_ONLY"
+    else:
+        state = "REJECTED_IN_RESEARCH"
+    return {"status": state, "comparison": result,
+            "independent_validation_performed": False,
+            "eligible_for_promotion": False}

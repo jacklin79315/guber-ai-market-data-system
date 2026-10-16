@@ -103,6 +103,7 @@ def run_research_iterations(candles, features, strategy, research, *,
         "best_observed_trial_index": (
             max(ranked, key=lambda h: h["feedback_rank"])["trial_index"]
             if ranked else None),
+        "candidate_grid_exhausted": len(history) == len(candidates),
         "feedback_used_for_candidate_selection": any(
             h["feedback_source_trial_index"] is not None for h in history),
         "independent_validation_performed": False,

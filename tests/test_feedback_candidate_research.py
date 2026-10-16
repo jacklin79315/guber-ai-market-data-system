@@ -1,5 +1,5 @@
 import unittest
-from p3.walk_forward_diagnostics import audit_prediction_coverage
+from p3.walk_forward_diagnostics import audit_prediction_coverage, trade_prediction_rows
 from p3.feedback_candidate_generator import DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate
 
 
@@ -16,6 +16,20 @@ def row(dd=10):
 
 
 class CandidateGenerationTests(unittest.TestCase):
+    def test_trade_prediction_rows_join_by_decision_time(self):
+        replay = {"events": [
+            {"type": "ENTRY", "lot_id": 4, "decision_time_ms": 10, "side": "LONG"},
+            {"type": "EXIT", "lot_id": 4, "entry_price": 100,
+             "exit_price": 103, "net_pnl": 3, "reason": "TP"},
+            {"type": "BACKTEST_END_SETTLEMENT", "lot_id": 5}]}
+        rows = trade_prediction_rows(
+            replay, [{"decision_time_ms": 10, "probability_up": 0.7}],
+            [{"decision_time_ms": 10, "predicted_upper_bound": 104,
+              "predicted_lower_bound": 98}])
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]["forecast_pair_complete"])
+        self.assertEqual(rows[0]["probability_up"], 0.7)
+
     def test_forecast_coverage_counts_missing_entries(self):
         replay = {"events": [{"type": "ENTRY", "decision_time_ms": 10},
                              {"type": "ENTRY", "decision_time_ms": 20}]}

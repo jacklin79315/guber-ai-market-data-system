@@ -4,6 +4,7 @@ Explicit holdout boundary keeps research optimization away from future data.
 This does not replace the production training workflow or write to Supabase.
 """
 import json
+from datetime import datetime, timezone
 from .native_history_replay import load_native_candles
 from .ai_feature_history import load_native_features
 from .fee_schedule import load_fee_rate
@@ -15,6 +16,9 @@ from .walk_forward_feedback import run_research_iterations
 def run_four_strategy_research(db, *, symbol, holdout_start_ms,
                                iterations=5):
     research = research_window(holdout_start_ms)
+    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    if research[1] > now_ms:
+        raise ValueError("research window must be fully closed")
     fee_rate = load_fee_rate(db)
     # Research results remain in memory and logs; no database writes.
     results = {}

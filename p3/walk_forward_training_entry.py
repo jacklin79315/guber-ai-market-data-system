@@ -15,9 +15,9 @@ def main():
     settings = load_training_settings(db)
     strategy = os.environ["TRAINING_BATCH_STRATEGY"]
     timeframe = STRATEGY_TIMEFRAMES[strategy]
-    iterations = int(os.environ.get("TRAINING_ITERATIONS", "5"))
-    if iterations != 5:
-        raise ValueError("Pilot supports five iterations")
+    iterations = int(os.environ.get("TRAINING_ITERATIONS", "10"))
+    if iterations not in (5, 10):
+        raise ValueError("Research pilot supports five or ten iterations")
     symbol = settings["symbol"]
     candles = load_native_candles(db, symbol, timeframe)
     features = load_native_features(db, symbol, timeframe)

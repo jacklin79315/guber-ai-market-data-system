@@ -3,7 +3,7 @@
 No persistence, scheduling, independent holdout, or model promotion.
 """
 from .autonomous_experiment_plan import (
-    research_data_fingerprint, compare_iteration_records)
+    research_data_fingerprint, compare_iteration_records, assess_candidate_research)
 from .feedback_candidate_generator import (
     DEFAULT_LAYER_PARAMS, next_feedback_candidate, next_structure_candidate)
 from .walk_forward_feedback import (
@@ -60,8 +60,10 @@ def run_feedback_candidate_research(candles, features, strategy, research, *,
             if anchor is None:
                 raise ValueError("missing comparison anchor")
             row["paired_research_comparison"] = compare_iteration_records(anchor, row)
+            row["research_candidate_assessment"] = assess_candidate_research(anchor, row)
         else:
             row["paired_research_comparison"] = None
+            row["research_candidate_assessment"] = None
         history.append(row)
     return {
         "strategy": strategy, "research_window": list(research),

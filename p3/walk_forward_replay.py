@@ -10,7 +10,7 @@ from .multi_model_replay import STRATEGY_TIMEFRAMES
 
 def replay_walk_forward_research(candles, features, strategy, research, *,
                                  params=None, confidence_threshold=0.6,
-                                 fee_rate=0.0, slippage_rate=0.0):
+                                 fee_rate=0.0, slippage_rate=0.0, symbol=None):
     """Fit point-in-time models and replay their decisions on native candles.
 
     Preserve the candle immediately before the research boundary as execution
@@ -18,18 +18,17 @@ def replay_walk_forward_research(candles, features, strategy, research, *,
     """
     if strategy not in STRATEGY_TIMEFRAMES:
         raise ValueError("unsupported strategy")
-    decision_result = generate_walk_forward_decisions(
-        candles, features, strategy, research,
-        params=params, confidence_threshold=confidence_threshold)
     start, end = research
     research_candles = [c for c in candles
                         if start <= int(c["close_time"]) < end]
     if not research_candles:
         raise ValueError("no research candles to replay")
-    symbols = {c["symbol"] for c in research_candles}
-    if len(symbols) != 1:
-        raise ValueError("single-symbol research requires one symbol")
-    symbol = next(iter(symbols))
+    # Native candle adapter intentionally stores OHLC only, not symbol.
+    if not symbol:
+        raise ValueError("symbol must be provided explicitly for native research replay")
+    decision_result = generate_walk_forward_decisions(
+        candles, features, strategy, research,
+        params=params, confidence_threshold=confidence_threshold, symbol=symbol)
     decisions = decision_result["decisions"]
     # Replay only decisions whose execution candle is inside research.
     # Decisions on the final candle cannot fill within this interval.

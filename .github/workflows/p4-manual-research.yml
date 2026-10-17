@@ -57,5 +57,7 @@ jobs:
         run: |
           test -n "$SUPABASE_URL" || { echo "SUPABASE_URL secret missing"; exit 1; }
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "SUPABASE_SERVICE_ROLE_KEY secret missing"; exit 1; }
+      - name: Verify read-only Supabase access and research schema
+        run: node p4-research-preflight.mjs
       - name: Run bounded P4 research (no live orders)
         run: node p4-backend-runner.mjs

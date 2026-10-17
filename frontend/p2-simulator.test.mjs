@@ -18,3 +18,7 @@ test("equity marks open positions and updates after exit",()=>{const a=createAcc
 
 test("changing submitted proposal does not rewrite approved price ranges",()=>{const a=createAccount();const order=p();submitProposal(a,order);order.entry[0]=1;order.takeProfit[0]=999;assert.deepEqual(a.pending[0].entry,[99,101]);assert.deepEqual(a.pending[0].takeProfit,[110,111])});
 test("short position realizes correct directional PnL",()=>{const a=createAccount();submitProposal(a,p({side:"SHORT",entry:[99,101],takeProfit:[89,90],stopLoss:[109,110]}));processBar(a,bar(99,101),1,costs);processBar(a,bar(89,100,90),2,costs);assert.equal(a.closed[0].exitReason,"TP");assert.ok(a.closed[0].pnl>0)});
+
+test("partial entry range fills only at traded price",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(98,99.5,99),1,costs);assert.equal(a.positions[0].entryPrice,99.5)});
+test("long stop fully skipped by downward gap closes at adverse open",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(99,101),1,costs);processBar(a,{...bar(80,85,82),open:84},2,costs);assert.equal(a.closed[0].exitReason,"SL");assert.equal(a.closed[0].exitPrice,84)});
+test("short stop fully skipped by upward gap closes at adverse open",()=>{const a=createAccount();submitProposal(a,p({side:"SHORT",takeProfit:[89,90],stopLoss:[109,110]}));processBar(a,bar(99,101),1,costs);processBar(a,{...bar(115,120,118),open:116},2,costs);assert.equal(a.closed[0].exitReason,"SL");assert.equal(a.closed[0].exitPrice,116)});

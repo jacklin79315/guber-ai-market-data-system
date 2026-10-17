@@ -1,5 +1,6 @@
 import {collectP4DiagnosticEvidence} from './p4-diagnostic-evidence.mjs';
 import {summarizeP4DiagnosticFeedback} from './p4-diagnostic-audit.mjs';
+import {planP4DiagnosticUpdate} from './p4-diagnostic-update-plan.mjs';
 import {runSequentialFiveExpertReplay} from './p3-sequential-replay.mjs';
 import {validateTrainingParameters} from './p4-challenger-parameters.mjs';
 // Run two isolated paper simulations on exactly the same closed candles and decision providers.
@@ -16,5 +17,6 @@ export async function compareChallengerReplay({candles,featureAtDecision,history
  const summarize=(version,r)=>({version,processedCandles:r.processedCandles,statistics:r.statistics,metrics:r.metrics,initialCapital:r.account.initialCapital,closedTrades:r.account.closed.length});
  const diagnosticEvidence={champion:collectP4DiagnosticEvidence(championResult),challenger:collectP4DiagnosticEvidence(challengerResult)};
  const diagnosticAudit={champion:summarizeP4DiagnosticFeedback(diagnosticEvidence.champion),challenger:summarizeP4DiagnosticFeedback(diagnosticEvidence.challenger)};
- return {diagnosticEvidence,diagnosticAudit,status:'RESEARCH_COMPARISON_ONLY',independentValidation:false,promotionAllowed:false,champion:summarize(champion.version,championResult),challenger:summarize(challenger.version,challengerResult),controls:{sameCandles:true,sameCosts:true,sameInitialCapital:true,sameBrainProvider:true,sameFeatureProvider:true},warning:'Same-window comparisons are not independent out-of-sample evidence. No promotion is authorized.'};
+ const diagnosticUpdatePlan=planP4DiagnosticUpdate({audit:diagnosticAudit.challenger,parentParameters:challengerParams});
+ return {diagnosticEvidence,diagnosticAudit,diagnosticUpdatePlan,status:'RESEARCH_COMPARISON_ONLY',independentValidation:false,promotionAllowed:false,champion:summarize(champion.version,championResult),challenger:summarize(challenger.version,challengerResult),controls:{sameCandles:true,sameCosts:true,sameInitialCapital:true,sameBrainProvider:true,sameFeatureProvider:true},warning:'Same-window comparisons are not independent out-of-sample evidence. No promotion is authorized.'};
 }

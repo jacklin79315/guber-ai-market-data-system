@@ -1,7 +1,7 @@
 import {applyExpertPatch} from './p3-contract.mjs';
 // Research-only Risk/Position baseline. All capital amounts share one simulated account.
 export function estimateRiskPositionBaseline({proposal,account,maxPortfolioUtilization=0.8,maxTradeFraction=0.1,maxLossFraction=0.01}={}){
- if(!proposal||!Number.isFinite(proposal.expectedValue)||!Number.isFinite(proposal.expectedLoss)||proposal.expectedLoss<=0||!account||![account.equity,account.committedCapital].every(v=>Number.isFinite(v)&&v>=0)||!Number.isFinite(account.equity)||account.equity<=0||![maxPortfolioUtilization,maxTradeFraction,maxLossFraction].every(v=>Number.isFinite(v)&&v>0&&v<=1))throw Error('invalid risk settings');
+ if(!proposal||!Number.isFinite(proposal.expectedValue)||!Number.isFinite(proposal.expectedLoss)||proposal.expectedLoss<=0||!account||![account.equity,account.committedCapital].every(v=>Number.isFinite(v)&&v>=0)||!Number.isFinite(account.equity)||account.equity<=0||![maxPortfolioUtilization,maxTradeFraction,maxLossFraction].every(v=>Number.isFinite(v)&&v>0&&v<=1)||maxPortfolioUtilization>0.8)throw Error('invalid risk settings');
  if(account.committedCapital>account.equity+1e-8)throw Error('invalid committed capital');
  if(proposal.expectedValue<=0)return {action:'WAIT',reason:'NON_POSITIVE_EXPECTANCY'};
  const available=Math.max(0,Math.min(account.equity-account.committedCapital,account.equity*maxPortfolioUtilization-account.committedCapital));

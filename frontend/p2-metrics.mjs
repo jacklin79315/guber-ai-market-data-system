@@ -23,6 +23,7 @@ export function tradeMetrics(account){
   shadowOrders:account.shadowOrders?.length??0,
   shadowObservedBars:(account.shadowOrders||[]).reduce((n,s)=>n+(s.observations?.length||0),0),
   shadowAmbiguousBars:(account.shadowOrders||[]).reduce((n,s)=>n+(s.ambiguousBars?.length||0),0),
-  shadowRevisitedEntry:(account.shadowOrders||[]).filter(s=>s.firstTouches?.entry!=null).length
+  shadowRevisitedEntry:(account.shadowOrders||[]).filter(s=>s.firstTouches?.entry!=null).length,
+  shadowStatusCounts:(account.shadowOrders||[]).reduce((counts,s)=>{const key=s.counterfactualStatus||"NOT_OBSERVED";counts[key]=(counts[key]||0)+1;return counts}, {})
  };
 }

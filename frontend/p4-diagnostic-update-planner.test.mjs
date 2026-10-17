@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {planP4DiagnosticUpdate} from './p4-diagnostic-update-planner.mjs';
+import {DEFAULT_TRAINING_PARAMETERS as parent} from './p4-challenger-parameters.mjs';
+const feedback=(actor,requiresReview=false)=>({schemaVersion:'P4_FEEDBACK_V1',requiresReview,appliedToModels:false,feedback:[{actor,direction:'NEGATIVE',weight:2}]});
+test('unverified diagnostic cannot update parameters',()=>{const p=planP4DiagnosticUpdate({parent,diagnosticFeedback:[feedback('Entry')]});assert.equal(p.status,'AWAITING_VALIDATED_DIAGNOSIS');assert.equal(p.applied,false);assert.deepEqual(p.parameters,parent)});
+test('validated Entry fault nominates an experiment without applying it',()=>{const p=planP4DiagnosticUpdate({parent,diagnosticFeedback:[feedback('Entry')],verified:true});assert.equal(p.status,'DIAGNOSTIC_RESEARCH_PROPOSAL');assert(['entryLookback','entryThreshold'].includes(p.proposedParameter));assert.equal(p.applied,false)});
+test('Risk fault is not incorrectly mapped to Entry or Reward parameter',()=>{const p=planP4DiagnosticUpdate({parent,diagnosticFeedback:[feedback('Risk')],verified:true});assert.equal(p.status,'NO_ACTIONABLE_PARAMETER_FAULT')});
+test('pending review blocks even verified batch',()=>{const p=planP4DiagnosticUpdate({parent,diagnosticFeedback:[feedback('Reward',true)],verified:true});assert.equal(p.status,'AWAITING_VALIDATED_DIAGNOSIS')});

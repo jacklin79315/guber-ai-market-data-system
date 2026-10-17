@@ -67,3 +67,13 @@ test("system settings show actual service health to both roles",async()=>{
  assert.match(ui,/if\(active==="系統設定"\)\{loadServiceHealth/);
  assert.match(ui,/if\(signedInRole==="admin"\)\{bindAccountManagement/);
 });
+
+test("watchlist changes require an admin and persist through the backend",async()=>{
+ const ui=await read("main.js");
+ const server=await read("server.mjs");
+ assert.match(ui,/loadWatchlistAdmin/);
+ assert.match(ui,/watchlist-admin-rows/);
+ assert.match(server,/api\/admin\/watchlist\/toggle/);
+ assert.match(server,/actor.role!=="admin"/);
+ assert.match(server,/method:"PATCH"/);
+});

@@ -5,6 +5,7 @@ import {detectEntryCandidate} from './p3-entry-baseline.mjs';
 import {runFiveExpertResearch} from './p3-five-expert-research.mjs';
 import {approvedToSimulationProposal} from './p3-p2-bridge.mjs';
 import {tradeMetrics} from './p2-metrics.mjs';
+import {estimateRiskPositionBaseline} from './p3-risk-position-baseline.mjs';
 // Sequential research replay: close bar -> update P2 account -> decide using only known data.
 // History and feature resolvers must provide strictly causal observations; never place live orders.
 export async function runSequentialFiveExpertReplay({candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},lookback=20,threshold=0.001,minProbabilitySamples=30,minTimeSamples=10,maxDecisions=100000,trainingParameters,modelVersion='P3_RESEARCH_V1'}={}){
@@ -42,7 +43,8 @@ export async function runSequentialFiveExpertReplay({candles,featureAtDecision,h
   for(const sample of history.holdingHistory){if(holdingIds.has(sample.id))throw Error('duplicate historical holding sample');holdingIds.add(sample.id)}
   const committedCapital=[...account.pending,...account.positions].reduce((sum,p)=>sum+p.capital,0);
   const verdict=await runFiveExpertResearch({candidate,candles:prefix,features,tradeHistory:history.tradeHistory,holdingHistory:history.holdingHistory,account:{equity:account.equity,committedCapital},feeRate:costs.feeRate,slippageRate:costs.slippageRate,brain,minProbabilitySamples,minTimeSamples,rewardParameters,modelVersion});
-  decisions.push({id:candidate.id,decisionTime:bar.closeTime,action:verdict.action,reason:verdict.reason||null,history:verdict.history});
+  const riskDiagnostics=verdict.proposal&&Number.isFinite(verdict.proposal.allocation)&&Number.isFinite(verdict.proposal.expectedLoss)&&verdict.proposal.expectedLoss>0&&('expectedValue' in verdict.proposal)?estimateRiskPositionBaseline({proposal:verdict.proposal,account:{equity:account.equity,committedCapital}}):null;
+  decisions.push({id:candidate.id,decisionTime:bar.closeTime,action:verdict.action,reason:verdict.reason||null,allocation:verdict.proposal?.allocation??null,riskDiagnostics:riskDiagnostics?.allocationDiagnostics??null,history:verdict.history});
   if(verdict.action!=='APPROVE')continue;
   const proposal=approvedToSimulationProposal(verdict,{decisionIndex:i});
   const submission=submitProposal(account,proposal);

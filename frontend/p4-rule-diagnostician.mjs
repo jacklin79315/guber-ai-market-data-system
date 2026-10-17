@@ -45,3 +45,21 @@ export function assessP4ExpertHistory({evidence}={}){
  }
  return results;
 }
+
+// Inspect proposal invariants only. These do not establish predictive quality.
+export function assessP4ProposalInvariants({evidence}={}){
+ if(!evidence||typeof evidence!=='object')throw Error('invalid proposal evidence');
+ const p=evidence.proposalAtDecision;
+ if(!p||typeof p!=='object'||evidence.action!=='APPROVE')return [];
+ const results=[];
+ const rr=p.riskReward, gain=p.expectedGain,loss=p.expectedLoss;
+ if([rr,gain,loss].every(v=>typeof v==='number'&&Number.isFinite(v))&&loss>0&&gain>=0){
+  if(Math.abs(rr-gain/loss)>1e-6*Math.max(1,Math.abs(rr)))results.push({actor:'Reward',quality:'FAULT',responsibility:'PRIMARY',reason:'Recorded risk/reward contradicts expected gain divided by expected loss',evidenceKeys:['proposalAtDecision']});
+ }
+ const prob=p.winProbability,ev=p.expectedValue;
+ if([prob,ev,gain,loss].every(v=>typeof v==='number'&&Number.isFinite(v))&&prob>=0&&prob<=1&&loss>0&&gain>=0){
+  const expected=prob*gain-(1-prob)*loss;
+  if(Math.abs(ev-expected)>1e-6*Math.max(1,Math.abs(ev)))results.push({actor:'Win',quality:'FAULT',responsibility:'PRIMARY',reason:'Expected value contradicts probability-weighted gain and loss',evidenceKeys:['proposalAtDecision']});
+ }
+ return results;
+}

@@ -98,3 +98,13 @@ test("training settings are persisted with role and range checks",async()=>{
  assert.match(server,/dashboard_settings/);
  assert.match(server,/capital_usage_limit/);
 });
+
+test("training status reads real run and request records without a fake start",async()=>{
+ const ui=await read("main.js");
+ const server=await read("server.mjs");
+ assert.match(ui,/loadTrainingStatus/);
+ assert.match(ui,/training-run-history/);
+ assert.match(server,/api\/training\/status/);
+ assert.match(server,/control_requests/);
+ assert.match(server,/research_runs/);
+});

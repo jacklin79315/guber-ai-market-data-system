@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createP4SupabaseCheckpointStore} from './p4-supabase-checkpoints.mjs';
+import {createP4Checkpoint} from './p4-checkpoints.mjs';
+test('P4 server adapter writes then reads a checkpoint with scoped job identity',async()=>{let saved;const calls=[];const store=createP4SupabaseCheckpointStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'server-test-only',fetchImpl:async(url,options)=>{calls.push({url,options});if(options.method==='POST'){saved=JSON.parse(options.body);return {ok:true,status:201}}return {ok:true,json:async()=>[{job_id:saved.job_id,checkpoint:saved.checkpoint}]}}});const cp=createP4Checkpoint({jobId:'research-1',updatedAtMs:123});await store.save(cp);assert.deepEqual(await store.load('research-1'),cp);assert.equal(calls[0].options.method,'POST');assert.equal(calls[1].options.method,'GET');assert.equal(new URL(calls[1].url).searchParams.get('job_id'),'eq.research-1')});
+test('P4 server adapter rejects failed writes',async()=>{const store=createP4SupabaseCheckpointStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async()=>({ok:false,status:403})});await assert.rejects(store.save(createP4Checkpoint({jobId:'x',updatedAtMs:1})),/write failed: 403/)});

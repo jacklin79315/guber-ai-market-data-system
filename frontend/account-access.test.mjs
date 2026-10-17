@@ -87,3 +87,14 @@ test("Binance symbol enrollment is guarded by admin role",async()=>{
  assert.match(server,/actor.role!=="admin"/);
  assert.match(server,/backfill_requested_at/);
 });
+
+test("training settings are persisted with role and range checks",async()=>{
+ const ui=await read("main.js");
+ const server=await read("server.mjs");
+ assert.match(ui,/training-settings-form/);
+ assert.match(ui,/bindTrainingSettings/);
+ assert.match(server,/api\/training\/settings/);
+ assert.match(server,/actor.role!=="admin"/);
+ assert.match(server,/dashboard_settings/);
+ assert.match(server,/capital_usage_limit/);
+});

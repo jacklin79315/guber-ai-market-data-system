@@ -38,3 +38,17 @@ test("multiple closed positions reconcile account cash with total net PnL",()=>{
 test("multi-symbol unrealized equity sums both marks and entry fees",()=>{const a=createAccount();const c={feeRate:0.001,slippageRate:0};submitProposal(a,p({id:"btc",capital:2000}));submitProposal(a,p({id:"eth",symbol:"ETHUSDT",capital:3000}));processBar(a,bar(99,101,100),1,c);processBar(a,{...bar(99,101,100),symbol:"ETHUSDT"},1,c);assert.equal(a.cash,4995);assert.equal(a.positions.length,2);processBar(a,bar(100,105,105),2,c);processBar(a,{...bar(95,100,95),symbol:"ETHUSDT"},2,c);const expected=4995+2000+(105-101)*(2000/101)+3000+(95-101)*(3000/101);assert.ok(Math.abs(a.equity-expected)<1e-7);assert.equal(a.closed.length,0);assert.equal(a.positions.reduce((n,x)=>n+x.capital,0),5000);assert.ok(5000<=a.equity*0.8)});
 
 test('portfolio 80 percent hard cap cannot be overridden by account settings',()=>{assert.throws(()=>createAccount({maxUtilization:0.81}),/invalid account settings/);assert.equal(createAccount({maxUtilization:0.8}).maxUtilization,0.8)});
+
+test("LONG and SHORT both reconcile 0.1 percent entry and exit fees",()=>{
+ for(const side of ["LONG","SHORT"]){
+  const a=createAccount();const c={feeRate:0.001,slippageRate:0};
+  const levels=side==="LONG"?{}:{side:"SHORT",takeProfit:[89,90],stopLoss:[109,110]};
+  submitProposal(a,p(levels));processBar(a,bar(99,101),1,c);
+  const pos=a.positions[0];assert.equal(pos.entryFee,2);
+  processBar(a,side==="LONG"?bar(105,111,110):bar(89,100,90),2,c);
+  const t=a.closed[0];assert.equal(t.exitFee,t.exitPrice*(2000/t.entryPrice)*0.001);
+  assert.ok(Math.abs(t.totalFees-(t.entryFee+t.exitFee))<1e-10);
+  assert.ok(Math.abs(t.pnl-(t.grossPnl-t.totalFees))<1e-10);
+  assert.ok(Math.abs(a.cash-(a.initialCapital+t.pnl))<1e-8);
+ }
+});

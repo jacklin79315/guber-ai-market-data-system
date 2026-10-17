@@ -33,6 +33,13 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
  // Costs and fill pricing are deliberately required, not silently assumed.
  if(!finite(feeRate)||feeRate<0||!finite(slippageRate)||slippageRate<0||slippageRate>=1)throw Error("explicit costs required");
  const events=[];
+ // Preserve subsequent closed candles for cancelled proposals; no hindsight fills.
+ for(const shadow of account.shadowOrders){
+  const p=shadow.proposal;
+  if(p.symbol===bar.symbol&&p.timeframe===bar.timeframe&&index>shadow.cancelIndex){
+   shadow.observations.push({index,open:bar.open,high:bar.high,low:bar.low,close:bar.close,entryTouched:touches(bar,p.entry),tpTouched:touches(bar,p.takeProfit),slTouched:touches(bar,p.stopLoss)});
+  }
+ }
  for(const p of account.positions){if(p.symbol===bar.symbol&&p.timeframe===bar.timeframe)p.markPrice=bar.close}
  refreshEquity(account);
  for(const p of [...account.positions]){

@@ -33,5 +33,7 @@ export async function runSequentialFiveExpertReplay({candles,featureAtDecision,h
   if(submission.accepted)decisionArchive.set(proposal.id,{decisionTime:bar.closeTime,features:structuredClone(features)});
   events.push({type:submission.accepted?'SUBMITTED':'REJECTED',id:proposal.id,closeTime:bar.closeTime,reason:submission.reason||null});
  }
- return {account,metrics:tradeMetrics(account),decisions,events,processedCandles:candles.length,approvedCount:decisions.filter(d=>d.action==='APPROVE').length,waitCount:decisions.filter(d=>d.action==='WAIT').length};
+ const count=type=>events.filter(e=>e.type===type).length;
+ const statistics={candidateCount:decisions.length,approvedCount:decisions.filter(d=>d.action==='APPROVE').length,waitCount:decisions.filter(d=>d.action==='WAIT').length,rejectedByBrainCount:decisions.filter(d=>d.action==='REJECT').length,submittedCount:count('SUBMITTED'),rejectedSubmissionCount:count('REJECTED'),filledCount:count('OPEN'),closedCount:count('CLOSED'),cancelledBeforeFillCount:count('CANCELLED'),capitalWaitEvents:count('WAIT_CAPITAL'),openPositionCount:account.positions.length,pendingOrderCount:account.pending.length,realizedTradeCount:account.closed.length};
+ return {account,metrics:tradeMetrics(account),decisions,events,processedCandles:candles.length,approvedCount:statistics.approvedCount,waitCount:statistics.waitCount,statistics};
 }

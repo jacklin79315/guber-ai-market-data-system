@@ -1,0 +1,5 @@
+import test from "node:test";import assert from "node:assert/strict";import {replayHistoricalWindows} from "./p2-window-replay.mjs";
+const D=86400000;
+const candle=t=>({symbol:"BTCUSDT",timeframe:"1d",closeTime:t+D-1,open:100,high:101,low:99,close:100});
+test("multiple seven-day windows form one chronological P2 replay",async()=>{const calls=[];const all=Array.from({length:16},(_,i)=>candle(i*D));const result=await replayHistoricalWindows({symbol:"BTCUSDT",timeframe:"1d",fromOpenTime:0,toOpenTime:15*D,asOfMs:17*D,windowDays:7,loadWindow:async q=>{calls.push(q);return all.filter(c=>c.closeTime-D+1>=q.fromOpenTime&&c.closeTime-D+1<=q.toOpenTime)}});assert.equal(calls.length,3);assert.equal(result.windowsLoaded,3);assert.equal(result.processedCandles,16);assert.equal(result.equitySnapshots.length,16);assert.equal(result.account.equity,10000)});
+test("overlapping historical candle is rejected",async()=>{await assert.rejects(()=>replayHistoricalWindows({symbol:"BTCUSDT",timeframe:"1d",fromOpenTime:0,toOpenTime:8*D,asOfMs:10*D,loadWindow:async()=>[candle(0)]}),/overlapping/)});

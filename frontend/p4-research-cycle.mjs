@@ -1,14 +1,16 @@
+import {restoreP4ResearchRounds} from './p4-research-recovery.mjs';
 import {createTrainingLedger} from './p4-training-ledger.mjs';
 import {runP4ResearchIteration} from './p4-single-iteration.mjs';
 import {validateTrainingParameters} from './p4-challenger-parameters.mjs';
 // Bounded research loop only. No Champion promotion, persistence, or live orders.
 // A research parent may change; the ledger Champion remains immutable.
-export async function runP4ResearchCycle({championVersion,championParameters,iterations,seed,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},otherReplayOptions={},shouldStop=()=>false,onIteration}={}){
+export async function runP4ResearchCycle({championVersion,championParameters,iterations,seed,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},otherReplayOptions={},shouldStop=()=>false,onIteration,resumeRounds=[]}={}){
  if(typeof championVersion!=='string'||!championVersion||!Number.isSafeInteger(iterations)||iterations<1||iterations>100||!Number.isSafeInteger(seed)||seed<0||typeof shouldStop!=='function'||(onIteration!==undefined&&typeof onIteration!=='function'))throw Error('invalid P4 research cycle configuration');
- let parentVersion=championVersion,parentParameters=validateTrainingParameters(championParameters);
+ const recovery=restoreP4ResearchRounds({championVersion,championParameters,iterations,rounds:resumeRounds});
+ let parentVersion=recovery.parentVersion,parentParameters=recovery.parentParameters;
  const ledger=createTrainingLedger({championVersion});
- const completed=[];
- for(let i=0;i<iterations;i++){
+ const completed=recovery.completed;
+ for(let i=recovery.nextIteration;i<iterations;i++){
   if(shouldStop())break;
   const challengerVersion=championVersion+'-research-'+(i+1);
   const runId='research-round-'+(i+1);

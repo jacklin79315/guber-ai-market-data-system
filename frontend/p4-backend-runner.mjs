@@ -20,15 +20,20 @@ export function parseP4RunnerOptions(env=process.env){
  const partitioned=env.P4_PARTITIONED==='TRUE';
  if(env.P4_PARTITIONED!==undefined&&!['TRUE','FALSE'].includes(env.P4_PARTITIONED))throw Error('invalid P4_PARTITIONED');
  const expectedCandles=(toOpenTime-fromOpenTime)/step+1;
- if(expectedCandles>500)throw Error('P4 initial runner limited to 500 candles');
- return {jobId,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,iterations,seed,expectedCandles,partitioned};
+ const scope=env.P4_RESEARCH_SCOPE||'SMOKE';
+ if(!['SMOKE','HISTORICAL_24M'].includes(scope))throw Error('invalid P4_RESEARCH_SCOPE');
+ if(scope==='SMOKE'&&expectedCandles>500)throw Error('P4 initial runner limited to 500 candles');
+ if(scope==='HISTORICAL_24M'){
+  if(env.P4_RESEARCH_CONFIRM!=='RESEARCH_ONLY'||!partitioned||timeframe!=='1h'||symbol!=='BTCUSDT'||iterations>3||expectedCandles<17000||expectedCandles>18000)throw Error('P4 24-month research requires BTCUSDT 1h, partition, 17000-18000 candles and at most 3 iterations');
+ }
+ return {jobId,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,iterations,seed,expectedCandles,partitioned,scope};
 }
 export async function runP4BackendResearch({env=process.env,fetchImpl=fetch,onProgress}={}){
  const config=parseP4RunnerOptions(env);
  const supabaseUrl=env.SUPABASE_URL,serviceRoleKey=env.SUPABASE_SERVICE_ROLE_KEY;
  if(!supabaseUrl||!serviceRoleKey)throw Error('missing server Supabase credentials');
  const storeConfig={supabaseUrl,serviceRoleKey,fetchImpl};
- return runP4HistoricalResearchJob({...config,supabaseUrl,apiKey:serviceRoleKey,fetchImpl,brain:researchRuleBrain,championVersion:RESEARCH_BRAIN_VERSION,championParameters:DEFAULT_TRAINING_PARAMETERS,codeRevision:'P4_BOUNDED_RUNNER_V2_PARTITION_OPTION',...(config.partitioned?{partitionOptions:{validationFraction:0.2,minResearch:100,minValidation:30}}:{}),costs:{feeRate:0.001,slippageRate:0},checkpointStore:createP4SupabaseCheckpointStore(storeConfig),roundStore:createP4SupabaseRoundStore(storeConfig),leaseStore:createP4SupabaseLeaseStore(storeConfig),ownerToken:randomBytes(24).toString('hex'),onProgress});
+ return runP4HistoricalResearchJob({...config,supabaseUrl,apiKey:serviceRoleKey,fetchImpl,brain:researchRuleBrain,championVersion:RESEARCH_BRAIN_VERSION,championParameters:DEFAULT_TRAINING_PARAMETERS,codeRevision:'P4_BOUNDED_RUNNER_V3_24M_OPT_IN',...(config.partitioned?{partitionOptions:{validationFraction:0.2,minResearch:100,minValidation:30}}:{}),costs:{feeRate:0.001,slippageRate:0},checkpointStore:createP4SupabaseCheckpointStore(storeConfig),roundStore:createP4SupabaseRoundStore(storeConfig),leaseStore:createP4SupabaseLeaseStore(storeConfig),ownerToken:randomBytes(24).toString('hex'),onProgress});
 }
 if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
  runP4BackendResearch({onProgress:p=>process.stdout.write(JSON.stringify({phase:p.phase,iteration:p.iteration,completedWindows:p.completedWindows})+'\n')}).then(result=>{process.stdout.write(JSON.stringify({status:result.status,completedIterations:result.completedIterations,loadedCandles:result.loadedCandles,independentValidation:false,liveTrading:false})+'\n')}).catch(e=>{process.stderr.write('P4 research failed: '+e.message+'\n');process.exitCode=1});

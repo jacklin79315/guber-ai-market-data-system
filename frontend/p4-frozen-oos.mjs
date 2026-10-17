@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {validateTrainingParameters} from './p4-challenger-parameters.mjs';
 import {compareChallengerReplay} from './p4-challenger-comparison.mjs';
+import {assessP4OOSReadiness} from './p4-oos-readiness.mjs';
 // A sealed parameter snapshot and nonoverlapping chronological window are mandatory.
 // This is an OOS comparison, NOT authorization for Champion promotion.
 export async function evaluateP4FrozenOOS({researchBoundary,validationCandles,champion,challenger,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},otherReplayOptions={}}={}){
@@ -13,5 +14,6 @@ export async function evaluateP4FrozenOOS({researchBoundary,validationCandles,ch
  const frozen={champion:{version:champion.version,parameters:validateTrainingParameters(champion.parameters)},challenger:{version:challenger.version,parameters:validateTrainingParameters(challenger.parameters)}};
  const fingerprint=createHash('sha256').update(JSON.stringify({frozen,researchBoundary,market,first:validationCandles[0].closeTime,last:prev,count:validationCandles.length})).digest('hex');
  const comparison=await compareChallengerReplay({candles:validationCandles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,champion:frozen.champion,challenger:frozen.challenger,otherReplayOptions});
- return {schemaVersion:'P4_FROZEN_OOS_EVALUATION_V1',status:'OOS_REPLAY_COMPLETED_REVIEW_REQUIRED',frozenFingerprint:fingerprint,boundary:structuredClone(researchBoundary),validationCandles:validationCandles.length,comparison,independentWindow:true,independentValidationPassed:false,promotionAllowed:false,warning:'OOS replay alone does not prove model independence, sufficient sample size, or safe promotion. No automatic retraining or Champion replacement.'};
+ const readiness=assessP4OOSReadiness({comparison});
+ return {readiness,schemaVersion:'P4_FROZEN_OOS_EVALUATION_V1',status:'OOS_REPLAY_COMPLETED_REVIEW_REQUIRED',frozenFingerprint:fingerprint,boundary:structuredClone(researchBoundary),validationCandles:validationCandles.length,comparison,independentWindow:true,independentValidationPassed:false,promotionAllowed:false,warning:'OOS replay alone does not prove model independence, sufficient sample size, or safe promotion. No automatic retraining or Champion replacement.'};
 }

@@ -105,6 +105,6 @@ test("training status reads real run and request records without a fake start",a
  assert.match(ui,/loadTrainingStatus/);
  assert.match(ui,/training-run-history/);
  assert.match(server,/api\/training\/status/);
- assert.match(server,/control_requests/);
- assert.match(server,/research_runs/);
+ assert.match(server,/p1_training_requests/);
+ assert.match(server,/p1_training_runs/);
 });

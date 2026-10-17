@@ -282,3 +282,12 @@
 - 此區間每根 K 線均可配對一筆 `market_features`，缺配對數 **0**；`rsi_12`、`atr_percent`、`volume_ratio`、`adx_14`、`return_3` 任一缺漏的配對列數 **0**。以上是資料庫 SQL 統計，不等於已逐筆重算指標數值正確性或全量回放成功。
 - GitHub Actions `c989a06`、`811b1b1`、`8b3ea75` 均 SUCCESS；管理員唯讀 `GET /api/admin/p4/research-status?id=<jobId>` 已加入控制中心程式，可檢視 checkpoint 與 durable round 差異；尚未實際以管理員登入執行端點驗收。
 - **下一步**：在正式服務以受限測試工作驗證完整 P4 讀取、特徵、租約、輪次、恢復及成本流程，並確認部署中的研究執行入口；完成獨立診斷與 OOS 之前不可宣稱自主學習完成或正式模型獲利能力。
+
+
+## 13K. 2026-10-18 P4 研究帳本／二次中斷恢復補強
+
+- `3dee694`、`d58275d`、`93b2b62`：逐輪研究帳本快照、重啟恢復、舊版帳本不完整標記與整合測試；GitHub Actions SUCCESS。
+- `145f045`：研究重啟、資料載入完畢後再次停止時，保留已提交輪次數，不再誤寫 0；GitHub Actions SUCCESS。
+- `b1cb37b`：舊版帳本歷史不完整標記隨後續輪次持續保存，不因再次重啟消失；GitHub Actions SUCCESS。
+- `d1263b4`：新增研究第一輪已完成、重新啟動後在歷史重載期間再次停止的整合測試；GitHub Actions run `39072097599` SUCCESS。
+- 以上驗收均為程式自動化測試／既有 Supabase SQL 隔離測試；**尚未**完成 Railway 實際執行 P4 研究工作並持久化的端到端驗收，**尚未**完成獨立診斷引擎或 AI 模型訓練。

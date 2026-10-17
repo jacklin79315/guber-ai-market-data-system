@@ -4,6 +4,10 @@ import {adaptRawCandles} from "./p2-candle-adapter.mjs";
 const allowedIntervals=new Set(["15m","1h","4h","1d"]);
 export async function loadHistoricalCandles({fetchPage,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,pageSize=1000,source="BINANCE",market="SPOT"}){
  if(typeof fetchPage!=="function"||typeof symbol!=="string"||!/^[A-Z0-9]{3,30}$/.test(symbol)||!allowedIntervals.has(timeframe)||!Number.isSafeInteger(fromOpenTime)||!Number.isSafeInteger(toOpenTime)||fromOpenTime>toOpenTime||!Number.isSafeInteger(asOfMs)||fromOpenTime<0||toOpenTime<0||asOfMs<=toOpenTime||!Number.isInteger(pageSize)||pageSize<1||pageSize>1000)throw Error("invalid historical candle query");
+ const duration={"15m":900000,"1h":3600000,"4h":14400000,"1d":86400000}[timeframe];
+ if(fromOpenTime%duration!==0)throw Error('misaligned historical start');
+ // Streaming windows can end between candle opens; compare against the last aligned open.
+ const expectedEndOpen=toOpenTime-(toOpenTime%duration);
  const result=[];let cursor=fromOpenTime-1;
  while(true){
   const rows=await fetchPage({source,market,symbol,timeframe,afterOpenTime:cursor,toOpenTime,limit:pageSize});
@@ -17,10 +21,9 @@ export async function loadHistoricalCandles({fetchPage,symbol,timeframe,fromOpen
   result.push(...adaptRawCandles(rows,{asOfMs,source,market}));cursor=last;
   if(rows.length<pageSize)break;
  }
- const duration={"15m":900000,"1h":3600000,"4h":14400000,"1d":86400000}[timeframe];
- for(let i=1;i<result.length;i++)if(result[i].closeTime-result[i-1].closeTime!==duration)throw Error('missing or overlapping historical candle interval');
+ for(let i=1;i<result.length;i++)if(result[i].closeTime-result[i-1].closeTime!==duration)throw Error('missing or misaligned historical candle interval');
  if(result.length&&result[0].closeTime!==fromOpenTime+duration-1)throw Error('missing historical start candle');
- if(result.length&&result.at(-1).closeTime!==toOpenTime+duration-1)throw Error('missing historical end candle');
+ if(result.length&&result.at(-1).closeTime!==expectedEndOpen+duration-1)throw Error('missing historical end candle');
  return result;
 }
 // Constructs an explicit read-only GET for a configured Supabase REST endpoint.

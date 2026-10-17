@@ -9,8 +9,9 @@ export async function runSequentialHistoricalReplay({fetchPage,symbol,timeframe,
  if(typeof featureAtDecision!=='function'||typeof brain!=='function')throw Error('explicit feature and Brain providers required');
  const candles=await loadHistoricalCandles({fetchPage,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs});
  const duration={'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000}[timeframe];
- const expectedCount=Math.floor((toOpenTime-fromOpenTime)/duration)+1;
- if(!candles.length||candles.length!==expectedCount||candles.some((bar,i)=>bar.closeTime!==fromOpenTime+(i+1)*duration-1))throw Error('P3 historical candles missing or misaligned');
+ const expectedEndOpen=toOpenTime-(toOpenTime%duration);
+ const expectedCount=Math.floor((expectedEndOpen-fromOpenTime)/duration)+1;
+ if(!candles.length||candles.length!==expectedCount||candles.some((bar,i)=>bar.closeTime!==fromOpenTime+(i+1)*duration-1||bar.closeTime>=asOfMs))throw Error('P3 historical candles missing or misaligned');
  const result=await runSequentialFiveExpertReplay({candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,lookback,threshold,minProbabilitySamples,minTimeSamples,maxDecisions,trainingParameters,modelVersion});
  return {...result,source:'HISTORICAL_READ_ONLY',symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,loadedCandles:candles.length};
 }

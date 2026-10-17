@@ -12,7 +12,7 @@ test("viewer navigation includes read-only sections while account management rem
  assert.match(ui,/if\(!allowedSection\(active\)\)active="總覽"/);
  assert.match(ui,/"訓練控制":\["admin","viewer"\]/);
  assert.match(ui,/"專家與模型":\["admin","viewer"\]/);
- assert.match(ui,/"系統設定":\["admin"\]/);
+ assert.match(ui,/"系統設定":\["admin","viewer"\]/);
 });
 test("admin account API validates server-side role",async()=>{
  const server=await read("server.mjs");

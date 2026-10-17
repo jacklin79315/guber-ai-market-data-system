@@ -49,6 +49,8 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
    }
    const first=shadow.firstTouches;
    shadow.counterfactualStatus=shadow.ambiguousBars.length?"AMBIGUOUS_SEQUENCE":first.entry===null?"ENTRY_NOT_REVISITED":first.tp!==null||first.sl!==null?"LEVELS_OBSERVED":"ENTRY_REVISITED";
+   shadow.counterfactualOutcome="UNDETERMINED";
+   shadow.hypotheticalPnl=null;
    // Classifications are evidence states, not counterfactual profit claims.
   }
  }

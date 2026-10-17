@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {runFiveExpertResearch} from './p3-five-expert-research.mjs';
+const candles=Array.from({length:21},(_,i)=>({symbol:'BTCUSDT',timeframe:'1h',closeTime:(i+1)*3600000-1,open:i===20?105:100,high:i===20?106:101,low:i===20?104:99,close:i===20?105:100}));
+const decisionTime=candles.at(-1).closeTime;
+const candidate={id:'c',symbol:'BTCUSDT',side:'LONG',timeframe:'1h',entryRange:[105,105],entryReason:'breakout',decisionTime};
+const features={asOfMs:decisionTime,rsi:55,atrPercent:0.02,volumeRatio:1.2,trendStrength:0.4,momentum:0.03};
+const tradeHistory=Array.from({length:5},(_,i)=>({id:'t'+i,decisionTime:i*1000,closedTime:i*1000+500,outcome:'WIN',symbol:'BTCUSDT',timeframe:'1h',side:'LONG',features}));
+const args={candidate,candles,features,tradeHistory,holdingHistory:tradeHistory.map(h=>({id:h.id,decisionTime:h.decisionTime,closedTime:h.closedTime,symbol:h.symbol,timeframe:h.timeframe,side:h.side})),account:{equity:10000,committedCapital:0},feeRate:0.001,slippageRate:0.001,minProbabilitySamples:3,minTimeSamples:3};
+test('five experts run and Brain can WAIT without approving',async()=>{const r=await runFiveExpertResearch({...args,brain:async()=>({action:'WAIT',reason:'research only'})});assert.equal(r.action,'WAIT');assert.equal(r.history.length,6);assert.ok(r.proposal.allocation>0);assert.ok(r.proposal.expectedHoldingMs>0)});
+test('insufficient probability data stops pipeline before risk/time and Brain',async()=>{let called=false;const r=await runFiveExpertResearch({...args,minProbabilitySamples:10,brain:async()=>{called=true;return {action:'APPROVE',reason:'yes'}}});assert.equal(r.action,'WAIT');assert.equal(r.history.at(-1).expert,'winProbability');assert.equal(called,false)});
+test('future features rejected before experts',async()=>{await assert.rejects(()=>runFiveExpertResearch({...args,features:{...features,asOfMs:decisionTime+1},brain:async()=>({action:'WAIT',reason:'no'})}),/invalid research chain inputs/)});

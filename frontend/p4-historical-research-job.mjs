@@ -20,7 +20,7 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
  if(!resumeRounds.length)await saveProgress({phase:'LOADING'});
  const loaded=await loadP4SegmentedHistoricalCandles({supabaseUrl,apiKey,fetchImpl,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,maxCandlesPerWindow,shouldStop,onProgress:async p=>{if(leaseGuard)await leaseGuard();await saveProgress({phase:'LOADING',...p,completedIterations:resumeRounds.length});await onProgress?.({phase:'LOADING',...p});}});
  if(!loaded.verified){await saveProgress({phase:'STOPPED',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:resumeRounds.length});return {status:'STOPPED_BEFORE_TRAINING',source:'SUPABASE_READ_ONLY',loadedCandles:loaded.loadedCandles,completedIterations:resumeRounds.length};}
- if(shouldStop()){await saveProgress({phase:'STOPPED',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows});return {status:'STOPPED_BEFORE_TRAINING',source:'SUPABASE_READ_ONLY',loadedCandles:loaded.loadedCandles,completedIterations:0};}
+ if(shouldStop()){await saveProgress({phase:'STOPPED',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:resumeRounds.length});return {status:'STOPPED_BEFORE_TRAINING',source:'SUPABASE_READ_ONLY',loadedCandles:loaded.loadedCandles,completedIterations:resumeRounds.length};}
  if(leaseGuard)await leaseGuard();
  await saveProgress({phase:'RESEARCH',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:resumeRounds.length});
  const featureReader=createSupabaseFeatureAtDecision({supabaseUrl,apiKey,fetchImpl});

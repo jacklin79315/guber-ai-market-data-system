@@ -30,7 +30,7 @@ async function auth(req,res,pathname){
   attempts.push(now);loginAttempts.set(ip,attempts);
   if(loginAttempts.size>1000)loginAttempts.clear();
   if(typeof b.username!=="string"||typeof b.password!=="string"){send(res,401,{message:"帳號或密碼不正確"});return}
-  const result=await fetch(url+"/rest/v1/rpc/p1_verify_login",{method:"POST",headers:{apikey:key,"Content-Type":"application/json"},body:JSON.stringify({p_username:b.username,p_password:b.password})});
+  const result=await fetch(url+"/rest/v1/rpc/p1_verify_login",{method:"POST",headers:{apikey:key,"Content-Type":"application/json"},body:JSON.stringify({p_username:b.username.trim(),p_password:b.password})});
   if(!result.ok){send(res,503,{message:"資料庫登入驗證服務暫時無法使用"});return}
   const users=await result.json();if(!Array.isArray(users)||!users[0]){send(res,401,{message:"帳號或密碼不正確"});return}
   loginAttempts.delete(ip);send(res,200,issueTokens(users[0].username,users[0].role));return

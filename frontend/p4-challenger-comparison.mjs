@@ -1,3 +1,4 @@
+import {collectP4DiagnosticEvidence} from './p4-diagnostic-evidence.mjs';
 import {runSequentialFiveExpertReplay} from './p3-sequential-replay.mjs';
 import {validateTrainingParameters} from './p4-challenger-parameters.mjs';
 // Run two isolated paper simulations on exactly the same closed candles and decision providers.
@@ -12,5 +13,6 @@ export async function compareChallengerReplay({candles,featureAtDecision,history
   runSequentialFiveExpertReplay({...shared,trainingParameters:challengerParams,modelVersion:challenger.version})
  ]);
  const summarize=(version,r)=>({version,processedCandles:r.processedCandles,statistics:r.statistics,metrics:r.metrics,initialCapital:r.account.initialCapital,closedTrades:r.account.closed.length});
- return {status:'RESEARCH_COMPARISON_ONLY',independentValidation:false,promotionAllowed:false,champion:summarize(champion.version,championResult),challenger:summarize(challenger.version,challengerResult),controls:{sameCandles:true,sameCosts:true,sameInitialCapital:true,sameBrainProvider:true,sameFeatureProvider:true},warning:'Same-window comparisons are not independent out-of-sample evidence. No promotion is authorized.'};
+ const diagnosticEvidence={champion:collectP4DiagnosticEvidence(championResult),challenger:collectP4DiagnosticEvidence(challengerResult)};
+ return {diagnosticEvidence,status:'RESEARCH_COMPARISON_ONLY',independentValidation:false,promotionAllowed:false,champion:summarize(champion.version,championResult),challenger:summarize(challenger.version,challengerResult),controls:{sameCandles:true,sameCosts:true,sameInitialCapital:true,sameBrainProvider:true,sameFeatureProvider:true},warning:'Same-window comparisons are not independent out-of-sample evidence. No promotion is authorized.'};
 }

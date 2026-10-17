@@ -10,3 +10,18 @@ test('P2 exit index must match original market series',()=>assert.throws(()=>att
 
 test('break-even outcome informs holding time but not binary win probability',()=>{const closed=attachClosedTimes({closed:[{...trade,pnl:0}],candles});const h=buildCausalExpertHistory({closed,decisionArchive:archive,asOfMs:21});assert.equal(h.tradeHistory.length,0);assert.equal(h.holdingHistory.length,1)});
 test('losses retain LOSS label after settlement',()=>{const closed=attachClosedTimes({closed:[{...trade,pnl:-3}],candles});const h=buildCausalExpertHistory({closed,decisionArchive:archive,asOfMs:21});assert.equal(h.tradeHistory[0].outcome,'LOSS')});
+
+test('interleaved multi-symbol candles resolve local exit index',()=>{
+ const mixed=[
+  {symbol:'BTCUSDT',timeframe:'1h',closeTime:10},
+  {symbol:'ETHUSDT',timeframe:'1h',closeTime:10},
+  {symbol:'BTCUSDT',timeframe:'1h',closeTime:20},
+  {symbol:'ETHUSDT',timeframe:'1h',closeTime:20},
+  {symbol:'BTCUSDT',timeframe:'1h',closeTime:30}
+ ];
+ const result=attachClosedTimes({closed:[{...trade,exitIndex:2},{...trade,id:'eth',symbol:'ETHUSDT',exitIndex:1}],candles:mixed});
+ assert.equal(result[0].closedTime,30);
+ assert.equal(result[1].closedTime,20);
+});
+test('missing market series fails closed',()=>assert.throws(()=>attachClosedTimes({closed:[{...trade,symbol:'SOLUSDT'}],candles}),/series/));
+test('nonchronological candle series fails closed',()=>assert.throws(()=>attachClosedTimes({closed:[trade],candles:[...candles,{...candles[0]}]}),/nonchronological/));

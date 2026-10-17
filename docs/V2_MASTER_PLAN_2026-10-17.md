@@ -309,3 +309,13 @@
 - 實際 Supabase 查詢：`p4_research_checkpoints`、`p4_research_rounds`、`p4_research_leases` 均為 **0 筆**；真實 P4 研究尚未啟動。
 - `docs/P4_MANUAL_RESEARCH_ACCEPTANCE.md`（`afd8598`）新增 GitHub Environment／Secrets 設定、手動觸發與 Supabase 驗收清單。
 - 現有 GitHub 連接器沒有 Actions Secrets／Environment 管理或 workflow dispatch 操作，因此 **無法直接完成 GitHub 憑證設定與啟動**；需要具儲存庫權限者操作，之後可由連接器查核 Actions 和 Supabase 持久化結果。
+
+
+## 13N. 2026-10-18 P4 真實資料端到端驗收（PASS）
+
+- GitHub Actions run `39073363789` SUCCESS，含 Secrets 預檢、Supabase 唯讀 schema 預檢與 P4 研究執行。
+- `p4_btc_smoke_001`，BTCUSDT 1h，2026-09-01～09-07 UTC，共 168 根 K 線，1 輪研究。
+- Supabase：checkpoint `COMPLETED`／`completedIterations=1`／`loadedCandles=168`；round iteration=1 已儲存，設定指紋一致，無租約殘留。**受限研究執行和持久化驗收 PASS**。
+- 未訓練基準：9 筆已結算，淨 -9.1853 USDT（-0.09185%），手續費 4.5091 USDT；challenger：9 筆，淨 -10.1305 USDT（-0.10131%），手續費 4.5089 USDT。
+- Feedback：`INSUFFICIENT_RESEARCH_SAMPLES`（每組 9 筆，要求至少 30）；`promotionAllowed=false`；沒有獨立 OOS，也不是已訓練 AI。
+- 下一個開發優先序：管理員網頁整合研究啟動／進度／停止／恢復、研究結果、診斷與統計；一般帳號唯讀。保留研究限制、不開啟真實下單。

@@ -40,6 +40,7 @@ async function auth(req,res,pathname){
   const b=await body(req);const fake={headers:{authorization:"Bearer "+(b.refresh_token||"")}};const user=sessionUser(fake,"refresh");
   if(!user){send(res,401,{message:"登入已失效"});return}send(res,200,issueTokens(user.username,user.role));return
  }
+ if(pathname==="/api/auth/admin/users"){const actor=sessionUser(req);if(!actor){send(res,401,{message:"請先登入"});return}if(actor.role!=="admin"){send(res,403,{message:"僅管理員可以管理帳號"});return}send(res,503,{message:"帳號管理尚未啟用：缺少安全的資料庫管理端連線"});return}
  if(pathname==="/api/auth/logout"){send(res,200,{ok:true});return}
  if(pathname==="/api/auth/user"){const user=sessionUser(req);if(!user){send(res,401,{message:"請先登入"});return}send(res,200,{username:user.username,role:user.role});return}
  send(res,404,{message:"找不到服務"})

@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createP4SupabaseLeaseStore} from './p4-supabase-leases.mjs';
+test('P4 lease adapter calls scoped RPCs and rejects occupied lease',async()=>{const names=[];const store=createP4SupabaseLeaseStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test-server-only',fetchImpl:async(url,opts)=>{names.push(new URL(url).pathname);assert.equal(opts.method,'POST');return {ok:true,json:async()=>names.length!==1}}});assert.equal(await store.claim('job','a'.repeat(32)),false);assert.equal(await store.renew('job','a'.repeat(32)),true);assert.equal(await store.release('job','a'.repeat(32)),true);assert.deepEqual(names.map(x=>x.split('/').at(-1)),['p4_claim_research_lease','p4_renew_research_lease','p4_release_research_lease'])});
+test('P4 lease adapter fails closed on RPC errors',async()=>{const store=createP4SupabaseLeaseStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async()=>({ok:false,status:403})});await assert.rejects(store.claim('job','a'.repeat(32)),/failed: 403/)});

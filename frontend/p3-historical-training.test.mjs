@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {trainP3FromHistoricalCandles} from './p3-historical-training.mjs';
+const duration=3600000;
+const prices=[[100,101,99,100],[100,102,99,101],[101,112,100,110]];
+const rows=prices.map(([open,high,low,close],i)=>({source:'BINANCE',market:'SPOT',symbol:'BTCUSDT',timeframe:'1h',open_time:i*duration,close_time:(i+1)*duration-1,open_price:String(open),high_price:String(high),low_price:String(low),close_price:String(close)}));
+const fetchImpl=async()=>({ok:true,json:async()=>rows});
+const settings={supabaseUrl:'https://example.supabase.co',apiKey:'test-key',fetchImpl,symbol:'BTCUSDT',timeframe:'1h',fromOpenTime:0,toOpenTime:2*duration,asOfMs:4*duration,costs:{feeRate:0,slippageRate:0},minSamples:1};
+test('read-only Supabase candle source feeds P2 realized trades into P3 training',async()=>{const proposals=[{id:'t1',symbol:'BTCUSDT',timeframe:'1h',side:'LONG',decisionIndex:0,entry:[100,101],takeProfit:[110,111],stopLoss:[95,96],capital:100}];const decisionContexts=[{id:'t1',decisionTime:duration-1,marketState:'TREND_UP'}];const r=await trainP3FromHistoricalCandles({...settings,proposals,decisionContexts});assert.equal(r.candleCount,3);assert.equal(r.closedTrades,1);assert.equal(r.status,'TRAINED');assert.equal(r.training.validation.evaluated,0)});
+test('historical candles without expert proposals do not create synthetic trades',async()=>{const r=await trainP3FromHistoricalCandles({...settings,proposals:[],decisionContexts:[]});assert.equal(r.closedTrades,0);assert.equal(r.status,'INSUFFICIENT_DATA')});
+test('mismatched expert contexts reject historical training',async()=>{await assert.rejects(()=>trainP3FromHistoricalCandles({...settings,proposals:[{id:'t1',symbol:'BTCUSDT',timeframe:'1h'}],decisionContexts:[]}),/expert proposals/)});

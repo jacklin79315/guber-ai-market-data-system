@@ -90,3 +90,10 @@
 - `frontend/main.js` 已加入 BTCUSDT 15m/1h/4h/1d 最近已收盤 K 線時間檢查，畫面以台北時間顯示並標示可能延遲；**僅代表最新資料時效，不代表全歷史缺漏或技術指標檢驗**。
 - `frontend/server.mjs` 已加入登入嘗試速率限制、行情唯讀 GET 方法限制、前端安全回應標頭；需待 CI 與實際部署驗證。
 - 管理員 Auth 內部身分仍未開通，`ADMIN_AUTH_EMAIL`/`ADMIN_AUTH_USER_ID` 尚未配置，無法正式登入。原始 Logo 二進位資產仍待上傳。
+
+
+### P1 真實資料對接修正（2026-10-17）
+- 查核 Supabase `raw_candles` BTCUSDT 四個週期均有原始資料（15m、1h、4h、1d）；`close_time` 為毫秒 Unix timestamp（bigint），已修正前端時間解析，避免誤判日期格式異常。
+- 新增受管理員登入驗證保護的唯讀 `/api/data/watchlist` 及前端 `fetchWatchlist()`；商品監測頁開始顯示資料庫清單總數與啟用數（待登入實測）。
+- 擴充 `frontend/server.test.mjs`，涵蓋禁止 POST 行情查詢、封鎖伺服器程式碼與未配置管理員時拒絕讀取清單；測試仍需核對 GitHub Actions 結果。
+- Railway 前端已有 SUCCESS 部署紀錄，但最新提交持續自動部署，應以最新 commit SHA 對照狀態。管理員身份仍未建立，勿宣稱登入或行情實測成功。

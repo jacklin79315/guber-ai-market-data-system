@@ -1,4 +1,5 @@
 import {loadHistoricalCandles,createSupabaseCandlePageFetcher} from './p2-historical-reader.mjs';
+import {createSupabaseFeatureAtDecision} from './p3-supabase-feature-reader.mjs';
 import {runSequentialFiveExpertReplay} from './p3-sequential-replay.mjs';
 // Read-only historical source -> chronological five-expert research -> P2 paper simulation.
 // The caller must supply causal features and a Brain decision function. No fabricated AI.
@@ -14,4 +15,12 @@ export async function runSequentialHistoricalReplay({fetchPage,symbol,timeframe,
 export async function runSupabaseSequentialFiveExpertReplay({supabaseUrl,apiKey,fetchImpl=fetch,...options}={}){
  const fetchPage=createSupabaseCandlePageFetcher({supabaseUrl,anonKey:apiKey,fetchImpl});
  return runSequentialHistoricalReplay({...options,fetchPage});
+}
+
+// Fully database-backed candles and features; Brain is still explicit and versioned by caller.
+export async function runSupabaseFeatureBackedReplay({supabaseUrl,apiKey,fetchImpl=fetch,featureAtDecision,...options}={}){
+ if(featureAtDecision!==undefined)throw Error('feature override not allowed in database-backed replay');
+ if(typeof options.brain!=='function'||typeof options.modelVersion!=='string'||!options.modelVersion.trim())throw Error('explicit versioned Brain required');
+ const reader=createSupabaseFeatureAtDecision({supabaseUrl,apiKey,fetchImpl});
+ return runSupabaseSequentialFiveExpertReplay({...options,supabaseUrl,apiKey,fetchImpl,featureAtDecision:reader});
 }

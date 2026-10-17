@@ -5,9 +5,12 @@ export function estimateRiskPositionBaseline({proposal,account,maxPortfolioUtili
  if(account.committedCapital>account.equity+1e-8)throw Error('invalid committed capital');
  if(proposal.expectedValue!==null&&proposal.expectedValue<=0)return {action:'WAIT',reason:'NON_POSITIVE_EXPECTANCY'};
  const available=Math.max(0,Math.min(account.equity-account.committedCapital,account.equity*maxPortfolioUtilization-account.committedCapital));
- const allocation=Math.min(available,account.equity*maxTradeFraction*(proposal.expectedValue===null?0.25:1),account.equity*maxLossFraction/proposal.expectedLoss);
+ const tradeCap=account.equity*maxTradeFraction*(proposal.expectedValue===null?0.25:1);
+ const lossBudgetCap=account.equity*maxLossFraction/proposal.expectedLoss;
+ const allocation=Math.min(available,tradeCap,lossBudgetCap);
+ const bindingConstraints=[['PORTFOLIO_AVAILABLE',available],['TRADE_CAP',tradeCap],['LOSS_BUDGET',lossBudgetCap]].filter(([,limit])=>Math.abs(limit-allocation)<=Math.max(1e-8,Math.abs(allocation)*1e-10)).map(([name])=>name);
  if(!Number.isFinite(allocation)||allocation<=0)return {action:'WAIT',reason:'INSUFFICIENT_ACCOUNT_CAPACITY'};
- return {action:'CONTINUE',patch:{allocation,riskReason:'Single simulation account: portfolio cap '+maxPortfolioUtilization+', trade cap '+maxTradeFraction+', estimated loss budget '+maxLossFraction+' of equity; committed capital '+account.committedCapital+'; expected net loss fraction '+proposal.expectedLoss+'; '+(proposal.expectedValue===null?'UNKNOWN probability: provisional 25% of trade cap, unvalidated':'estimated positive EV')},availableCapital:available,projectedUtilization:(account.committedCapital+allocation)/account.equity};
+ return {action:'CONTINUE',patch:{allocation,riskReason:'Single simulation account: portfolio cap '+maxPortfolioUtilization+', trade cap '+maxTradeFraction+', estimated loss budget '+maxLossFraction+' of equity; committed capital '+account.committedCapital+'; expected net loss fraction '+proposal.expectedLoss+'; '+(proposal.expectedValue===null?'UNKNOWN probability: provisional 25% of trade cap, unvalidated':'estimated positive EV')},availableCapital:available,allocationDiagnostics:{tradeCap,lossBudgetCap,availableCapital:available,bindingConstraints,provisionalUnknownProbability:proposal.expectedValue===null,allocationFraction:allocation/account.equity},projectedUtilization:(account.committedCapital+allocation)/account.equity};
 }
 export function applyRiskPositionBaseline({proposal,account,...options}={}){
  const result=estimateRiskPositionBaseline({proposal,account,...options});

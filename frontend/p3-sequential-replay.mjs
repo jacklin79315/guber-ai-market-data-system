@@ -5,6 +5,7 @@ import {detectEntryCandidate} from './p3-entry-baseline.mjs';
 import {runFiveExpertResearch} from './p3-five-expert-research.mjs';
 import {approvedToSimulationProposal} from './p3-p2-bridge.mjs';
 import {tradeMetrics} from './p2-metrics.mjs';
+import {estimateRiskPositionBaseline} from './p3-risk-position-baseline.mjs';
 // Sequential research replay: close bar -> update P2 account -> decide using only known data.
 // History and feature resolvers must provide strictly causal observations; never place live orders.
 export async function runSequentialFiveExpertReplay({candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},lookback=20,threshold=0.001,minProbabilitySamples=30,minTimeSamples=10,maxDecisions=100000,trainingParameters,modelVersion='P3_RESEARCH_V1'}={}){
@@ -42,7 +43,8 @@ export async function runSequentialFiveExpertReplay({candles,featureAtDecision,h
   for(const sample of history.holdingHistory){if(holdingIds.has(sample.id))throw Error('duplicate historical holding sample');holdingIds.add(sample.id)}
   const committedCapital=[...account.pending,...account.positions].reduce((sum,p)=>sum+p.capital,0);
   const verdict=await runFiveExpertResearch({candidate,candles:prefix,features,tradeHistory:history.tradeHistory,holdingHistory:history.holdingHistory,account:{equity:account.equity,committedCapital},feeRate:costs.feeRate,slippageRate:costs.slippageRate,brain,minProbabilitySamples,minTimeSamples,rewardParameters,modelVersion});
-  decisions.push({id:candidate.id,decisionTime:bar.closeTime,action:verdict.action,reason:verdict.reason||null,history:verdict.history});
+  const riskDiagnostics=verdict.proposal&&Number.isFinite(verdict.proposal.allocation)&&Number.isFinite(verdict.proposal.expectedLoss)&&verdict.proposal.expectedLoss>0&&('expectedValue' in verdict.proposal)?estimateRiskPositionBaseline({proposal:verdict.proposal,account:{equity:account.equity,committedCapital}}):null;
+  decisions.push({id:candidate.id,decisionTime:bar.closeTime,action:verdict.action,reason:verdict.reason||null,allocation:verdict.proposal?.allocation??null,riskDiagnostics:riskDiagnostics?.allocationDiagnostics??null,history:verdict.history});
   if(verdict.action!=='APPROVE')continue;
   const proposal=approvedToSimulationProposal(verdict,{decisionIndex:i});
   const submission=submitProposal(account,proposal);
@@ -52,6 +54,8 @@ export async function runSequentialFiveExpertReplay({candles,featureAtDecision,h
  const count=type=>events.filter(e=>e.type===type).length;
  const brainDecisionReasons=Object.fromEntries([...new Set(decisions.map(d=>d.reason||'UNSPECIFIED'))].sort().map(reason=>[reason,decisions.filter(d=>(d.reason||'UNSPECIFIED')===reason).length]));
  const stageOutcomes={};for(const d of decisions)for(const step of d.history||[]){const key=step.expert+':'+step.action+(step.reason?':'+step.reason:'');stageOutcomes[key]=(stageOutcomes[key]||0)+1;}
+ const allocationAudit={decisionCount:decisions.length,diagnosedCount:decisions.filter(d=>d.riskDiagnostics).length,approvedDiagnosedCount:decisions.filter(d=>d.action==='APPROVE'&&d.riskDiagnostics).length,approvedAllocatedCapital:decisions.filter(d=>d.action==='APPROVE'&&Number.isFinite(d.allocation)).reduce((sum,d)=>sum+d.allocation,0),bindingConstraintCounts:{},unknownProbabilityApprovedCount:0};
+ for(const d of decisions){if(d.action!=='APPROVE'||!d.riskDiagnostics)continue;if(d.riskDiagnostics.provisionalUnknownProbability)allocationAudit.unknownProbabilityApprovedCount++;for(const key of d.riskDiagnostics.bindingConstraints){allocationAudit.bindingConstraintCounts[key]=(allocationAudit.bindingConstraintCounts[key]||0)+1;}}
  const statistics={brainDecisionReasons,stageOutcomes,candidateCount:decisions.length,approvedCount:decisions.filter(d=>d.action==='APPROVE').length,waitCount:decisions.filter(d=>d.action==='WAIT').length,rejectedByBrainCount:decisions.filter(d=>d.action==='REJECT').length,submittedCount:count('SUBMITTED'),rejectedSubmissionCount:count('REJECTED'),filledCount:count('OPEN'),closedCount:count('CLOSED'),cancelledBeforeFillCount:count('CANCELLED'),capitalWaitEvents:count('WAIT_CAPITAL'),openPositionCount:account.positions.length,pendingOrderCount:account.pending.length,realizedTradeCount:account.closed.length};
- return {account,metrics:tradeMetrics(account),decisions,events,processedCandles:candles.length,approvedCount:statistics.approvedCount,waitCount:statistics.waitCount,statistics};
+ return {account,metrics:tradeMetrics(account),allocationAudit,decisions,events,processedCandles:candles.length,approvedCount:statistics.approvedCount,waitCount:statistics.waitCount,statistics};
 }

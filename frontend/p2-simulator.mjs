@@ -67,7 +67,7 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
   const pnl=(p.side==="LONG"?1:-1)*(exitPrice-p.entryPrice)*qty;
   const exitFee=exitPrice*qty*feeRate;
   account.cash+=p.capital+pnl-exitFee;
-  const record={...p,state:"CLOSED",exitIndex:index,exitReason:exit,exitPrice,pnl:pnl-p.entryFee-exitFee};
+  const record={...p,state:"CLOSED",exitIndex:index,exitReason:exit,exitPrice,exitFee,grossPnl:pnl,totalFees:p.entryFee+exitFee,pnl:pnl-p.entryFee-exitFee};
   account.positions.splice(account.positions.indexOf(p),1);account.closed.push(record);refreshEquity(account);events.push({id:p.id,type:"CLOSED",reason:exit});
  }
  for(const p of [...account.pending]){

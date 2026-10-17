@@ -19,12 +19,20 @@ export function buildCausalExpertHistory({closed,decisionArchive,asOfMs}={}){
 }
 
 // P2 stores bar indices; resolve actual close timestamps from the same replay series.
-export function attachClosedTimes({closed,candles}={}){
+export function attachClosedTimes({closed,candles}={}) {
  if(!Array.isArray(closed)||!Array.isArray(candles))throw Error('invalid P2 closed-time input');
+ const series=new Map();
+ for(const bar of candles){
+  if(!bar||typeof bar.symbol!=='string'||typeof bar.timeframe!=='string'||!Number.isSafeInteger(bar.closeTime))throw Error('invalid P2 candle');
+  const key=bar.symbol+'|'+bar.timeframe;
+  if(!series.has(key))series.set(key,[]);
+  const bars=series.get(key);
+  if(bars.length&&bar.closeTime<=bars.at(-1).closeTime)throw Error('nonchronological P2 candle series');
+  bars.push(bar);
+ }
  return closed.map(t=>{
-  if(!Number.isSafeInteger(t.exitIndex)||t.exitIndex<0||t.exitIndex>=candles.length)throw Error('invalid P2 exit index');
-  const bar=candles[t.exitIndex];
-  if(!bar||bar.symbol!==t.symbol||bar.timeframe!==t.timeframe||!Number.isSafeInteger(bar.closeTime))throw Error('P2 exit bar mismatch');
-  return {...t,closedTime:bar.closeTime};
+  const bars=series.get(t.symbol+'|'+t.timeframe);
+  if(!Number.isSafeInteger(t.exitIndex)||t.exitIndex<0||!bars||t.exitIndex>=bars.length)throw Error('invalid P2 exit index or series');
+  return {...t,closedTime:bars[t.exitIndex].closeTime};
  });
 }

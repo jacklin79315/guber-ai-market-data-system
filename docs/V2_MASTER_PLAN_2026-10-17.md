@@ -300,3 +300,12 @@
 - `.github/workflows/p4-manual-research.yml`（`0058cee`）：新增僅 `workflow_dispatch` 手動啟動工作流程，使用 `p4-research` environment 與 GitHub Secrets `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`；單次工作最多 25 分鐘，固定 BTCUSDT 1h、最多 3 輪，不啟用真實下單。
 - Railway 控制中心 `951790e` 已部署 SUCCESS；`0058cee` 當時仍 BUILDING。GitHub Actions 手動工作流程**尚未實際執行**，GitHub Secrets／environment 設定**尚未驗證**，因此不得宣稱真實 Supabase 端到端研究已通過。
 - 下一步：核對工作流程可用性、Secrets／environment 保護設定，在可控制且不影響正式服務的前提下，手動執行小規模歷史研究，查驗 Supabase checkpoint、rounds、租約及研究結果，之後才考慮擴大資料窗。
+
+
+## 13M. 2026-10-18 P4 手動驗收準備與權限界線
+
+- GitHub Actions `39072715836` SUCCESS：唯讀 Supabase 預檢及失敗拒絕測試通過。
+- Railway 控制中心已部署 `8272cd4` SUCCESS；既有服務環境確認存在 `SUPABASE_URL` 與 `SUPABASE_SERVICE_ROLE_KEY` 變數名稱，但 **Railway 變數不等於 GitHub Actions Secrets**。
+- 實際 Supabase 查詢：`p4_research_checkpoints`、`p4_research_rounds`、`p4_research_leases` 均為 **0 筆**；真實 P4 研究尚未啟動。
+- `docs/P4_MANUAL_RESEARCH_ACCEPTANCE.md`（`afd8598`）新增 GitHub Environment／Secrets 設定、手動觸發與 Supabase 驗收清單。
+- 現有 GitHub 連接器沒有 Actions Secrets／Environment 管理或 workflow dispatch 操作，因此 **無法直接完成 GitHub 憑證設定與啟動**；需要具儲存庫權限者操作，之後可由連接器查核 Actions 和 Supabase 持久化結果。

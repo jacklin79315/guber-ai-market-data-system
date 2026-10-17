@@ -1,3 +1,4 @@
+import {reviewBrainProposal} from './p3-brain-review.mjs';
 import {EXPERT_ORDER,BRAIN_ACTIONS,applyExpertPatch,createProposalContext} from './p3-contract.mjs';
 // P3 orchestration only. Expert implementations are injected, not simulated AI.
 export async function runExpertPipeline({context,experts,brain,maxReturns=2}={}){
@@ -12,6 +13,10 @@ export async function runExpertPipeline({context,experts,brain,maxReturns=2}={})
   const verdict=await brain(structuredClone(state));
   if(!verdict||!BRAIN_ACTIONS.includes(verdict.action)||typeof verdict.reason!=='string'||!verdict.reason.trim())throw Error('invalid Brain verdict');
   history.push({expert:'brain',action:verdict.action,reason:verdict.reason});
+  if(verdict.action==='APPROVE'){
+   const review=reviewBrainProposal(state);
+   if(!review.ok){history.push({expert:'brainSafety',action:'WAIT',issues:review.issues});return {action:'WAIT',reason:'Brain safety review failed: '+review.issues.join(','),proposal:state,history};}
+  }
   if(verdict.action!=='RETURN')return {action:verdict.action,reason:verdict.reason,proposal:state,history};
   const target=EXPERT_ORDER.indexOf(verdict.target);
   if(target<0)throw Error('invalid Brain return target');

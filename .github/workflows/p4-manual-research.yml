@@ -1,0 +1,61 @@
+name: P4 bounded research (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Unique research job id (letters, digits, underscore, hyphen)"
+        required: true
+        type: string
+      from_ms:
+        description: "UTC aligned first candle open timestamp (milliseconds)"
+        required: true
+        type: string
+      to_ms:
+        description: "UTC aligned last candle open timestamp (milliseconds)"
+        required: true
+        type: string
+      as_of_ms:
+        description: "Historical cutoff, strictly after final candle close (milliseconds)"
+        required: true
+        type: string
+      iterations:
+        description: "Research iterations (1 to 3)"
+        required: true
+        default: "1"
+        type: choice
+        options: ["1", "2", "3"]
+permissions:
+  contents: read
+concurrency:
+  group: p4-manual-research
+  cancel-in-progress: false
+jobs:
+  bounded-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P4_RESEARCH_CONFIRM: RESEARCH_ONLY
+      P4_JOB_ID: ${{ inputs.job_id }}
+      P4_SYMBOL: BTCUSDT
+      P4_TIMEFRAME: 1h
+      P4_FROM_MS: ${{ inputs.from_ms }}
+      P4_TO_MS: ${{ inputs.to_ms }}
+      P4_AS_OF_MS: ${{ inputs.as_of_ms }}
+      P4_ITERATIONS: ${{ inputs.iterations }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify secret configuration
+        run: |
+          test -n "$SUPABASE_URL" || { echo "SUPABASE_URL secret missing"; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "SUPABASE_SERVICE_ROLE_KEY secret missing"; exit 1; }
+      - name: Run bounded P4 research (no live orders)
+        run: node p4-backend-runner.mjs

@@ -1,0 +1,28 @@
+name: P1 前端安全測試
+on:
+  push:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/p1-frontend-tests.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+jobs:
+  frontend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: JavaScript 語法檢查
+        run: |
+          node --check server.mjs
+          node --check auth.js
+          node --check data.js
+          node --check main.js
+      - name: 安全冒煙測試
+        run: npm test

@@ -20,6 +20,8 @@ export function tradeMetrics(account){
   netRealizedPnl:netPnl,
   grossRealizedPnl,entryFees,exitFees,totalFees:entryFees+exitFees,
   costLedgerCoverage:trades.filter(t=>Number.isFinite(t.entryFee)&&Number.isFinite(t.exitFee)&&Number.isFinite(t.grossPnl)).length,
+  costLedgerComplete:trades.every(t=>Number.isFinite(t.entryFee)&&Number.isFinite(t.exitFee)&&Number.isFinite(t.grossPnl)),
+  costLedgerNetDifference:trades.every(t=>Number.isFinite(t.entryFee)&&Number.isFinite(t.exitFee)&&Number.isFinite(t.grossPnl))?grossRealizedPnl-entryFees-exitFees-netPnl:null,
   realizedReturn:netPnl/account.initialCapital,
   grossProfit,grossLoss,
   profitFactor:grossLoss>0?grossProfit/grossLoss:null,

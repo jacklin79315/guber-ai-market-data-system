@@ -23,4 +23,4 @@ test('P3 historical replay rejects an entirely empty series',async()=>{await ass
 test('P3 historical replay rejects missing candles even when reader returns a partial range',async()=>{const partial=rows.filter(r=>r.open_time!==12*hour);await assert.rejects(runSequentialHistoricalReplay({...base,fetchPage:async({afterOpenTime,toOpenTime})=>partial.filter(r=>r.open_time>afterOpenTime&&r.open_time<=toOpenTime)}),/missing or misaligned historical candle interval|P3 historical candles missing or misaligned/)});
 
 test('P3 accepts a query end between aligned candle opens',async()=>{const result=await runSequentialHistoricalReplay({...base,toOpenTime:24*hour+1234});assert.equal(result.loadedCandles,25)});
-test('P3 refuses a candle that is not closed at as-of time',async()=>{await assert.rejects(runSequentialHistoricalReplay({...base,asOfMs:24*hour+1}),/P3 historical candles missing or misaligned|not closed|future/i)});
+test('P3 refuses a candle that is not closed at as-of time',async()=>{await assert.rejects(runSequentialHistoricalReplay({...base,asOfMs:24*hour+1}),/P3 historical candles missing or misaligned|unclosed|not closed|future/i)});

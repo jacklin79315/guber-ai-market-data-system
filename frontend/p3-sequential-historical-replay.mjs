@@ -8,6 +8,9 @@ import {createBrainModelAdapter} from './p3-model-adapters.mjs';
 export async function runSequentialHistoricalReplay({fetchPage,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},lookback=20,threshold=0.001,minProbabilitySamples=30,minTimeSamples=10,maxDecisions=100000,trainingParameters,modelVersion='P3_RESEARCH_V1'}={}){
  if(typeof featureAtDecision!=='function'||typeof brain!=='function')throw Error('explicit feature and Brain providers required');
  const candles=await loadHistoricalCandles({fetchPage,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs});
+ const duration={'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000}[timeframe];
+ const expectedCount=Math.floor((toOpenTime-fromOpenTime)/duration)+1;
+ if(!candles.length||candles.length!==expectedCount||candles.some((bar,i)=>bar.closeTime!==fromOpenTime+(i+1)*duration-1))throw Error('P3 historical candles missing or misaligned');
  const result=await runSequentialFiveExpertReplay({candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,lookback,threshold,minProbabilitySamples,minTimeSamples,maxDecisions,trainingParameters,modelVersion});
  return {...result,source:'HISTORICAL_READ_ONLY',symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,loadedCandles:candles.length};
 }

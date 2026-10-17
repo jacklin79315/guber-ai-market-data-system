@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createAccount,submitProposal,processBar} from "./p2-simulator.mjs";
 const p=(overrides={})=>({id:"p1",symbol:"BTCUSDT",timeframe:"1h",side:"LONG",decisionIndex:0,entry:[99,101],takeProfit:[110,111],stopLoss:[90,91],capital:2000,...overrides});
-const bar=(low,high,close=100,index=1)=>({symbol:"BTCUSDT",timeframe:"1h",open:100,low,high,close});
+const bar=(low,high,close=100)=>({symbol:"BTCUSDT",timeframe:"1h",open:Math.max(low,Math.min(high,100)),low,high,close});
 const costs={feeRate:0,slippageRate:0};
 test("decision candle cannot fill",()=>{const a=createAccount();submitProposal(a,p());assert.deepEqual(processBar(a,bar(99,101),0,costs),[]);assert.equal(a.pending.length,1)});
 test("next candle opens and capital stays within 80 percent",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(99,101),1,costs);assert.equal(a.positions.length,1);assert.equal(a.cash,8000)});

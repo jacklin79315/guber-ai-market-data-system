@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {analyzeP4WinCalibration,wilson95} from './p4-win-calibration.mjs';
+test('Wilson interval has finite bounds for small and extreme samples',()=>{for(const wins of [0,1,10]){const w=wilson95(wins,10);assert(w.lower>=0&&w.upper<=1&&w.lower<=wins/10&&w.upper>=wins/10)}});
+test('global sample threshold does not certify sparse bins',()=>{const decisions=Array.from({length:30},(_,i)=>({id:String(i),action:'APPROVE',proposalAtDecision:{winProbability:i===0?0.1:0.7}}));const closedTrades=decisions.map(d=>({id:d.id,exitReason:'TP'}));const x=analyzeP4WinCalibration({decisions,closedTrades,minSamples:30});assert.equal(x.status,'RESEARCH_CALIBRATION_READY');assert.equal(x.eligibleBinCount,0);assert.equal(x.bins[0].binSampleSufficient,false);assert.equal(x.bins[3].count,29);assert.equal(x.diagnosticFaultAssigned,false)});
+test('Wilson rejects invalid samples',()=>assert.throws(()=>wilson95(2,1)));

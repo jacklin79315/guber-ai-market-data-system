@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createSupabaseFeatureAtDecision} from './p3-supabase-feature-reader.mjs';
+const candidate={symbol:'BTCUSDT',timeframe:'1h',decisionTime:3599999};
+const row={source:'BINANCE',market:'SPOT',symbol:'BTCUSDT',timeframe:'1h',open_time:0,close_time:3599999,rsi_12:54,atr_percent:0.02,volume_ratio:1.1,adx_14:23,return_3:0.01};
+const settings={supabaseUrl:'https://example.supabase.co',apiKey:'test',fetchImpl:async(url,options)=>{const u=new URL(url);assert.equal(options.method,'GET');assert.equal(u.searchParams.get('close_time'),'eq.3599999');assert.equal(u.searchParams.get('symbol'),'eq.BTCUSDT');return {ok:true,json:async()=>[row]}}};
+test('read real schema fields at exact decision close time',async()=>{const feature=await createSupabaseFeatureAtDecision(settings)({candidate});assert.deepEqual(feature,{asOfMs:3599999,rsi:54,atrPercent:0.02,volumeRatio:1.1,trendStrength:23,momentum:0.01})});
+test('reject absent duplicated or incomplete feature rows',async()=>{for(const rows of [[],[row,row],[{...row,atr_percent:null}]])await assert.rejects(createSupabaseFeatureAtDecision({...settings,fetchImpl:async()=>({ok:true,json:async()=>rows})})({candidate}),/missing or ambiguous|incomplete/)});
+test('reject mismatched timestamp or market',async()=>{for(const bad of [{...row,close_time:3600000},{...row,symbol:'ETHUSDT'}])await assert.rejects(createSupabaseFeatureAtDecision({...settings,fetchImpl:async()=>({ok:true,json:async()=>[bad]})})({candidate}),/misaligned/)});

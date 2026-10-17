@@ -7,3 +7,5 @@
 .table-wrap td{white-space:nowrap}
 .table-wrap:focus-visible{outline:2px solid #9bc6ff;outline-offset:2px}
 @media(max-width:720px){.table-wrap{margin-inline:-2px}.table-wrap th,.table-wrap td{padding:14px 12px}.top-actions{gap:6px}.logout-button{min-height:44px}.bottom-nav button{min-height:52px;min-width:44px;touch-action:manipulation}}
+
+[data-state="正常"]{color:#89d6b3}[data-state="可能延遲"]{color:#ffcb80}[data-state="時間異常"]{color:#ff9e9e}

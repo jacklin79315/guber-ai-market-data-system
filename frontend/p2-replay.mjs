@@ -21,7 +21,8 @@ export function replayCandles({candles,proposals=[],accountOptions={},costs}){
   proposalsByBar.set(at,[...(proposalsByBar.get(at)||[]),p]);
  }
  const seen=new Set();
- for(const b of sorted){
+ for(let candleIndex=0;candleIndex<sorted.length;candleIndex++){
+  const b=sorted[candleIndex];
   const k=seriesKey(b),i=cursor.get(k)||0;
   if(seen.has(k+"|"+b.closeTime))throw Error("duplicate candle");
   seen.add(k+"|"+b.closeTime);
@@ -33,7 +34,7 @@ export function replayCandles({candles,proposals=[],accountOptions={},costs}){
   for(const event of processBar(account,b,i,costs))events.push({...event,closeTime:b.closeTime,index:i});
   cursor.set(k,i+1);
   // Record after all symbols sharing the timestamp have been processed.
-  const next=sorted[sorted.indexOf(b)+1];
+  const next=sorted[candleIndex+1];
   if(!next||next.closeTime!==b.closeTime)equitySnapshots.push({closeTime:b.closeTime,equity:account.equity,cash:account.cash,openPositions:account.positions.length});
  }
  return {account,events,metrics:tradeMetrics(account),equitySnapshots,equityMetrics:equityMetrics(equitySnapshots,account.initialCapital),processedCandles:sorted.length};

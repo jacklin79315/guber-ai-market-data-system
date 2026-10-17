@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readP4DurableJobStatus} from './p4-durable-status.mjs';
+test('P4 status reports durable round ahead of checkpoint',async()=>{const fetchImpl=async url=>({ok:true,json:async()=>new URL(url).pathname.endsWith('p4_research_checkpoints')?[{job_id:'job',checkpoint:{jobId:'job',phase:'RESEARCH',completedIterations:1,completedWindows:2,loadedCandles:25},updated_at:'2026-10-18T00:00:00Z'}]:[{iteration:2}]});const result=await readP4DurableJobStatus({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'server-test',jobId:'job',fetchImpl});assert.equal(result.recoveryPending,true);assert.equal(result.durableRounds,2);assert.equal(result.consistencyError,false)});
+test('P4 status rejects unsafe job IDs without network access',async()=>{await assert.rejects(readP4DurableJobStatus({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'server-test',jobId:'bad;drop',fetchImpl:()=>{throw Error('unexpected request')}}),/invalid P4 status request/)});

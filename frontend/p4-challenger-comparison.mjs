@@ -8,9 +8,10 @@ import {validateTrainingParameters} from './p4-challenger-parameters.mjs';
 // These are research results, NOT independent validation unless a separate untouched window is supplied.
 export async function compareChallengerReplay({candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},champion,challenger,otherReplayOptions={}}={}){
  if(!Array.isArray(candles)||candles.length===0||typeof featureAtDecision!=='function'||typeof brain!=='function'||!costs||!champion||!challenger||typeof champion.version!=='string'||!champion.version||typeof challenger.version!=='string'||!challenger.version||champion.version===challenger.version)throw Error('invalid challenger comparison');
+ if(!otherReplayOptions||typeof otherReplayOptions!=='object'||Array.isArray(otherReplayOptions)||['candles','validationCandles','featureAtDecision','historyAtDecision','brain','costs','accountOptions','trainingParameters','modelVersion'].some(k=>Object.hasOwn(otherReplayOptions,k)))throw Error('comparison replay override forbidden');
  const championParams=validateTrainingParameters(champion.parameters),challengerParams=validateTrainingParameters(challenger.parameters);
- const shared={candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,...otherReplayOptions};
- // Explicitly override any accidental model/parameter overrides in shared options.
+ const shared={...otherReplayOptions,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions};
+ // Model identity and parameters are sealed independently for each replay.
  const [championResult,challengerResult]=await Promise.all([
   runSequentialFiveExpertReplay({...shared,trainingParameters:championParams,modelVersion:champion.version}),
   runSequentialFiveExpertReplay({...shared,trainingParameters:challengerParams,modelVersion:challenger.version})

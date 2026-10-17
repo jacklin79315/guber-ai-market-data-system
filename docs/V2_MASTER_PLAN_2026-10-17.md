@@ -319,3 +319,16 @@
 - 未訓練基準：9 筆已結算，淨 -9.1853 USDT（-0.09185%），手續費 4.5091 USDT；challenger：9 筆，淨 -10.1305 USDT（-0.10131%），手續費 4.5089 USDT。
 - Feedback：`INSUFFICIENT_RESEARCH_SAMPLES`（每組 9 筆，要求至少 30）；`promotionAllowed=false`；沒有獨立 OOS，也不是已訓練 AI。
 - 下一個開發優先序：管理員網頁整合研究啟動／進度／停止／恢復、研究結果、診斷與統計；一般帳號唯讀。保留研究限制、不開啟真實下單。
+
+
+## 13O. P4 網頁研究控制（2026-10-18 開發進度）
+
+- `ed902fc`：登入後唯讀 `/api/p4/research-jobs`，最近 10 筆真實 Supabase checkpoint；管理員與一般帳號均可查看。
+- `08c59ad`：訓練控制頁新增 P4 任務清單；GitHub CI 與 Railway 部署成功。
+- `8d7d85c`：登入後唯讀 `/api/p4/research-result?id=...`，只投影最新一輪 champion/challenger 已結算交易數、淨損益、報酬率、費用、樣本門檻、獨立驗證和晉升判定；不傳完整 ledger 或服務金鑰。
+- `d67dd89`：前端呈現上述真實研究結果；GitHub CI 與 Railway 部署成功。
+- `0fe4371`：管理員專用 POST `/api/admin/p4/start`，需明確 `RESEARCH_ONLY` 確認；伺服器產生唯一 job ID，僅允許固定 BTCUSDT 1h／168 根／1 輪受限研究；使用現有持久化 checkpoint、round、lease。GitHub CI 通過。
+- `041e4bc`：管理員頁新增「開始一次 P4 受限研究」按鈕與二次確認，一般帳號僅查看。GitHub CI、Railway 部署成功。
+- `6d2870e`：按下網頁啟動後自動刷新任務／研究結果（最多 24 次、每 5 秒），不再要求每次手動刷新；**待 CI／部署驗證**。
+- **尚未通過的驗收**：真正由已部署網頁點擊啟動、確認 Supabase 新 job 完整落盤；不能把程式部署當成網頁啟動的端到端 PASS。
+- **已知限制／待做**：目前固定研究窗，尚未開放自訂研究參數、停止／恢復控制；Web 啟動在服務進程內執行，部署或重啟會中斷當次任務（資料庫 checkpoint 可保留）；同一進程內禁止重複啟動，但跨多實例的全域任務配額／佇列仍需設計。正式 24 個月／約 100 輪自主訓練尚未接通；研究執行不是已訓練 AI。

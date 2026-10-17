@@ -38,7 +38,11 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
   const p=shadow.proposal;
   if(p.symbol===bar.symbol&&p.timeframe===bar.timeframe&&index>shadow.cancelIndex){
    const observation={index,open:bar.open,high:bar.high,low:bar.low,close:bar.close,entryTouched:touches(bar,p.entry),tpTouched:touches(bar,p.takeProfit),slTouched:touches(bar,p.stopLoss)};
+   observation.touchedLevels=["entry","tp","sl"].filter(k=>observation[k+"Touched"]);
+   observation.ambiguousSequence=observation.touchedLevels.length>1;
    shadow.observations.push(observation);
+   shadow.ambiguousBars??=[];
+   if(observation.ambiguousSequence)shadow.ambiguousBars.push(index);
    shadow.firstTouches??={entry:null,tp:null,sl:null};
    for(const [key,hit] of [["entry",observation.entryTouched],["tp",observation.tpTouched],["sl",observation.slTouched]]){
     if(hit&&shadow.firstTouches[key]===null)shadow.firstTouches[key]=index;

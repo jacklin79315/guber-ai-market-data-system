@@ -20,6 +20,9 @@ export function tradeMetrics(account){
   averageTradePnl:trades.length?netPnl/trades.length:null,
   pendingOrders:account.pending?.length??0,
   openPositions:account.positions?.length??0,
-  shadowOrders:account.shadowOrders?.length??0
+  shadowOrders:account.shadowOrders?.length??0,
+  shadowObservedBars:(account.shadowOrders||[]).reduce((n,s)=>n+(s.observations?.length||0),0),
+  shadowAmbiguousBars:(account.shadowOrders||[]).reduce((n,s)=>n+(s.ambiguousBars?.length||0),0),
+  shadowRevisitedEntry:(account.shadowOrders||[]).filter(s=>s.firstTouches?.entry!=null).length
  };
 }

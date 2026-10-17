@@ -39,3 +39,14 @@ export async function runSupabaseInferenceBrainReplay({inferenceEndpoint,inferen
  const brain=createBrainModelAdapter({infer,modelVersion:brainVersion});
  return runSupabaseFeatureBackedReplay({...options,brain,modelVersion:brainVersion});
 }
+
+
+// Explicit research baseline: permits a real Supabase integration replay without
+// pretending a trained Brain exists. This path is never selected by the production
+// inference endpoint and must be labeled RULE_BASELINE in any report.
+export async function runSupabaseRuleBaselineReplay({brain,modelVersion,...options}={}){
+ if(brain!==undefined||modelVersion!==undefined)throw Error('research baseline Brain override forbidden');
+ const {researchRuleBrain,RESEARCH_BRAIN_VERSION}=await import('./p3-research-rule-brain.mjs');
+ const result=await runSupabaseFeatureBackedReplay({...options,brain:researchRuleBrain,modelVersion:RESEARCH_BRAIN_VERSION});
+ return {...result,brainKind:'UNTRAINED_RULE_BASELINE',brainVersion:RESEARCH_BRAIN_VERSION};
+}

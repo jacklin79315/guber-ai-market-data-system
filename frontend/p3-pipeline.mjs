@@ -7,6 +7,13 @@ export async function runExpertPipeline({context,experts,brain,maxReturns=2}={})
  let state=base,stage=0,returns=0;const history=[];
  for(let steps=0;steps<50;steps++){
   if(stage<EXPERT_ORDER.length){const name=EXPERT_ORDER[stage];const result=await experts[name](structuredClone(state));
+   if(name==='riskPosition'&&result?.action==='RETURN'){
+    if(result.target!=='reward'||typeof result.reason!=='string'||!result.reason.trim())throw Error('risk may return only to reward');
+    history.push({expert:name,action:'RETURN',target:'reward',reason:result.reason});
+    if(returns>=maxReturns)return {action:'WAIT',reason:'Risk return limit reached',proposal:state,history};
+    const clear=new Set(EXPERT_ORDER.slice(EXPERT_ORDER.indexOf('reward')).flatMap(n=>({reward:['tpRange','slRange','riskReward','expectedGain','expectedLoss','rewardReason'],winProbability:['winProbability','expectedValue','probabilityReason'],riskPosition:['allocation','riskReason'],time:['expectedHoldingMs','timeUncertainty']}[n]||[])));
+    state=Object.fromEntries(Object.entries(state).filter(([key])=>!clear.has(key)));stage=EXPERT_ORDER.indexOf('reward');returns++;continue;
+   }
    if(result?.action==='WAIT'&&typeof result.reason==='string'&&result.reason.trim()){history.push({expert:name,action:'WAIT',reason:result.reason});return {action:'WAIT',reason:result.reason,proposal:state,history};}
    if(!result||result.action!=='CONTINUE'||!result.patch)throw Error('invalid expert output');
    state=applyExpertPatch(name,state,result.patch);history.push({expert:name,action:'CONTINUE'});stage++;continue;

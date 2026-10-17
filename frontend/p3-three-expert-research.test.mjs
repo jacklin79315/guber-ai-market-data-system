@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {analyzeEntryRewardProbabilityHistory} from './p3-three-expert-research.mjs';
 const make=(close,i)=>({symbol:'BTCUSDT',timeframe:'1h',closeTime:(i+1)*3600000-1,open:close,high:close+1,low:close-1,close});
 const candles=Array.from({length:20},(_,i)=>make(100,i));candles.push(make(105,20));
-const f={rsi:55,atrPercent:0.02,volumeRatio:1.2,trendStrength:0.4,momentum:0.03};
+const f={asOfMs:0,rsi:55,atrPercent:0.02,volumeRatio:1.2,trendStrength:0.4,momentum:0.03};
 const tradeHistory=Array.from({length:5},(_,i)=>({id:'historical-'+i,decisionTime:(i+1)*1000,closedTime:(i+1)*1000+500,outcome:i<3?'WIN':'LOSS',symbol:'BTCUSDT',timeframe:'1h',side:'LONG',features:f}));
 const args={candles,tradeHistory,featureAtDecision:({decisionTime})=>({...f,asOfMs:decisionTime}),feeRate:0.001,slippageRate:0.001,minSamples:3};
 test('three expert research chain produces probability proposal but no approved trade',()=>{const r=analyzeEntryRewardProbabilityHistory(args);assert.equal(r.entryCandidateCount,1);assert.equal(r.rewardProposalCount,1);assert.equal(r.partialProposalCount,1);assert.equal(r.approvedCount,0);assert.equal(r.stage,'ENTRY_REWARD_PROBABILITY_ONLY');assert.equal(r.proposals[0].winProbability,4/7);assert.ok(Number.isFinite(r.proposals[0].expectedValue));assert.equal(r.proposals[0].allocation,undefined)});

@@ -18,3 +18,14 @@ export function buildCausalExpertHistory({closed,decisionArchive,asOfMs}={}){
  }
  return {tradeHistory,holdingHistory};
 }
+
+// P2 stores bar indices; resolve actual close timestamps from the same replay series.
+export function attachClosedTimes({closed,candles}={}){
+ if(!Array.isArray(closed)||!Array.isArray(candles))throw Error('invalid P2 closed-time input');
+ return closed.map(t=>{
+  if(!Number.isSafeInteger(t.exitIndex)||t.exitIndex<0||t.exitIndex>=candles.length)throw Error('invalid P2 exit index');
+  const bar=candles[t.exitIndex];
+  if(!bar||bar.symbol!==t.symbol||bar.timeframe!==t.timeframe||!Number.isSafeInteger(bar.closeTime))throw Error('P2 exit bar mismatch');
+  return {...t,closedTime:bar.closeTime};
+ });
+}

@@ -1,0 +1,33 @@
+// Explicitly invoked P4 backend research runner. Never starts on deployment.
+import {randomBytes} from 'node:crypto';
+import {runP4HistoricalResearchJob} from './p4-historical-research-job.mjs';
+import {createP4SupabaseCheckpointStore} from './p4-supabase-checkpoints.mjs';
+import {createP4SupabaseRoundStore} from './p4-supabase-rounds.mjs';
+import {createP4SupabaseLeaseStore} from './p4-supabase-leases.mjs';
+import {DEFAULT_TRAINING_PARAMETERS} from './p4-challenger-parameters.mjs';
+import {researchRuleBrain,RESEARCH_BRAIN_VERSION} from './p3-research-rule-brain.mjs';
+const requireEnv=k=>{const v=process.env[k];if(!v)throw Error('missing '+k);return v};
+export function parseP4RunnerOptions(env=process.env){
+ if(env.P4_RESEARCH_CONFIRM!=='RESEARCH_ONLY')throw Error('P4 runner disabled; explicitly set P4_RESEARCH_CONFIRM=RESEARCH_ONLY');
+ const jobId=env.P4_JOB_ID;
+ if(typeof jobId!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(jobId))throw Error('invalid P4_JOB_ID');
+ const symbol=env.P4_SYMBOL||'BTCUSDT',timeframe=env.P4_TIMEFRAME||'1h';
+ if(!/^[A-Z0-9]{3,30}$/.test(symbol)||!['15m','1h','4h','1d'].includes(timeframe))throw Error('invalid P4 symbol/timeframe');
+ const fromOpenTime=Number(env.P4_FROM_MS),toOpenTime=Number(env.P4_TO_MS),asOfMs=Number(env.P4_AS_OF_MS);
+ const iterations=Number(env.P4_ITERATIONS||1),seed=Number(env.P4_SEED||7);
+ const step={'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000}[timeframe];
+ if(![fromOpenTime,toOpenTime,asOfMs].every(Number.isSafeInteger)||fromOpenTime<0||toOpenTime<fromOpenTime+step*24||asOfMs<=toOpenTime+step-1||fromOpenTime%step||toOpenTime%step||!Number.isSafeInteger(iterations)||iterations<1||iterations>3||!Number.isSafeInteger(seed)||seed<0)throw Error('invalid P4 bounded research window');
+ const expectedCandles=(toOpenTime-fromOpenTime)/step+1;
+ if(expectedCandles>500)throw Error('P4 initial runner limited to 500 candles');
+ return {jobId,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,iterations,seed,expectedCandles};
+}
+export async function runP4BackendResearch({env=process.env,fetchImpl=fetch,onProgress}={}){
+ const config=parseP4RunnerOptions(env);
+ const supabaseUrl=env.SUPABASE_URL,serviceRoleKey=env.SUPABASE_SERVICE_ROLE_KEY;
+ if(!supabaseUrl||!serviceRoleKey)throw Error('missing server Supabase credentials');
+ const storeConfig={supabaseUrl,serviceRoleKey,fetchImpl};
+ return runP4HistoricalResearchJob({...config,supabaseUrl,apiKey:serviceRoleKey,fetchImpl,brain:researchRuleBrain,championVersion:RESEARCH_BRAIN_VERSION,championParameters:DEFAULT_TRAINING_PARAMETERS,codeRevision:'P4_BOUNDED_RUNNER_V1',costs:{feeRate:0.001,slippageRate:0},checkpointStore:createP4SupabaseCheckpointStore(storeConfig),roundStore:createP4SupabaseRoundStore(storeConfig),leaseStore:createP4SupabaseLeaseStore(storeConfig),ownerToken:randomBytes(24).toString('hex'),onProgress});
+}
+if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
+ runP4BackendResearch({onProgress:p=>process.stdout.write(JSON.stringify({phase:p.phase,iteration:p.iteration,completedWindows:p.completedWindows})+'\n')}).then(result=>{process.stdout.write(JSON.stringify({status:result.status,completedIterations:result.completedIterations,loadedCandles:result.loadedCandles,independentValidation:false,liveTrading:false})+'\n')}).catch(e=>{process.stderr.write('P4 research failed: '+e.message+'\n');process.exitCode=1});
+}

@@ -2,7 +2,7 @@
 // All amounts are in the configured simulation account unit.
 export function createAccount({initialCapital=10000,maxUtilization=0.8}={}){
  if(!Number.isFinite(initialCapital)||initialCapital<=0||!Number.isFinite(maxUtilization)||maxUtilization<=0||maxUtilization>1)throw Error("invalid account settings");
- return {initialCapital,cash:initialCapital,equity:initialCapital,maxUtilization,positions:[],pending:[],closed:[],cancelled:[]};
+ return {initialCapital,cash:initialCapital,equity:initialCapital,maxUtilization,positions:[],pending:[],closed:[],cancelled:[],shadowOrders:[]};
 }
 const finite=n=>typeof n==="number"&&Number.isFinite(n);
 const touches=(bar,range)=>bar.low<=range[1]&&bar.high>=range[0];
@@ -27,11 +27,14 @@ function decideExit(p,bar){
  return tp?"TP":"SL";
 }
 function occupied(account){return account.positions.reduce((sum,p)=>sum+p.capital,0)}
+function refreshEquity(account){account.equity=account.cash+account.positions.reduce((sum,p)=>sum+p.capital+(p.side==="LONG"?1:-1)*(p.markPrice-p.entryPrice)*(p.capital/p.entryPrice),0)}
 export function processBar(account,bar,index,{feeRate,slippageRate}={}){
  if(!Number.isInteger(index)||index<0||!bar||!["open","high","low","close"].every(k=>finite(bar[k]))||bar.low>bar.high||bar.open<bar.low||bar.open>bar.high||bar.close<bar.low||bar.close>bar.high)throw Error("invalid bar");
  // Costs and fill pricing are deliberately required, not silently assumed.
  if(!finite(feeRate)||feeRate<0||!finite(slippageRate)||slippageRate<0||slippageRate>=1)throw Error("explicit costs required");
  const events=[];
+ for(const p of account.positions){if(p.symbol===bar.symbol&&p.timeframe===bar.timeframe)p.markPrice=bar.close}
+ refreshEquity(account);
  for(const p of [...account.positions]){
   if(p.symbol!==bar.symbol||p.timeframe!==bar.timeframe||index<=p.entryIndex)continue;
   const exit=decideExit(p,bar);if(!exit)continue;
@@ -42,13 +45,13 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
   const exitFee=exitPrice*qty*feeRate;
   account.cash+=p.capital+pnl-exitFee;
   const record={...p,state:"CLOSED",exitIndex:index,exitReason:exit,exitPrice,pnl:pnl-p.entryFee-exitFee};
-  account.positions.splice(account.positions.indexOf(p),1);account.closed.push(record);events.push({id:p.id,type:"CLOSED",reason:exit});
+  account.positions.splice(account.positions.indexOf(p),1);account.closed.push(record);refreshEquity(account);events.push({id:p.id,type:"CLOSED",reason:exit});
  }
  for(const p of [...account.pending]){
   if(p.symbol!==bar.symbol||p.timeframe!==bar.timeframe||index<=p.decisionIndex)continue;
   const entryHit=touches(bar,p.entry),exit=decideExit(p,bar);
   // Ambiguous intrabar order is not inferred from OHLC. No entry if TP/SL also touched.
-  if(exit){account.pending.splice(account.pending.indexOf(p),1);account.cancelled.push({...p,state:"CANCELLED",cancelIndex:index,cancelReason:entryHit?"AMBIGUOUS_BAR":"PRE_ENTRY_"+exit});events.push({id:p.id,type:"CANCELLED",reason:entryHit?"AMBIGUOUS_BAR":"PRE_ENTRY_"+exit});continue}
+  if(exit){account.pending.splice(account.pending.indexOf(p),1);account.cancelled.push({...p,state:"CANCELLED",cancelIndex:index,cancelReason:entryHit?"AMBIGUOUS_BAR":"PRE_ENTRY_"+exit});account.shadowOrders.push({proposal:{...p},cancelIndex:index,reason:entryHit?"AMBIGUOUS_BAR":"PRE_ENTRY_"+exit,realizedPnl:0,observations:[]});events.push({id:p.id,type:"CANCELLED",reason:entryHit?"AMBIGUOUS_BAR":"PRE_ENTRY_"+exit});continue}
   if(!entryHit)continue;
   const used=occupied(account);
   if(used+p.capital>account.equity*account.maxUtilization||p.capital>account.cash){events.push({id:p.id,type:"WAIT_CAPITAL"});continue}
@@ -58,7 +61,8 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
   if(p.capital+entryFee>account.cash){events.push({id:p.id,type:"WAIT_CAPITAL"});continue}
   account.cash-=p.capital+entryFee;
   account.pending.splice(account.pending.indexOf(p),1);
-  account.positions.push({...p,state:"OPEN",entryIndex:index,entryPrice,entryFee});events.push({id:p.id,type:"OPEN"});
+  account.positions.push({...p,state:"OPEN",entryIndex:index,entryPrice,entryFee,markPrice:bar.close});refreshEquity(account);events.push({id:p.id,type:"OPEN"});
  }
+ refreshEquity(account);
  return events;
 }

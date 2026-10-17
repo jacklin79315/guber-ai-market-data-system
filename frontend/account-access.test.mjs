@@ -4,14 +4,14 @@ import {readFile} from "node:fs/promises";
 const root=new URL("./",import.meta.url);
 const read=(name)=>readFile(new URL(name,root),"utf8");
 
-test("viewer navigation excludes admin-only sections",async()=>{
+test("viewer navigation includes read-only sections while account management remains admin-only",async()=>{
  const ui=await read("main.js");
  assert.match(ui,/function visibleSections\(\)/);
  assert.match(ui,/visibleSections\(\)\.map/);
- assert.match(ui,/\.filter\(allowedSection\)\.map/);
+ assert.match(ui,/visibleSections\(\)\.map\(\(\[name\]\)=>name\)/);
  assert.match(ui,/if\(!allowedSection\(active\)\)active="總覽"/);
- assert.match(ui,/"訓練控制":\["admin"\]/);
- assert.match(ui,/"專家與模型":\["admin"\]/);
+ assert.match(ui,/"訓練控制":\["admin","viewer"\]/);
+ assert.match(ui,/"專家與模型":\["admin","viewer"\]/);
  assert.match(ui,/"系統設定":\["admin"\]/);
 });
 test("admin account API validates server-side role",async()=>{

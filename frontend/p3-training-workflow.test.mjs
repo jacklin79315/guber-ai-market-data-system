@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {trainP3WinProbability} from './p3-training-workflow.mjs';
+const candles=Array.from({length:130},(_,i)=>({symbol:'BTCUSDT',timeframe:'1h',closeTime:(i+1)*1000}));
+const closed=Array.from({length:40},(_,i)=>({id:'t'+i,state:'CLOSED',symbol:'BTCUSDT',timeframe:'1h',side:'LONG',decisionIndex:i*3,exitIndex:i*3+2,pnl:i%4===0?-2:3}));
+const decisionContexts=closed.map(t=>({id:t.id,decisionTime:candles[t.decisionIndex].closeTime,marketState:'TREND_UP'}));
+test('P2 closed trades train cohorts and produce separate out-of-sample validation metrics',()=>{const result=trainP3WinProbability({closed,candles,decisionContexts,cutoffMs:130001,minSamples:30});assert.equal(result.status,'TRAINED');assert.equal(result.totalClosedSamples,40);assert.equal(result.readyCohorts.length,1);assert.equal(result.validation.evaluated,10);assert.ok(result.validation.brierScore!==null);assert.equal(result.model.models['TREND_UP|LONG|1h'].sampleCount,40)});
+test('insufficient data remains explicit and never produces a ready model',()=>{const result=trainP3WinProbability({closed:closed.slice(0,3),candles,decisionContexts,cutoffMs:130001,minSamples:30});assert.equal(result.status,'INSUFFICIENT_DATA');assert.equal(result.readyCohorts.length,0);assert.equal(result.validation.evaluated,0)});
+test('missing decision-time market context blocks training',()=>{assert.throws(()=>trainP3WinProbability({closed,candles,decisionContexts:[],cutoffMs:130001}),/timestamps/)});

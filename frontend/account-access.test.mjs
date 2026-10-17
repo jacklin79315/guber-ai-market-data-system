@@ -56,3 +56,12 @@ test("official UBER logo referenced on login and dashboard",async()=>{
  assert.match(css,/login-logo/);
  assert.match(server,/raw.githubusercontent.com/);
 });
+
+test("system settings show actual service health to both roles",async()=>{
+ const ui=await read("main.js");
+ assert.match(ui,/service-health-status/);
+ assert.match(ui,/async function loadServiceHealth/);
+ assert.match(ui,/databaseProjectMatchesExpected/);
+ assert.match(ui,/if\(active==="系統設定"\)\{loadServiceHealth/);
+ assert.match(ui,/if\(signedInRole==="admin"\)\{bindAccountManagement/);
+});

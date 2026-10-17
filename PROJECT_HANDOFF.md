@@ -77,3 +77,10 @@
 - Railway 新增獨立服務 `uber-v2-control-center`（ID `bf479074-7963-4ece-9e68-bcb4736f7b3b`），來源 main、根目錄 `/frontend`、啟動 `npm start`、健康檢查 `/api/health`。首次部署已觸發，當時狀態 BUILDING，**不可宣稱已部署成功**。
 - 新服務已設定 Supabase URL、公開金鑰與管理員帳號名稱；**管理員內部 Auth 身分尚未開通／設定，未填入 `ADMIN_AUTH_EMAIL` 與 `ADMIN_AUTH_USER_ID`，登入會拒絕服務**。不得使用現有未知使用者身分冒充管理員。
 - Logo 原始 JPEG 已在對話工作環境保留，GitHub 資產尚未上傳；不可替代圖形。原行情抓取服務未更動。
+
+
+### P1 前端部署與安全測試（2026-10-17）
+- Railway `uber-v2-control-center` 服務部署狀態 **SUCCESS**，執行紀錄確認 `Frontend listening on 8080`。獨立公開網域：`https://uber-v2-control-center-production.up.railway.app`；**尚未完成外部 HTTP 實測與管理員登入驗收**。
+- 已補上 `/api/health` 健康檢查、管理員身分 ID 驗證、受保護的 `/api/data/candles` 只讀行情代理。管理員未配置時登入／行情接口應拒絕請求。
+- 已加入 `frontend/server.test.mjs` 安全冒煙測試與 `.github/workflows/p1-frontend-tests.yml` 自動測試工作流程，待 GitHub Actions 執行結果確認，**不可宣稱測試通過**。
+- 已封鎖直接讀取伺服器 `.mjs` 程式及套件中繼資料。Logo 圖檔仍待 GitHub 上傳。

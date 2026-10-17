@@ -21,7 +21,7 @@ export function submitProposal(account,p){
  account.pending.push({...p,entry:[...p.entry],takeProfit:[...p.takeProfit],stopLoss:[...p.stopLoss],state:"PENDING"});return {accepted:true};
 }
 function decideExit(p,bar){
- const tp=touches(bar,p.takeProfit),sl=touches(bar,p.stopLoss);
+ const tp=touches(bar,p.takeProfit),sl=touches(bar,p.stopLoss)||(p.state==="OPEN"&&(p.side==="LONG"?bar.open<p.stopLoss[0]:bar.open>p.stopLoss[1]));
  if(!tp&&!sl)return null;
  if(tp&&sl){const tpDistance=Math.min(...p.takeProfit.map(x=>Math.abs(bar.close-x)));const slDistance=Math.min(...p.stopLoss.map(x=>Math.abs(bar.close-x)));return tpDistance<slDistance?"TP":"SL"}
  return tp?"TP":"SL";

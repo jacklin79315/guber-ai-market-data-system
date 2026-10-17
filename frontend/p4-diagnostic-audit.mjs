@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 // P4 audit summary: diagnostic findings are NOT model updates.
 // Preserve unresolved evidence instead of converting unknowns into rewards.
 export function summarizeP4DiagnosticFeedback(rows){
@@ -19,5 +20,6 @@ export function summarizeP4DiagnosticFeedback(rows){
    else target.unresolved++;
   }
  }
- return {schemaVersion:'P4_DIAGNOSTIC_AUDIT_V1',eventCount:rows.length,requiresReview,actors,appliedToModels:false,eligibleForAutonomousUpdate:false};
+ const fingerprint=createHash('sha256').update(JSON.stringify(rows.map(r=>({diagnosis:r.diagnosis,feedback:r.feedback})))).digest('hex');
+ return {schemaVersion:'P4_DIAGNOSTIC_AUDIT_V1',eventCount:rows.length,requiresReview,actors,fingerprint,appliedToModels:false,eligibleForAutonomousUpdate:false};
 }

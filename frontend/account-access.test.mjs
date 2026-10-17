@@ -77,3 +77,13 @@ test("watchlist changes require an admin and persist through the backend",async(
  assert.match(server,/actor.role!=="admin"/);
  assert.match(server,/method:"PATCH"/);
 });
+
+test("Binance symbol enrollment is guarded by admin role",async()=>{
+ const ui=await read("main.js");
+ const server=await read("server.mjs");
+ assert.match(ui,/addSymbolButton/);
+ assert.match(ui,/api\/admin\/watchlist\/add/);
+ assert.match(server,/api\/admin\/watchlist\/add/);
+ assert.match(server,/actor.role!=="admin"/);
+ assert.match(server,/backfill_requested_at/);
+});

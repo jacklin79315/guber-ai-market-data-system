@@ -9,3 +9,7 @@
 .login-card input{width:100%;font-size:16px}
 .login-card button{width:100%;font-size:15px;font-weight:600}
 @media(max-width:390px){.login-card{padding:22px 19px;border-radius:14px;gap:14px}}
+
+/* Official logo sourced directly from repository root; the fallback wordmark appears only on image-load failure. */
+.login-logo{display:block;width:min(220px,74vw);max-height:170px;object-fit:contain;object-position:left center;filter:invert(1);mix-blend-mode:screen}
+.login-logo[hidden],.login-wordmark[hidden]{display:none!important}

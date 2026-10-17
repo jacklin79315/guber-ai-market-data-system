@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {assessChallengerPromotion as assess} from './p4-promotion-gate.mjs';
+const window={startMs:100,endMs:200,independent:true,usedForTuning:false,championNetReturn:0.04,challengerNetReturn:0.06,championMaxDrawdown:0.12,challengerMaxDrawdown:0.10,championClosedTrades:20,challengerClosedTrades:18};
+const base={champion:{version:'c1'},challenger:{version:'x2'},validation:{sameData:true,sameCosts:true,sameCapital:true,sameExpertVersions:true,windows:[window]}};
+test('independent improvement is eligible only for review, not auto-deployment',()=>assert.equal(assess(base).action,'ELIGIBLE_FOR_REVIEW'));
+test('uncontrolled cost comparison retains Champion',()=>assert.equal(assess({...base,validation:{...base.validation,sameCosts:false}}).action,'KEEP_CHAMPION'));
+test('in-sample tuned evaluation rejected',()=>assert.throws(()=>assess({...base,validation:{...base.validation,windows:[{...window,usedForTuning:true}]}}),/invalid independent/));
+test('no realized trades retains Champion',()=>assert.equal(assess({...base,validation:{...base.validation,windows:[{...window,challengerClosedTrades:0}]}}).action,'KEEP_CHAMPION'));
+test('worse drawdown retains Champion despite higher return',()=>assert.equal(assess({...base,validation:{...base.validation,windows:[{...window,challengerMaxDrawdown:0.2}]}}).action,'KEEP_CHAMPION'));
+test('overlapping windows rejected',()=>assert.throws(()=>assess({...base,validation:{...base.validation,windows:[window,{...window,startMs:150,endMs:250}]}}),/overlapping/));

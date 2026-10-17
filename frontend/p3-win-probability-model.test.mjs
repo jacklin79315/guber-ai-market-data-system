@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {fitWinProbability,predictWinProbability} from './p3-win-probability-model.mjs';
+const samples=Array.from({length:40},(_,i)=>({id:'trade-'+i,decisionTime:i*100,closedTime:i*100+50,outcome:i%4===0?'LOSS':'WIN'}));
+test('closed historical observations train an empirical probability baseline',()=>{const model=fitWinProbability(samples,{cutoffMs:5000});assert.equal(model.status,'READY');assert.equal(model.sampleCount,40);assert.equal(model.wins,30);assert.equal(model.probability,31/42);assert.equal(predictWinProbability(model,{decisionTime:5000}).winProbability,31/42)});
+test('small sample cannot claim predictive readiness',()=>{const model=fitWinProbability(samples.slice(0,4),{cutoffMs:5000});assert.equal(model.status,'INSUFFICIENT_DATA');assert.equal(model.probability,null);assert.throws(()=>predictWinProbability(model,{decisionTime:5000}),/not ready/)});
+test('future closures and overlapping cutoff are excluded',()=>{assert.throws(()=>fitWinProbability([{id:'future',decisionTime:100,closedTime:5000,outcome:'WIN'}],{cutoffMs:5000}),/future/);assert.throws(()=>fitWinProbability(samples,{cutoffMs:3000}),/future/)});
+test('duplicate trade identifiers cannot inflate training data',()=>{assert.throws(()=>fitWinProbability([samples[0],samples[0]],{cutoffMs:5000}),/training sample/)});
+test('prediction cannot precede the training cutoff',()=>{const model=fitWinProbability(samples,{cutoffMs:5000});assert.throws(()=>predictWinProbability(model,{decisionTime:4999}),/precedes/)});

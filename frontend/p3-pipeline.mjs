@@ -11,7 +11,7 @@ export async function runExpertPipeline({context,experts,brain,maxReturns=2}={})
     if(result.target!=='reward'||typeof result.reason!=='string'||!result.reason.trim())throw Error('risk may return only to reward');
     history.push({expert:name,action:'RETURN',target:'reward',reason:result.reason});
     if(returns>=maxReturns)return {action:'WAIT',reason:'Risk return limit reached',proposal:state,history};
-    const clear=new Set(EXPERT_ORDER.slice(EXPERT_ORDER.indexOf('reward')).flatMap(n=>({reward:['tpRange','slRange','riskReward','expectedGain','expectedLoss','rewardReason'],winProbability:['winProbability','expectedValue','probabilityReason'],riskPosition:['allocation','riskReason'],time:['expectedHoldingMs','timeUncertainty']}[n]||[])));
+    const clear=new Set(EXPERT_ORDER.slice(EXPERT_ORDER.indexOf('reward')).flatMap(n=>({reward:['tpRange','slRange','riskReward','expectedGain','expectedLoss','rewardReason'],winProbability:['winProbability','expectedValue','probabilityReason','probabilityConfidence','probabilitySampleCount'],riskPosition:['allocation','riskReason'],time:['expectedHoldingMs','timeUncertainty']}[n]||[])));
     state=Object.fromEntries(Object.entries(state).filter(([key])=>!clear.has(key)));stage=EXPERT_ORDER.indexOf('reward');returns++;continue;
    }
    if(result?.action==='WAIT'&&typeof result.reason==='string'&&result.reason.trim()){history.push({expert:name,action:'WAIT',reason:result.reason});return {action:'WAIT',reason:result.reason,proposal:state,history};}
@@ -30,7 +30,7 @@ export async function runExpertPipeline({context,experts,brain,maxReturns=2}={})
   if(target<0)throw Error('invalid Brain return target');
   if(returns>=maxReturns)return {action:'WAIT',reason:'Brain return limit reached',proposal:state,history};
   // Clear target and every downstream-owned field before rerunning them.
-  const keysToClear=new Set(EXPERT_ORDER.slice(target).flatMap(name=>({entry:['symbol','side','timeframe','entryRange','entryReason'],reward:['tpRange','slRange','riskReward','expectedGain','expectedLoss','rewardReason'],winProbability:['winProbability','expectedValue','probabilityReason'],riskPosition:['allocation','riskReason'],time:['expectedHoldingMs','timeUncertainty']}[name])));
+  const keysToClear=new Set(EXPERT_ORDER.slice(target).flatMap(name=>({entry:['symbol','side','timeframe','entryRange','entryReason'],reward:['tpRange','slRange','riskReward','expectedGain','expectedLoss','rewardReason'],winProbability:['winProbability','expectedValue','probabilityReason','probabilityConfidence','probabilitySampleCount'],riskPosition:['allocation','riskReason'],time:['expectedHoldingMs','timeUncertainty']}[name])));
   state=Object.fromEntries(Object.entries(state).filter(([key])=>!keysToClear.has(key)));stage=target;returns++;
  }
  throw Error('P3 pipeline exceeded safety steps');

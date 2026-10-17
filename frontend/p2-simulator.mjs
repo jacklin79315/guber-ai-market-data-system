@@ -1,7 +1,7 @@
 // P2 deterministic simulation core. No live orders or external side effects.
 // All amounts are in the configured simulation account unit.
 export function createAccount({initialCapital=10000,maxUtilization=0.8}={}){
- if(!Number.isFinite(initialCapital)||initialCapital<=0||!Number.isFinite(maxUtilization)||maxUtilization<=0||maxUtilization>1)throw Error("invalid account settings");
+ if(!Number.isFinite(initialCapital)||initialCapital<=0||!Number.isFinite(maxUtilization)||maxUtilization<=0||maxUtilization>0.8)throw Error("invalid account settings");
  return {initialCapital,cash:initialCapital,equity:initialCapital,maxUtilization,positions:[],pending:[],closed:[],cancelled:[],shadowOrders:[]};
 }
 const finite=n=>typeof n==="number"&&Number.isFinite(n);

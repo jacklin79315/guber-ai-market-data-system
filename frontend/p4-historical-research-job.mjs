@@ -26,6 +26,12 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
  if(leaseGuard)await leaseGuard();
  await saveProgress({phase:'RESEARCH',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:resumeRounds.length});
  const featureReader=createSupabaseFeatureAtDecision({supabaseUrl,apiKey,fetchImpl});
+ if(loaded.candles.length>500){
+  const first=loaded.candles[0],last=loaded.candles.at(-1);
+  const fromCloseTime=Number(first.closeTime),toCloseTime=Number(last.closeTime);
+  if(!Number.isSafeInteger(fromCloseTime)||!Number.isSafeInteger(toCloseTime))throw Error('invalid candle close times for feature prefetch');
+  await featureReader.prefetch({symbol,timeframe,fromCloseTime,toCloseTime});
+ }
  const research=await (partitionOptions===undefined?runP4ResearchCycle:runP4PartitionedResearchCycle)({partitionOptions,championVersion,championParameters,iterations,seed,candles:loaded.candles,featureAtDecision:featureReader,historyAtDecision,brain,costs,accountOptions,otherReplayOptions,shouldStop,resumeRounds,onIteration:async x=>{if(leaseGuard)await leaseGuard();if(roundStore){if(leaseGuard)await roundStore.commitLeased(jobId,ownerToken,specFingerprint,x);else await roundStore.commit(jobId,specFingerprint,x);}if(leaseGuard)await leaseGuard();await saveProgress({phase:'RESEARCH',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:x.iteration});await onProgress?.({phase:'RESEARCH',iteration:x.iteration,totalIterations:iterations,feedback:x.feedback});}});
  await saveProgress({phase:research.status==='RESEARCH_CYCLE_STOPPED'?'STOPPED':'COMPLETED',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:research.completedIterations??0});
  return {...research,source:'SUPABASE_READ_ONLY',dataVerified:true,loadedCandles:loaded.loadedCandles,windowCount:loaded.plan.windowCount};

@@ -31,3 +31,5 @@ test("replay preserves exact snapshot count across multiple symbols and timestam
  assert.equal(a.equitySnapshots.length,25);
  assert.equal(a.equityMetrics.maxDrawdown,0);
 });
+
+test("final replay snapshot reconciles equity, cash and total return",()=>{const candles=[candle("BTCUSDT",1),candle("ETHUSDT",1),candle("BTCUSDT",2),candle("ETHUSDT",2),candle("BTCUSDT",3,105,111,110),candle("ETHUSDT",3,89,95,90)];const a=replayCandles({candles,proposals:[proposal("btc","BTCUSDT"),proposal("eth","ETHUSDT")],costs:{feeRate:0.001,slippageRate:0.001}});const last=a.equitySnapshots.at(-1);assert.equal(a.equitySnapshots.length,3);assert.equal(a.account.closed.length,2);assert.ok(Math.abs(last.equity-a.account.equity)<1e-7);assert.ok(Math.abs(last.cash-a.account.cash)<1e-7);assert.ok(Math.abs(a.equityMetrics.endingEquity-a.account.equity)<1e-7);assert.ok(Math.abs(a.equityMetrics.totalReturn-(a.account.equity/a.account.initialCapital-1))<1e-9);assert.ok(Math.abs(a.account.cash-(a.account.initialCapital+a.metrics.netRealizedPnl))<1e-7)});

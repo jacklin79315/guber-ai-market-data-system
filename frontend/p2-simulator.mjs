@@ -18,7 +18,7 @@ export function submitProposal(account,p){
  validateProposal(p);
  if([...account.pending,...account.positions].some(x=>x.symbol===p.symbol&&x.timeframe===p.timeframe&&overlaps(x.entry,p.entry)))return {accepted:false,reason:"OVERLAPPING_ENTRY"};
  if(account.pending.some(x=>x.id===p.id)||account.positions.some(x=>x.id===p.id)||account.closed.some(x=>x.id===p.id)||account.cancelled.some(x=>x.id===p.id))return {accepted:false,reason:"DUPLICATE_ID"};
- account.pending.push({...p,state:"PENDING"});return {accepted:true};
+ account.pending.push({...p,entry:[...p.entry],takeProfit:[...p.takeProfit],stopLoss:[...p.stopLoss],state:"PENDING"});return {accepted:true};
 }
 function decideExit(p,bar){
  const tp=touches(bar,p.takeProfit),sl=touches(bar,p.stopLoss);

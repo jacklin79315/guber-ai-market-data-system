@@ -10,7 +10,7 @@ export function reviewBrainProposal(p){
  if(range(p.entryRange)&&range(p.tpRange)&&range(p.slRange)){
   if(p.side==='LONG'&&!(p.slRange[1]<p.entryRange[0]&&p.tpRange[0]>p.entryRange[1])||p.side==='SHORT'&&!(p.tpRange[1]<p.entryRange[0]&&p.slRange[0]>p.entryRange[1]))issues.push('INCONSISTENT_LEVELS');
  }
- if(!Number.isFinite(p.winProbability)||p.winProbability<0||p.winProbability>1||!Number.isFinite(p.expectedValue)||!text(p.probabilityReason))issues.push('INVALID_PROBABILITY');
+ if(!(p.winProbability===null&&p.expectedValue===null||Number.isFinite(p.winProbability)&&p.winProbability>=0&&p.winProbability<=1&&Number.isFinite(p.expectedValue))||!text(p.probabilityReason))issues.push('INVALID_PROBABILITY');
  if(!Number.isFinite(p.allocation)||p.allocation<=0||!text(p.riskReason))issues.push('INVALID_ALLOCATION');
  if(!Number.isSafeInteger(p.expectedHoldingMs)||p.expectedHoldingMs<=0||!text(p.timeUncertainty))issues.push('INVALID_TIME');
  return {ok:issues.length===0,issues};

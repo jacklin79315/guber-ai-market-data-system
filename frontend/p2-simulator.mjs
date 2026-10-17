@@ -54,7 +54,7 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
   if(exit){account.pending.splice(account.pending.indexOf(p),1);account.cancelled.push({...p,state:"CANCELLED",cancelIndex:index,cancelReason:entryHit?"AMBIGUOUS_BAR":"PRE_ENTRY_"+exit});account.shadowOrders.push({proposal:{...p},cancelIndex:index,reason:entryHit?"AMBIGUOUS_BAR":"PRE_ENTRY_"+exit,realizedPnl:0,observations:[]});events.push({id:p.id,type:"CANCELLED",reason:entryHit?"AMBIGUOUS_BAR":"PRE_ENTRY_"+exit});continue}
   if(!entryHit)continue;
   const used=occupied(account);
-  if(used+p.capital>account.equity*account.maxUtilization||p.capital>account.cash){events.push({id:p.id,type:"WAIT_CAPITAL"});continue}
+  if(account.equity<=0||used+p.capital>account.equity*account.maxUtilization||p.capital>account.cash){events.push({id:p.id,type:"WAIT_CAPITAL"});continue}
   const basePrice=p.side==="LONG"?p.entry[1]:p.entry[0];
   const entryPrice=basePrice*(p.side==="LONG"?1+slippageRate:1-slippageRate);
   const entryFee=p.capital*feeRate;

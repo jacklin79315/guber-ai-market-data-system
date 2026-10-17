@@ -95,7 +95,7 @@ test("training settings are persisted with role and range checks",async()=>{
  assert.match(ui,/bindTrainingSettings/);
  assert.match(server,/api\/training\/settings/);
  assert.match(server,/actor.role!=="admin"/);
- assert.match(server,/dashboard_settings/);
+ assert.match(server,/p1_training_configuration/);
  assert.match(server,/capital_usage_limit/);
 });
 

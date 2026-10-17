@@ -15,7 +15,7 @@ export function createReplaySession({proposals=[],accountOptions={},costs}={}){
   for(const b of candles){
    if(!b||!Number.isSafeInteger(b.closeTime)||b.closeTime<0||typeof b.symbol!=="string"||typeof b.timeframe!=="string")throw Error("invalid closeTime");
    const k=seriesKey(b),i=cursor.get(k)||0;
-   if(seen.has(k+"|"+b.closeTime)||lastClose.has(k)&&b.closeTime<=lastClose.get(k))throw Error("duplicate or out-of-order candle");
+   if(seen.has(k+"|"+b.closeTime)||lastClose.has(k)&&b.closeTime<=lastClose.get(k))throw Error("duplicate candle or out-of-order timestamp");
    if(pendingSnapshotTime!==null&&b.closeTime<pendingSnapshotTime)throw Error("out-of-order replay timestamp");
    if(pendingSnapshotTime!==null&&b.closeTime>pendingSnapshotTime){equitySnapshots.push({closeTime:pendingSnapshotTime,equity:account.equity,cash:account.cash,openPositions:account.positions.length});pendingSnapshotTime=null;}
    const due=[...(byBar.get(k+"|"+i)||[])].sort((a,b)=>String(a.id).localeCompare(String(b.id),"en"));

@@ -3,7 +3,7 @@ import {assessCandleFreshness} from "./candle-freshness.js";
 import {latestCandles,fetchWatchlist,fetchIngestionJobs} from "./data.js";
 import {isConfigured,restoreSession,signIn,signOut,currentSession,getUser} from "./auth.js";
 const sections=[["總覽","layout-dashboard"],["商品監測","chart-no-axes-combined"],["資料品質","database"],["訓練控制","brain"],["專家與模型","users"],["通知設定","bell"],["系統設定","settings"]];
-const sectionPermissions={"總覽":["admin","viewer"],"商品監測":["admin","viewer"],"資料品質":["admin","viewer"],"訓練控制":["admin","viewer"],"專家與模型":["admin","viewer"],"通知設定":["admin","viewer"],"系統設定":["admin"]};
+const sectionPermissions={"總覽":["admin","viewer"],"商品監測":["admin","viewer"],"資料品質":["admin","viewer"],"訓練控制":["admin","viewer"],"專家與模型":["admin","viewer"],"通知設定":["admin","viewer"],"系統設定":["admin","viewer"]};
 function visibleSections(){return sections.filter(([name])=>sectionPermissions[name]?.includes(signedInRole))}
 function allowedSection(name){return Boolean(sectionPermissions[name]?.includes(signedInRole))}
 const symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT","DOGEUSDT","PENGUUSDT"];

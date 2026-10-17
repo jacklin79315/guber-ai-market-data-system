@@ -25,6 +25,7 @@ export function assessP4ExpertHistory({evidence}={}){
   if(!step||typeof step!=='object')continue;
   const actor=actorFor[step.expert]??actorFor[String(step.expert??'').replace(/[-_ ]/g,'').toLowerCase()];
   if(!actor||seen.has(actor))continue;
+  if(actor==='Brain'&&step!==history.filter(h=>h?.expert==='brain').at(-1))continue;
   seen.add(actor);
   // A recorded Brain approval must match the final replay action. A mismatch is
   // an auditable decision-chain fault, independent of subsequent PnL.

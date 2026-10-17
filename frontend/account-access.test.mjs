@@ -30,3 +30,8 @@ test("authenticated requests check database account status",async()=>{
  assert.match(server,/account\.role!==identity\.role/);
  assert.match(server,/await verifiedSession\(fake,"refresh"\)/);
 });
+
+test("viewer settings never invokes administrator user listing",async()=>{
+ const ui=await read("main.js");
+ assert.match(ui,/if\(active==="系統設定"&&signedInRole==="admin"\)\{bindAccountManagement\(\);loadViewerAccounts\(\)\}/);
+});

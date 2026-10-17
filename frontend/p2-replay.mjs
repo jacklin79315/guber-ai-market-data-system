@@ -1,11 +1,12 @@
 import {tradeMetrics} from "./p2-metrics.mjs";
+import {equityMetrics} from "./p2-equity.mjs";
 import {createAccount,submitProposal,processBar} from "./p2-simulator.mjs";
 
 // Closed candles only. Equal-time symbols use a documented stable order.
 export function replayCandles({candles,proposals=[],accountOptions={},costs}){
  if(!Array.isArray(candles)||!Array.isArray(proposals)||!costs)throw Error("invalid replay input");
  const sorted=[...candles].sort((a,b)=>a.closeTime-b.closeTime||a.symbol.localeCompare(b.symbol,"en")||a.timeframe.localeCompare(b.timeframe,"en"));
- const account=createAccount(accountOptions),cursor=new Map(),events=[];
+ const account=createAccount(accountOptions),cursor=new Map(),events=[],equitySnapshots=[];
  const seriesKey=b=>b.symbol+"|"+b.timeframe;
  const lengths=new Map();
  for(const b of sorted){
@@ -31,6 +32,9 @@ export function replayCandles({candles,proposals=[],accountOptions={},costs}){
   }
   for(const event of processBar(account,b,i,costs))events.push({...event,closeTime:b.closeTime,index:i});
   cursor.set(k,i+1);
+  // Record after all symbols sharing the timestamp have been processed.
+  const next=sorted[sorted.indexOf(b)+1];
+  if(!next||next.closeTime!==b.closeTime)equitySnapshots.push({closeTime:b.closeTime,equity:account.equity,cash:account.cash,openPositions:account.positions.length});
  }
- return {account,events,metrics:tradeMetrics(account),processedCandles:sorted.length};
+ return {account,events,metrics:tradeMetrics(account),equitySnapshots,equityMetrics:equityMetrics(equitySnapshots,account.initialCapital),processedCandles:sorted.length};
 }

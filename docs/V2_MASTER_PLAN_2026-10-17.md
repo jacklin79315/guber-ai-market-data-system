@@ -273,3 +273,12 @@
 - GitHub Actions：`070eb5a`（研究一輪停止後恢復至三輪）及 `95a5344`（round 成功但 checkpoint 寫入失敗後恢復）均 SUCCESS；測試使用模擬 Supabase REST／儲存介面，**不是**實際部署程序對真實 Supabase 的完整端到端驗收。
 - 修正歷史資料重載期間將 completedIterations 重置為 0 的缺陷（`d704cee`，Actions SUCCESS）。
 - **仍待**：實際部署的 P4 執行器接入真實 Supabase 讀寫並執行完整中斷／重啟驗收；檢查實際歷史 K 線覆蓋、特徵對齊與 24 個月資料量；研究回饋是否符合自主學習目標、獨立診斷引擎、OOS Champion／Challenger。當前多輪研究仍是參數擾動回放，**不等於 AI 已訓練**；不得宣稱 P4 自主訓練完成。
+
+
+## 13J. 2026-10-18 P4 24 個月 BTCUSDT 原始資料／特徵實際資料庫稽核
+
+- 直接查詢正式 Supabase `public.raw_candles` 和 `public.market_features`，檢查 BTCUSDT、BINANCE／SPOT，UTC 開盤時間區間 `[1729209600000, 1792281600000)`（2024-10-18 至 2026-10-18，不含上界）。未重抓或修改歷史資料。
+- 四原生週期在區間內各有 K 線／特徵配對：15m **70,070**、1h **17,517**、4h **4,379**、1d **729** 根。依每個週期原生間隔計算，四週期內部缺口數均為 **0**；逐根核對 raw close_time 與 feature close_time，不符數均為 **0**。
+- 此區間每根 K 線均可配對一筆 `market_features`，缺配對數 **0**；`rsi_12`、`atr_percent`、`volume_ratio`、`adx_14`、`return_3` 任一缺漏的配對列數 **0**。以上是資料庫 SQL 統計，不等於已逐筆重算指標數值正確性或全量回放成功。
+- GitHub Actions `c989a06`、`811b1b1`、`8b3ea75` 均 SUCCESS；管理員唯讀 `GET /api/admin/p4/research-status?id=<jobId>` 已加入控制中心程式，可檢視 checkpoint 與 durable round 差異；尚未實際以管理員登入執行端點驗收。
+- **下一步**：在正式服務以受限測試工作驗證完整 P4 讀取、特徵、租約、輪次、恢復及成本流程，並確認部署中的研究執行入口；完成獨立診斷與 OOS 之前不可宣稱自主學習完成或正式模型獲利能力。

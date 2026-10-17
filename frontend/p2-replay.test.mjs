@@ -22,3 +22,12 @@ test("same timestamp capital contention uses stable symbol order",()=>{
 test("duplicate candle timestamps for same symbol are rejected",()=>{
  assert.throws(()=>run([candle("BTCUSDT",1),candle("BTCUSDT",1)],[]),/duplicate candle/);
 });
+
+test("replay preserves exact snapshot count across multiple symbols and timestamps",()=>{
+ const candles=[];
+ for(let t=1;t<=25;t++)for(const symbol of ["BTCUSDT","ETHUSDT","SOLUSDT"])candles.push(candle(symbol,t));
+ const a=run(candles,[]);
+ assert.equal(a.processedCandles,75);
+ assert.equal(a.equitySnapshots.length,25);
+ assert.equal(a.equityMetrics.maxDrawdown,0);
+});

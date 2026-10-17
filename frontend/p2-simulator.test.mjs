@@ -1,0 +1,14 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {createAccount,submitProposal,processBar} from "./p2-simulator.mjs";
+const p=(overrides={})=>({id:"p1",symbol:"BTCUSDT",timeframe:"1h",side:"LONG",decisionIndex:0,entry:[99,101],takeProfit:[110,111],stopLoss:[90,91],capital:2000,...overrides});
+const bar=(low,high,close=100,index=1)=>({symbol:"BTCUSDT",timeframe:"1h",open:100,low,high,close});
+const costs={feeRate:0,slippageRate:0};
+test("decision candle cannot fill",()=>{const a=createAccount();submitProposal(a,p());assert.deepEqual(processBar(a,bar(99,101),0,costs),[]);assert.equal(a.pending.length,1)});
+test("next candle opens and capital stays within 80 percent",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(99,101),1,costs);assert.equal(a.positions.length,1);assert.equal(a.cash,8000)});
+test("pre-entry TP cancels without PnL",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(105,111,108),1,costs);assert.equal(a.cancelled[0].cancelReason,"PRE_ENTRY_TP");assert.equal(a.cash,10000);assert.equal(a.closed.length,0)});
+test("same candle entry and TP is conservatively cancelled as ambiguous",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(99,111,108),1,costs);assert.equal(a.cancelled[0].cancelReason,"AMBIGUOUS_BAR");assert.equal(a.positions.length,0)});
+test("TP and SL same candle resolve by closing distance, tie to SL",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(99,101),1,costs);processBar(a,bar(90,111,100),2,costs);assert.equal(a.closed[0].exitReason,"SL")});
+test("overlapping same symbol and timeframe is rejected",()=>{const a=createAccount();assert.equal(submitProposal(a,p()).accepted,true);assert.equal(submitProposal(a,p({id:"p2",entry:[100,102]})).reason,"OVERLAPPING_ENTRY")});
+test("explicit fee and slippage required",()=>{const a=createAccount();assert.throws(()=>processBar(a,bar(99,101),1),/explicit costs required/)});
+test("single account rejects aggregate allocation over 80 percent",()=>{const a=createAccount();submitProposal(a,p({capital:8000}));submitProposal(a,p({id:"p2",symbol:"ETHUSDT",capital:1000}));processBar(a,bar(99,101),1,costs);processBar(a,{...bar(99,101),symbol:"ETHUSDT"},1,costs);assert.equal(a.positions.length,1);assert.equal(a.pending.length,1)});

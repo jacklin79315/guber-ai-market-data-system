@@ -291,3 +291,12 @@
 - `b1cb37b`：舊版帳本歷史不完整標記隨後續輪次持續保存，不因再次重啟消失；GitHub Actions SUCCESS。
 - `d1263b4`：新增研究第一輪已完成、重新啟動後在歷史重載期間再次停止的整合測試；GitHub Actions run `39072097599` SUCCESS。
 - 以上驗收均為程式自動化測試／既有 Supabase SQL 隔離測試；**尚未**完成 Railway 實際執行 P4 研究工作並持久化的端到端驗收，**尚未**完成獨立診斷引擎或 AI 模型訓練。
+
+
+## 13L. 2026-10-18 P4 手動研究執行入口
+
+- `frontend/p4-backend-runner.mjs`（`77dca6c`）：提供手動觸發的後端 P4 研究執行器，連接 Supabase 原生歷史 K 線／特徵、租約、checkpoint、fenced round persistence；使用 `P3_RULE_BRAIN_V2_EXPLORATION` **未訓練規則基準**，不是真正已訓練 AI。
+- `frontend/p4-backend-runner.test.mjs`：驗證必須設定 `P4_RESEARCH_CONFIRM=RESEARCH_ONLY`、合法 job ID、最多 3 輪與 500 根 K 線；測試錯誤訊息大小寫修正 `951790e`，GitHub Actions `39072352089` SUCCESS。
+- `.github/workflows/p4-manual-research.yml`（`0058cee`）：新增僅 `workflow_dispatch` 手動啟動工作流程，使用 `p4-research` environment 與 GitHub Secrets `SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`；單次工作最多 25 分鐘，固定 BTCUSDT 1h、最多 3 輪，不啟用真實下單。
+- Railway 控制中心 `951790e` 已部署 SUCCESS；`0058cee` 當時仍 BUILDING。GitHub Actions 手動工作流程**尚未實際執行**，GitHub Secrets／environment 設定**尚未驗證**，因此不得宣稱真實 Supabase 端到端研究已通過。
+- 下一步：核對工作流程可用性、Secrets／environment 保護設定，在可控制且不影響正式服務的前提下，手動執行小規模歷史研究，查驗 Supabase checkpoint、rounds、租約及研究結果，之後才考慮擴大資料窗。

@@ -8,9 +8,11 @@ import {tradeMetrics} from './p2-metrics.mjs';
 // History and feature resolvers must provide strictly causal observations; never place live orders.
 export async function runSequentialFiveExpertReplay({candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},lookback=20,threshold=0.001,minProbabilitySamples=30,minTimeSamples=10,maxDecisions=100000}={}){
  if(!Array.isArray(candles)||typeof featureAtDecision!=='function'||(historyAtDecision!==undefined&&typeof historyAtDecision!=='function')||typeof brain!=='function'||!costs||!Number.isFinite(costs.feeRate)||costs.feeRate<0||!Number.isFinite(costs.slippageRate)||costs.slippageRate<0||costs.slippageRate>=1||!Number.isSafeInteger(maxDecisions)||maxDecisions<1)throw Error('invalid sequential replay inputs');
- const account=createAccount(accountOptions),seen=new Set(),prefix=[],decisions=[],events=[],decisionArchive=new Map();let lastTime=-1;
+ const account=createAccount(accountOptions),seen=new Set(),prefix=[],decisions=[],events=[],decisionArchive=new Map();let lastTime=-1,seriesSymbol=null,seriesTimeframe=null;
  for(let i=0;i<candles.length;i++){
   const bar=candles[i];if(!bar||!Number.isSafeInteger(bar.closeTime)||bar.closeTime<=lastTime||seen.has(bar.symbol+'|'+bar.timeframe+'|'+bar.closeTime))throw Error('nonchronological or duplicate candle');
+  if(seriesSymbol===null){seriesSymbol=bar.symbol;seriesTimeframe=bar.timeframe;}
+  if(bar.symbol!==seriesSymbol||bar.timeframe!==seriesTimeframe)throw Error('sequential replay requires one symbol and one timeframe');
   lastTime=bar.closeTime;seen.add(bar.symbol+'|'+bar.timeframe+'|'+bar.closeTime);
   events.push(...processBar(account,bar,i,costs).map(e=>({...e,closeTime:bar.closeTime})));
   prefix.push(bar);

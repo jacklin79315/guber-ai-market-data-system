@@ -5,12 +5,14 @@ function vector(x){if(!x||typeof x!=='object'||FEATURES.some(k=>!Number.isFinite
 function distance(a,b){return Math.sqrt(a.reduce((sum,v,i)=>sum+((v-b[i])/(1+Math.abs(v)+Math.abs(b[i])))**2,0))}
 export function estimateSimilarTradeProbability({proposal,features,history,minSamples=30,neighbors=50}={}){
  if(!proposal||!Number.isSafeInteger(proposal.decisionTime)||!['LONG','SHORT'].includes(proposal.side)||!Array.isArray(proposal.entryRange)||!Number.isFinite(proposal.expectedGain)||proposal.expectedGain<=0||!Number.isFinite(proposal.expectedLoss)||proposal.expectedLoss<=0||!Array.isArray(history)||!Number.isSafeInteger(minSamples)||minSamples<1||!Number.isSafeInteger(neighbors)||neighbors<minSamples)throw Error('invalid probability research settings');
+ if(!Number.isSafeInteger(features?.asOfMs)||features.asOfMs>proposal.decisionTime||features.asOfMs<0)throw Error('future or undated decision features');
  const target=vector(features),seen=new Set(),eligible=[];
  for(const h of history){
   if(!h||typeof h.id!=='string'||!h.id||seen.has(h.id)||!Number.isSafeInteger(h.decisionTime)||!Number.isSafeInteger(h.closedTime)||h.decisionTime<0||h.closedTime<h.decisionTime||!['WIN','LOSS'].includes(h.outcome)||!['LONG','SHORT'].includes(h.side)||typeof h.symbol!=='string'||typeof h.timeframe!=='string')throw Error('invalid similarity history');
   seen.add(h.id);
   // Historical trades not yet closed at prediction time are never eligible.
   if(h.closedTime>=proposal.decisionTime||h.decisionTime>=proposal.decisionTime||h.side!==proposal.side||h.symbol!==proposal.symbol||h.timeframe!==proposal.timeframe)continue;
+  if(!Number.isSafeInteger(h.features?.asOfMs)||h.features.asOfMs>h.decisionTime||h.features.asOfMs<0)throw Error('future or undated historical features');
   eligible.push({id:h.id,outcome:h.outcome,distance:distance(target,vector(h.features))});
  }
  eligible.sort((a,b)=>a.distance-b.distance||a.id.localeCompare(b.id));const selected=eligible.slice(0,neighbors);

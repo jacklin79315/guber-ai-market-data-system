@@ -1,5 +1,5 @@
-// P4 backend-only lease table. A lease is required before launching a durable job.
-// No anonymous/authenticated access; stale lease recovery requires an explicit owner change.
+-- P4 backend-only lease table. A lease is required before launching a durable job.
+-- No anonymous/authenticated access; stale lease recovery requires an explicit owner change.
 create table if not exists public.p4_research_leases (
  job_id text primary key references public.p4_research_checkpoints(job_id) on delete restrict,
  owner_token text not null check (length(owner_token) between 16 and 128),

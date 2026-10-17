@@ -8,7 +8,7 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
  if(typeof championVersion!=='string'||!championVersion||!Number.isSafeInteger(iterations)||iterations<1||iterations>100||!Number.isSafeInteger(seed)||seed<0||typeof shouldStop!=='function'||(onIteration!==undefined&&typeof onIteration!=='function'))throw Error('invalid P4 research cycle configuration');
  const recovery=restoreP4ResearchRounds({championVersion,championParameters,iterations,rounds:resumeRounds});
  let parentVersion=recovery.parentVersion,parentParameters=recovery.parentParameters;
- const ledger=createTrainingLedger({championVersion});
+ const ledger=recovery.completed.at(-1)?.ledgerSnapshot?structuredClone(recovery.completed.at(-1).ledgerSnapshot):createTrainingLedger({championVersion});
  const completed=recovery.completed;
  for(let i=recovery.nextIteration;i<iterations;i++){
   if(shouldStop())break;
@@ -17,12 +17,12 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   // The single iteration's comparison uses the provided parent version and parameters.
   const iterationLedger={...ledger,championVersion:parentVersion};
   const result=await runP4ResearchIteration({ledger:iterationLedger,runId,challengerVersion,seed,iteration:i,championParameters:parentParameters,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,otherReplayOptions});
-  completed.push({iteration:i+1,runId,challengerVersion,candidate:result.candidate,feedback:result.feedback});
+  completed.push({iteration:i+1,runId,challengerVersion,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger)});
   if(result.feedback.proposedNextResearchParent===challengerVersion){
    parentVersion=challengerVersion;
    parentParameters=validateTrainingParameters(result.candidate.parameters);
   }
   if(onIteration)await onIteration(completed.at(-1));
  }
- return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,iterations:completed,ledger:structuredClone(ledger),independentValidation:false,promotionAllowed:false};
+ return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,iterations:completed,ledger:structuredClone(ledger),ledgerHistoryComplete:completed.length===0||Boolean(completed.at(-1)?.ledgerSnapshot),independentValidation:false,promotionAllowed:false};
 }

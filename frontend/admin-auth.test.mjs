@@ -15,7 +15,7 @@ test("admin identity enforced on login, refresh, user and candles",async()=>{
  assert.equal((await send("/api/auth/login",{username:"not-admin",password:"test"})).status,401);
  assert.equal((await send("/api/auth/login",{username:"guber",password:"other"})).status,403);
  assert.equal((await send("/api/auth/refresh",{refresh_token:"other"})).status,403);
- assert.equal((await fetch(base+"/api/auth/user",{headers:{Authorization:"Bearer other"}})).status,403);
+ assert.equal((await fetch(base+"/api/auth/user")).status,401);assert.equal((await fetch(base+"/api/auth/user",{headers:{Authorization:"Bearer other"}})).status,403);
  assert.equal((await fetch(base+"/api/data/candles?symbol=eq.BTCUSDT&timeframe=eq.1h",{headers:{Authorization:"Bearer other"}})).status,403);
  assert.equal((await fetch(base+"/api/data/candles?symbol=eq.BAD&timeframe=eq.1h",{headers:{Authorization:"Bearer test"}})).status,400);
  assert.equal((await send("/api/auth/login",{username:"guber",password:"test"})).status,200);

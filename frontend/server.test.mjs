@@ -1,0 +1,8 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {spawn} from "node:child_process";
+const port=18080;
+const base="http://127.0.0.1:"+port;
+let child;
+async function ready(){for(let i=0;i<30;i++){try{const r=await fetch(base+"/api/health");if(r.ok)return}catch{}await new Promise(resolve=>setTimeout(resolve,150))}throw Error("測試服務未啟動")}
+test("前端伺服器安全冒煙測試",async()=>{child=spawn(process.execPath,["server.mjs"],{cwd:new URL(".",import.meta.url),env:{...process.env,PORT:String(port),ADMIN_AUTH_EMAIL:"",ADMIN_AUTH_USER_ID:""}});try{await ready();const health=await fetch(base+"/api/health");const h=await health.json();assert.equal(h.status,"ok");assert.equal(h.authConfigured,false);const login=await fetch(base+"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:"guber",password:"wrong"})});assert.equal(login.status,503);const candles=await fetch(base+"/api/data/candles?symbol=eq.BTCUSDT&timeframe=eq.1h");assert.equal(candles.status,503);for(const file of ["/server.mjs","/README.md","/.env"]){const r=await fetch(base+file);assert.equal(r.status,404,file)}const index=await fetch(base+"/");assert.equal(index.status,200);assert.match(await index.text(),/zh-Hant-TW/)}finally{child.kill()}});

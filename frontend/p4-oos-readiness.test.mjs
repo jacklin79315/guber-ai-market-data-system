@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {assessP4OOSReadiness} from './p4-oos-readiness.mjs';
+const side={processedCandles:150,metrics:{closedTrades:31,costLedgerComplete:true,netRealizedPnl:5,totalFees:2}};
+const comparison={champion:side,challenger:side,diagnosticAudit:{champion:{},challenger:{}},controls:{sameCandles:true,sameCosts:true,sameInitialCapital:true}};
+test('sufficient evidence is only eligible for manual review',()=>{const x=assessP4OOSReadiness({comparison});assert.equal(x.status,'ELIGIBLE_FOR_MANUAL_REVIEW');assert.equal(x.promotionAllowed,false);assert.equal(x.independentValidationPassed,false)});
+test('low trade counts and incomplete costs block readiness',()=>{const x=assessP4OOSReadiness({comparison:{...comparison,challenger:{processedCandles:20,metrics:{closedTrades:1,costLedgerComplete:false,netRealizedPnl:0,totalFees:0}}}});assert.equal(x.status,'INSUFFICIENT_OOS_EVIDENCE');assert(x.reasons.includes('challenger:INSUFFICIENT_CLOSED_TRADES'));assert(x.reasons.includes('challenger:INCOMPLETE_COST_LEDGER'));assert(x.reasons.includes('UNEQUAL_REPLAY_LENGTH'))});

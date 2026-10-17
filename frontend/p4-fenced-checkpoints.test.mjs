@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createP4SupabaseCheckpointStore} from './p4-supabase-checkpoints.mjs';
+test('P4 leased checkpoint writes use owner-checked RPC',async()=>{const calls=[];const store=createP4SupabaseCheckpointStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'server-test',fetchImpl:async(url,opts)=>{calls.push({url,opts});return {ok:true,json:async()=>true}}});const cp={jobId:'job',phase:'LOADING',completedWindows:0,loadedCandles:0,completedIterations:0,updatedAtMs:1};await store.saveLeased(cp,'x'.repeat(32));assert.match(calls[0].url,/\/rpc\/p4_save_leased_checkpoint$/);assert.equal(JSON.parse(calls[0].opts.body).p_owner_token,'x'.repeat(32))});
+test('P4 leased checkpoint refuses invalid owner',async()=>{const store=createP4SupabaseCheckpointStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'server-test',fetchImpl:async()=>{throw Error('must not call')}});await assert.rejects(store.saveLeased({jobId:'job',phase:'LOADING',completedWindows:0,loadedCandles:0,completedIterations:0,updatedAtMs:1},'short'),/invalid P4 lease owner/)});

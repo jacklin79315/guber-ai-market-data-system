@@ -7,6 +7,7 @@ export async function runExpertPipeline({context,experts,brain,maxReturns=2}={})
  let state=base,stage=0,returns=0;const history=[];
  for(let steps=0;steps<50;steps++){
   if(stage<EXPERT_ORDER.length){const name=EXPERT_ORDER[stage];const result=await experts[name](structuredClone(state));
+   if(result?.action==='WAIT'&&typeof result.reason==='string'&&result.reason.trim()){history.push({expert:name,action:'WAIT',reason:result.reason});return {action:'WAIT',reason:result.reason,proposal:state,history};}
    if(!result||result.action!=='CONTINUE'||!result.patch)throw Error('invalid expert output');
    state=applyExpertPatch(name,state,result.patch);history.push({expert:name,action:'CONTINUE'});stage++;continue;
   }

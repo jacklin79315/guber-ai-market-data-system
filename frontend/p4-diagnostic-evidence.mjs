@@ -1,5 +1,5 @@
 import {diagnoseP4Decision,scoreP4DiagnosticFeedback} from './p4-independent-diagnosis.mjs';
-import {assessP4ExpertHistory,assessP4RiskEvidence} from './p4-rule-diagnostician.mjs';
+import {assessP4ExpertHistory,assessP4RiskEvidence,assessP4ProposalInvariants} from './p4-rule-diagnostician.mjs';
 // Evidence adapter: preserve observed facts; do not infer fault from realized profit or loss.
 // Actual expert quality assessment must be supplied by a separately validated diagnostician.
 export function collectP4DiagnosticEvidence(replay){
@@ -19,5 +19,5 @@ export function collectP4DiagnosticEvidence(replay){
  for(const decision of replay.decisions.filter(d=>d.action==='WAIT'||d.action==='RETURN'||d.action==='REJECT')){
   events.push({decisionId:decision.id,outcome:decision.action==='RETURN'?'RETURN':'WAIT',evidence:{decisionTime:decision.decisionTime,action:decision.action,reason:decision.reason,expertHistory:decision.history,accountAtDecision:decision.accountAtDecision,allocation:decision.allocation,proposalAtDecision:decision.proposalAtDecision,riskDiagnostics:decision.riskDiagnostics},assessments:[]});
  }
- return events.map(e=>{const diagnosis=diagnoseP4Decision({...e,assessments:[...assessP4RiskEvidence(e),...assessP4ExpertHistory(e).filter(a=>a.actor!=='Risk'||!assessP4RiskEvidence(e).some(b=>b.actor==='Risk'))]});return {diagnosis,feedback:scoreP4DiagnosticFeedback(diagnosis),evidence:e.evidence}});
+ return events.map(e=>{const diagnosis=diagnoseP4Decision({...e,assessments:[...assessP4RiskEvidence(e),...assessP4ProposalInvariants(e),...assessP4ExpertHistory(e).filter(a=>a.actor!=='Risk'||!assessP4RiskEvidence(e).some(b=>b.actor==='Risk'))]});return {diagnosis,feedback:scoreP4DiagnosticFeedback(diagnosis),evidence:e.evidence}});
 }

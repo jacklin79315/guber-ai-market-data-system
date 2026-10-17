@@ -28,6 +28,18 @@ export async function runSequentialFiveExpertReplay({candles,featureAtDecision,h
   if(!features||!Number.isSafeInteger(features.asOfMs)||features.asOfMs>bar.closeTime)throw Error('future or undated feature snapshot');
   const history=historyAtDecision?await historyAtDecision({candidate,decisionIndex:i,closed:structuredClone(account.closed)}):buildCausalExpertHistory({closed:attachClosedTimes({closed:account.closed,candles:prefix}),decisionArchive,asOfMs:bar.closeTime});
   if(!history||!Array.isArray(history.tradeHistory)||!Array.isArray(history.holdingHistory))throw Error('invalid historical research samples');
+  const historicalIds=new Set();
+  for(const sample of [...history.tradeHistory,...history.holdingHistory]){
+   if(!sample||typeof sample.id!=='string'||!sample.id||!Number.isSafeInteger(sample.decisionTime)||!Number.isSafeInteger(sample.closedTime)||sample.closedTime<=sample.decisionTime||sample.closedTime>=bar.closeTime)throw Error('noncausal historical research sample');
+   if(sample.symbol!==candidate.symbol||sample.timeframe!==candidate.timeframe)throw Error('cross-market historical research sample');
+  }
+  for(const sample of history.tradeHistory){
+   if(historicalIds.has(sample.id))throw Error('duplicate historical trade sample');
+   historicalIds.add(sample.id);
+   if(!sample.features||!Number.isSafeInteger(sample.features.asOfMs)||sample.features.asOfMs>sample.decisionTime)throw Error('future historical feature snapshot');
+  }
+  const holdingIds=new Set();
+  for(const sample of history.holdingHistory){if(holdingIds.has(sample.id))throw Error('duplicate historical holding sample');holdingIds.add(sample.id)}
   const committedCapital=[...account.pending,...account.positions].reduce((sum,p)=>sum+p.capital,0);
   const verdict=await runFiveExpertResearch({candidate,candles:prefix,features,tradeHistory:history.tradeHistory,holdingHistory:history.holdingHistory,account:{equity:account.equity,committedCapital},feeRate:costs.feeRate,slippageRate:costs.slippageRate,brain,minProbabilitySamples,minTimeSamples,rewardParameters,modelVersion});
   decisions.push({id:candidate.id,decisionTime:bar.closeTime,action:verdict.action,reason:verdict.reason||null,history:verdict.history});

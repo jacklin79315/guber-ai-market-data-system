@@ -4,3 +4,6 @@ test('rejects OOS candle injection before research',async()=>assert.rejects(runP
 test('rejects insufficient chronological data before research',async()=>assert.rejects(runP4ResearchThenOOS({candles:candles.slice(0,10)}),/insufficient/));
 
 test('rejects partition candle replacement before research',async()=>assert.rejects(runP4ResearchThenOOS({candles,partitionOptions:{candles:[]}}),/override/));
+
+test('rejects research provider substitution before training',async()=>assert.rejects(runP4ResearchThenOOS({candles,otherReplayOptions:{featureAtDecision:async()=>({})}}),/override/));
+test('rejects injected brain or account settings before training',async()=>assert.rejects(runP4ResearchThenOOS({candles,otherReplayOptions:{brain:async()=>({action:'APPROVE'})}}),/override/));

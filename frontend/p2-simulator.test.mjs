@@ -15,3 +15,6 @@ test("single account rejects aggregate allocation over 80 percent",()=>{const a=
 
 test("cancelled shadow order does not affect realized account PnL",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(105,111,108),1,costs);assert.equal(a.shadowOrders.length,1);assert.equal(a.shadowOrders[0].realizedPnl,0);assert.equal(a.equity,10000)});
 test("equity marks open positions and updates after exit",()=>{const a=createAccount();submitProposal(a,p());processBar(a,bar(99,101),1,costs);assert.ok(Number.isFinite(a.equity));processBar(a,bar(100,105,105),2,costs);assert.ok(a.equity>10000);processBar(a,bar(105,111,110),3,costs);assert.equal(a.positions.length,0);assert.equal(a.equity,a.cash)});
+
+test("changing submitted proposal does not rewrite approved price ranges",()=>{const a=createAccount();const order=p();submitProposal(a,order);order.entry[0]=1;order.takeProfit[0]=999;assert.deepEqual(a.pending[0].entry,[99,101]);assert.deepEqual(a.pending[0].takeProfit,[110,111])});
+test("short position realizes correct directional PnL",()=>{const a=createAccount();submitProposal(a,p({side:"SHORT",entry:[99,101],takeProfit:[89,90],stopLoss:[109,110]}));processBar(a,bar(99,101),1,costs);processBar(a,bar(89,100,90),2,costs);assert.equal(a.closed[0].exitReason,"TP");assert.ok(a.closed[0].pnl>0)});

@@ -10,7 +10,7 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
  let parentVersion=recovery.parentVersion,parentParameters=recovery.parentParameters;
  const ledger=recovery.completed.at(-1)?.ledgerSnapshot?structuredClone(recovery.completed.at(-1).ledgerSnapshot):createTrainingLedger({championVersion});
  const completed=recovery.completed;
- const ledgerHistoryComplete=completed.length===0||Boolean(completed.at(-1)?.ledgerSnapshot);
+ const ledgerHistoryComplete=completed.length===0||Boolean(completed.at(-1)?.ledgerSnapshot)&&completed.at(-1)?.ledgerHistoryComplete!==false;
  for(let i=recovery.nextIteration;i<iterations;i++){
   if(shouldStop())break;
   const challengerVersion=championVersion+'-research-'+(i+1);
@@ -18,7 +18,7 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   // The single iteration's comparison uses the provided parent version and parameters.
   const iterationLedger={...ledger,championVersion:parentVersion};
   const result=await runP4ResearchIteration({ledger:iterationLedger,runId,challengerVersion,seed,iteration:i,championParameters:parentParameters,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,otherReplayOptions});
-  completed.push({iteration:i+1,runId,challengerVersion,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger)});
+  completed.push({iteration:i+1,runId,challengerVersion,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger),ledgerHistoryComplete});
   if(result.feedback.proposedNextResearchParent===challengerVersion){
    parentVersion=challengerVersion;
    parentParameters=validateTrainingParameters(result.candidate.parameters);

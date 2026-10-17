@@ -26,7 +26,17 @@ export function assessP4ExpertHistory({evidence}={}){
   const actor=actorFor[step.expert]??actorFor[String(step.expert??'').replace(/[-_ ]/g,'').toLowerCase()];
   if(!actor||seen.has(actor))continue;
   seen.add(actor);
-  // A formal rejection or WAIT by an expert is not inherently wrong.
+  // A recorded Brain approval must match the final replay action. A mismatch is
+  // an auditable decision-chain fault, independent of subsequent PnL.
+  if(actor==='Brain'&&step.action==='APPROVE'&&evidence.action!=='APPROVE'){
+   results.push({actor,quality:'FAULT',responsibility:'PRIMARY',reason:'Brain approval conflicts with the final recorded decision',evidenceKeys:['expertHistory','action']});
+   continue;
+  }
+  if(actor==='Brain'&&evidence.action==='APPROVE'&&step.action!=='APPROVE'){
+   results.push({actor,quality:'FAULT',responsibility:'PRIMARY',reason:'Final approval lacks a matching Brain approval',evidenceKeys:['expertHistory','action']});
+   continue;
+  }
+ // A formal rejection or WAIT by an expert is not inherently wrong.
   // Only contradictory evidence is eligible for an attributable fault.
   if(step.action==='CONTINUE'&&step.reason==='NON_POSITIVE_EXPECTANCY'){
    results.push({actor,quality:'FAULT',responsibility:'PRIMARY',reason:'Expert continued despite explicitly recording non-positive expectancy',evidenceKeys:['expertHistory']});

@@ -16,11 +16,11 @@ export function estimateSimilarTradeProbability({proposal,features,history,minSa
   eligible.push({id:h.id,outcome:h.outcome,distance:distance(target,vector(h.features))});
  }
  eligible.sort((a,b)=>a.distance-b.distance||a.id.localeCompare(b.id));const selected=eligible.slice(0,neighbors);
- if(selected.length<minSamples)return {action:'WAIT',reason:'INSUFFICIENT_SIMILAR_CLOSED_TRADES',eligibleCount:eligible.length,required:minSamples};
+ if(selected.length<minSamples)return {action:'CONTINUE',patch:{winProbability:null,expectedValue:null,probabilityReason:'UNKNOWN: INSUFFICIENT_SIMILAR_CLOSED_TRADES; '+selected.length+' eligible of '+minSamples+' required',probabilityConfidence:'UNKNOWN',probabilitySampleCount:selected.length},sampleCount:selected.length,method:'UNKNOWN_INSUFFICIENT_HISTORY'};
  const wins=selected.filter(x=>x.outcome==='WIN').length;
  const winProbability=(wins+1)/(selected.length+2); // explicit Beta(1,1) smoothing
  const expectedValue=winProbability*proposal.expectedGain-(1-winProbability)*proposal.expectedLoss;
- const patch={winProbability,expectedValue,probabilityReason:'Historical same-symbol, same-timeframe, same-side nearest-neighbor baseline; '+selected.length+' closed trades; '+wins+' wins; five known-at-decision features; Beta(1,1) smoothing; net reward estimates from Reward expert'};
+ const patch={winProbability,expectedValue,probabilityConfidence:'LOW',probabilitySampleCount:selected.length,probabilityReason:'Historical same-symbol, same-timeframe, same-side nearest-neighbor baseline; '+selected.length+' closed trades; '+wins+' wins; five known-at-decision features; Beta(1,1) smoothing; net reward estimates from Reward expert'};
  return {action:'CONTINUE',patch,sampleCount:selected.length,method:'SIMILARITY_KNN_BASELINE_V1',positiveExpectancy:expectedValue>0};
 }
 export function applySimilarityProbability({proposal,features,history,minSamples=30,neighbors=50}={}){

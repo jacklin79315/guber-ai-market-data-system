@@ -37,7 +37,13 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
  for(const shadow of account.shadowOrders){
   const p=shadow.proposal;
   if(p.symbol===bar.symbol&&p.timeframe===bar.timeframe&&index>shadow.cancelIndex){
-   shadow.observations.push({index,open:bar.open,high:bar.high,low:bar.low,close:bar.close,entryTouched:touches(bar,p.entry),tpTouched:touches(bar,p.takeProfit),slTouched:touches(bar,p.stopLoss)});
+   const observation={index,open:bar.open,high:bar.high,low:bar.low,close:bar.close,entryTouched:touches(bar,p.entry),tpTouched:touches(bar,p.takeProfit),slTouched:touches(bar,p.stopLoss)};
+   shadow.observations.push(observation);
+   shadow.firstTouches??={entry:null,tp:null,sl:null};
+   for(const [key,hit] of [["entry",observation.entryTouched],["tp",observation.tpTouched],["sl",observation.slTouched]]){
+    if(hit&&shadow.firstTouches[key]===null)shadow.firstTouches[key]=index;
+   }
+   shadow.counterfactualStatus="OBSERVATION_ONLY";
   }
  }
  for(const p of account.positions){if(p.symbol===bar.symbol&&p.timeframe===bar.timeframe)p.markPrice=bar.close}

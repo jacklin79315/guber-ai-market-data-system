@@ -10,6 +10,7 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
  let parentVersion=recovery.parentVersion,parentParameters=recovery.parentParameters;
  const ledger=recovery.completed.at(-1)?.ledgerSnapshot?structuredClone(recovery.completed.at(-1).ledgerSnapshot):createTrainingLedger({championVersion});
  const completed=recovery.completed;
+ const ledgerHistoryComplete=completed.length===0||Boolean(completed.at(-1)?.ledgerSnapshot);
  for(let i=recovery.nextIteration;i<iterations;i++){
   if(shouldStop())break;
   const challengerVersion=championVersion+'-research-'+(i+1);
@@ -24,5 +25,5 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   }
   if(onIteration)await onIteration(completed.at(-1));
  }
- return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,iterations:completed,ledger:structuredClone(ledger),ledgerHistoryComplete:completed.length===0||Boolean(completed.at(-1)?.ledgerSnapshot),independentValidation:false,promotionAllowed:false};
+ return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,iterations:completed,ledger:structuredClone(ledger),ledgerHistoryComplete,independentValidation:false,promotionAllowed:false};
 }

@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {replayBrainDecisions} from './p3-brain-p2-replay.mjs';
+const candles=[{symbol:'BTCUSDT',timeframe:'1h',closeTime:1,open:100,high:101,low:99,close:100},{symbol:'BTCUSDT',timeframe:'1h',closeTime:2,open:100,high:101,low:99,close:100},{symbol:'BTCUSDT',timeframe:'1h',closeTime:3,open:100,high:111,low:99,close:110},{symbol:'BTCUSDT',timeframe:'1h',closeTime:4,open:110,high:112,low:108,close:111}];
+const proposal={id:'p1',symbol:'BTCUSDT',timeframe:'1h',side:'LONG',decisionTime:1,marketSnapshot:{asOfMs:1},entryRange:[100,100],tpRange:[110,110],slRange:[95,95],allocation:100};
+const costs={feeRate:0.001,slippageRate:0.001};
+test('only Brain APPROVE reaches P2 replay and earliest fill is next bar',()=>{const r=replayBrainDecisions({candles,decisions:[{action:'WAIT',reason:'no'},{action:'APPROVE',proposal}],costs});assert.equal(r.approvedCount,1);assert.equal(r.skippedCount,1);assert.equal(r.account.closed.length,1);assert.equal(r.account.closed[0].entryIndex,1)});
+test('no approved decisions means no simulated trades',()=>{const r=replayBrainDecisions({candles,decisions:[{action:'REJECT',reason:'bad'}],costs});assert.equal(r.approvedCount,0);assert.equal(r.account.closed.length,0)});
+test('unmatched decision timestamp fails closed',()=>assert.throws(()=>replayBrainDecisions({candles,decisions:[{action:'APPROVE',proposal:{...proposal,decisionTime:999,marketSnapshot:{asOfMs:999}}}],costs}),/existing closed candle/));
+test('future snapshot fails closed',()=>assert.throws(()=>replayBrainDecisions({candles,decisions:[{action:'APPROVE',proposal:{...proposal,marketSnapshot:{asOfMs:2}}}],costs}),/timestamp/));
+test('duplicate approval IDs fail closed',()=>assert.throws(()=>replayBrainDecisions({candles,decisions:[{action:'APPROVE',proposal},{action:'APPROVE',proposal}],costs}),/duplicate approved/));

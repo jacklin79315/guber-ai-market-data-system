@@ -1,3 +1,4 @@
+import {tradeMetrics} from "./p2-metrics.mjs";
 import {createAccount,submitProposal,processBar} from "./p2-simulator.mjs";
 
 // Closed candles only. Equal-time symbols use a documented stable order.
@@ -31,5 +32,5 @@ export function replayCandles({candles,proposals=[],accountOptions={},costs}){
   for(const event of processBar(account,b,i,costs))events.push({...event,closeTime:b.closeTime,index:i});
   cursor.set(k,i+1);
  }
- return {account,events,processedCandles:sorted.length};
+ return {account,events,metrics:tradeMetrics(account),processedCandles:sorted.length};
 }

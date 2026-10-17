@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {planP4DiagnosticUpdate} from './p4-diagnostic-update-plan.mjs';
+import {DEFAULT_TRAINING_PARAMETERS} from './p4-challenger-parameters.mjs';
+const actor=()=>({positive:0,negative:0,unresolved:0,weightedPositive:0,weightedNegative:0});
+test('risk fault cannot mutate Entry or Reward parameters',()=>{const risk={...actor(),negative:1,weightedNegative:2};const plan=planP4DiagnosticUpdate({audit:{schemaVersion:'P4_DIAGNOSTIC_AUDIT_V1',eventCount:1,actors:{Risk:risk}},parentParameters:DEFAULT_TRAINING_PARAMETERS});assert.equal(plan.status,'BLOCKED_UNSUPPORTED_PARAMETER');assert.equal(plan.findings[0].actor,'Risk');assert.equal(plan.proposedParameters,null);assert.equal(plan.updateApplied,false)});
+test('unresolved diagnosis does not fabricate model learning',()=>{const plan=planP4DiagnosticUpdate({audit:{schemaVersion:'P4_DIAGNOSTIC_AUDIT_V1',eventCount:1,actors:{Risk:actor()}},parentParameters:DEFAULT_TRAINING_PARAMETERS});assert.equal(plan.status,'INSUFFICIENT_ATTRIBUTABLE_FEEDBACK');assert.equal(plan.proposedParameters,null)});

@@ -44,3 +44,15 @@ test("missing brand image uses a CSP-safe visible wordmark fallback",async()=>{
  assert.doesNotMatch(ui,/onerror=/);
  assert.match(css,/\.brand-wordmark\[hidden\]/);
 });
+
+test("official UBER logo referenced on login and dashboard",async()=>{
+ const ui=await read("main.js");
+ const css=await read("login.css");
+ const server=await read("server.mjs");
+ assert.equal(ui.split("S__46424066.png").length-1,2);
+ assert.match(ui,/class="brand-logo"/);
+ assert.match(ui,/class="login-logo"/);
+ assert.match(ui,/loginLogo.addEventListener/);
+ assert.match(css,/login-logo/);
+ assert.match(server,/raw.githubusercontent.com/);
+});

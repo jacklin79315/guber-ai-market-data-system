@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createP4SupabaseRoundStore} from './p4-supabase-rounds.mjs';
+test('P4 round store commits without upsert and loads in order',async()=>{let posted;const store=createP4SupabaseRoundStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test-only',fetchImpl:async(url,opts)=>{if(opts.method==='POST'){posted=JSON.parse(opts.body);assert.equal(opts.headers.Prefer,'return=minimal');return {ok:true}}return {ok:true,json:async()=>[{iteration:1,spec_fingerprint:'a'.repeat(64),round_result:posted.round_result}]}}});await store.commit('job','a'.repeat(64),{iteration:1,runId:'research-round-1'});assert.equal((await store.load('job','a'.repeat(64))).length,1)});
+test('P4 round store rejects mismatched fingerprints',async()=>{const store=createP4SupabaseRoundStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async()=>({ok:true,json:async()=>[{iteration:1,spec_fingerprint:'wrong',round_result:{iteration:1}}]})});await assert.rejects(store.load('job','a'.repeat(64)),/integrity mismatch/)});

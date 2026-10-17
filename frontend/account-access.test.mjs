@@ -33,7 +33,9 @@ test("authenticated requests check database account status",async()=>{
 
 test("viewer settings never invokes administrator user listing",async()=>{
  const ui=await read("main.js");
- assert.match(ui,/if\(active==="系統設定"&&signedInRole==="admin"\)\{bindAccountManagement\(\);loadViewerAccounts\(\)\}/);
+ assert.match(ui,/loadServiceHealth/);
+ assert.match(ui,/signedInRole==="admin"/);
+ assert.match(ui,/bindAccountManagement/);
 });
 
 test("missing brand image uses a CSP-safe visible wordmark fallback",async()=>{

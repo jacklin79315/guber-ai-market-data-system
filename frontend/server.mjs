@@ -40,7 +40,20 @@ async function auth(req,res,pathname){
   const b=await body(req);const fake={headers:{authorization:"Bearer "+(b.refresh_token||"")}};const user=sessionUser(fake,"refresh");
   if(!user){send(res,401,{message:"登入已失效"});return}send(res,200,issueTokens(user.username,user.role));return
  }
- if(pathname==="/api/auth/admin/users"){const actor=sessionUser(req);if(!actor){send(res,401,{message:"請先登入"});return}if(actor.role!=="admin"){send(res,403,{message:"僅管理員可以管理帳號"});return}send(res,503,{message:"帳號管理尚未啟用：缺少安全的資料庫管理端連線"});return}
+ if(pathname==="/api/auth/admin/users"){
+  const actor=sessionUser(req);
+  if(!actor){send(res,401,{message:"請先登入"});return}
+  if(actor.role!=="admin"){send(res,403,{message:"僅管理員可以管理帳號"});return}
+  if(req.method!=="POST"){send(res,405,{message:"不支援的方法"});return}
+  const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if(!serviceKey){send(res,503,{message:"管理員帳號建立服務尚未設定"});return}
+  const input=await body(req);
+  if(typeof input.username!=="string"||!/^[a-z][a-z0-9_]{2,39}$/.test(input.username)||typeof input.password!=="string"||input.password.length<12||input.password.length>256){send(res,400,{message:"帳號格式不正確或密碼少於12字元"});return}
+  const result=await fetch(url+"/rest/v1/rpc/p1_admin_create_viewer",{method:"POST",headers:{apikey:serviceKey,Authorization:"Bearer "+serviceKey,"Content-Type":"application/json"},body:JSON.stringify({p_username:input.username,p_password:input.password})});
+  if(result.status===409){send(res,409,{message:"帳號已存在"});return}
+  if(!result.ok){send(res,503,{message:"建立帳號失敗，請確認資料庫函式及權限設定"});return}
+  const rows=await result.json();send(res,201,{user:Array.isArray(rows)?rows[0]:rows});return
+ }
  if(pathname==="/api/auth/logout"){send(res,200,{ok:true});return}
  if(pathname==="/api/auth/user"){const user=sessionUser(req);if(!user){send(res,401,{message:"請先登入"});return}send(res,200,{username:user.username,role:user.role});return}
  send(res,404,{message:"找不到服務"})

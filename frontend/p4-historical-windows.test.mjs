@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {planP4HistoricalWindows,verifyP4HistoricalWindows} from './p4-historical-windows.mjs';
+const duration=3600000;
+const plan=planP4HistoricalWindows({timeframe:'1h',fromOpenTime:0,toOpenTime:6*duration,asOfMs:8*duration,maxCandlesPerWindow:3});
+const segments=plan.windows.map(w=>Array.from({length:w.expectedCandles},(_,i)=>({timeframe:'1h',closeTime:w.fromOpenTime+(i+1)*duration-1})));
+test('P4 segmentation covers all native bars with no overlap or truncation',()=>{assert.deepEqual(plan.windows.map(w=>w.expectedCandles),[3,3,1]);assert.equal(plan.expectedCandles,7);assert.equal(verifyP4HistoricalWindows({plan,segments}).loadedCandles,7)});
+test('P4 segmentation fails closed on missing middle candle',()=>{const bad=structuredClone(segments);bad[1].splice(1,1);assert.throws(()=>verifyP4HistoricalWindows({plan,segments:bad}),/missing candles/)});
+test('P4 segmentation rejects duplicates and shifted candle timestamps',()=>{const bad=structuredClone(segments);bad[1][0].closeTime=bad[0].at(-1).closeTime;assert.throws(()=>verifyP4HistoricalWindows({plan,segments:bad}),/discontinuity/)});
+test('P4 segmentation refuses future incomplete candles',()=>{assert.throws(()=>planP4HistoricalWindows({timeframe:'1h',fromOpenTime:0,toOpenTime:7*duration,asOfMs:7*duration}),/invalid P4/)});

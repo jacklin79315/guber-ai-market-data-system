@@ -11,10 +11,9 @@ export function buildCausalExpertHistory({closed,decisionArchive,asOfMs}={}){
   if(!Number.isSafeInteger(decisionTime)||!Number.isSafeInteger(features?.asOfMs)||features.asOfMs>decisionTime||!Number.isSafeInteger(trade.closedTime)||trade.closedTime<=decisionTime)throw Error('invalid archived causal timestamps');
   if(trade.closedTime>=asOfMs)continue;
   if(!Number.isFinite(trade.pnl)||!['LONG','SHORT'].includes(trade.side)||typeof trade.symbol!=='string'||typeof trade.timeframe!=='string')throw Error('invalid closed trade outcome');
-  if(trade.pnl===0)continue; // Break-even cannot be mislabeled WIN or LOSS.
   const base={id:trade.id,decisionTime,closedTime:trade.closedTime,symbol:trade.symbol,timeframe:trade.timeframe,side:trade.side};
-  tradeHistory.push({...base,outcome:trade.pnl>0?'WIN':'LOSS',features:structuredClone(features)});
   holdingHistory.push(base);
+  if(trade.pnl!==0)tradeHistory.push({...base,outcome:trade.pnl>0?'WIN':'LOSS',features:structuredClone(features)}); // Break-even informs holding time, not binary win probability.
  }
  return {tradeHistory,holdingHistory};
 }

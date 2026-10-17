@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {assessP4ExpertHistory} from './p4-rule-diagnostician.mjs';
+test('Brain approval inconsistent with final WAIT is attributable fault',()=>{const a=assessP4ExpertHistory({evidence:{action:'WAIT',expertHistory:[{expert:'brain',action:'APPROVE'}]}});assert.equal(a[0].actor,'Brain');assert.equal(a[0].quality,'FAULT');assert.equal(a[0].responsibility,'PRIMARY')});
+test('Brain return followed by final approval is not fault',()=>{const a=assessP4ExpertHistory({evidence:{action:'APPROVE',expertHistory:[{expert:'brain',action:'RETURN'},{expert:'reward',action:'CONTINUE'},{expert:'brain',action:'APPROVE'}]}});assert.deepEqual(a,[])});
+test('Brain rejection matching final rejection is not punished',()=>assert.deepEqual(assessP4ExpertHistory({evidence:{action:'REJECT',expertHistory:[{expert:'brain',action:'REJECT'}]}}),[]));
+test('missing Brain history is unresolved rather than invented fault',()=>assert.deepEqual(assessP4ExpertHistory({evidence:{action:'APPROVE',expertHistory:[]}}),[]));

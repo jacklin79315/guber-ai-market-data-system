@@ -26,3 +26,12 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .account-row button{flex-shrink:0}
 @media(max-width:720px){.card:has(form),.card:has(.account-row){padding:16px}.account-row{gap:10px}.account-row button{min-width:72px}.topbar{align-items:flex-start}.top-actions{flex-shrink:0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+/* 全部已授權頁面可在手機底部導覽找到，不再隱藏資料品質與通知頁 */
+@media(max-width:720px){
+ .bottom-nav{justify-content:flex-start;gap:2px;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+ .bottom-nav button{flex:0 0 auto;min-width:64px;padding:4px 8px}
+ .bottom-nav button:focus-visible{outline-offset:-2px}
+ #symbol-filter{width:100%;min-height:44px;margin-top:8px;padding:10px 12px;border:1px solid #3b5068;border-radius:9px;background:#0b131d;color:#edf3fb;font-size:16px}
+}

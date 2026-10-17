@@ -39,7 +39,9 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
   if(p.symbol!==bar.symbol||p.timeframe!==bar.timeframe||index<=p.entryIndex)continue;
   const exit=decideExit(p,bar);if(!exit)continue;
   const target=exit==="TP"?(p.side==="LONG"?p.takeProfit[0]:p.takeProfit[1]):(p.side==="LONG"?p.stopLoss[0]:p.stopLoss[1]);
-  const exitPrice=target*(p.side==="LONG"?1-slippageRate:1+slippageRate);
+  // A stop crossed by an opening gap fills no better than the adverse open.
+  const gapStop=exit==="SL"?(p.side==="LONG"?Math.min(target,bar.open):Math.max(target,bar.open)):target;
+  const exitPrice=gapStop*(p.side==="LONG"?1-slippageRate:1+slippageRate);
   const qty=p.capital/p.entryPrice;
   const pnl=(p.side==="LONG"?1:-1)*(exitPrice-p.entryPrice)*qty;
   const exitFee=exitPrice*qty*feeRate;
@@ -55,7 +57,8 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
   if(!entryHit)continue;
   const used=occupied(account);
   if(account.equity<=0||used+p.capital>account.equity*account.maxUtilization||p.capital>account.cash){events.push({id:p.id,type:"WAIT_CAPITAL"});continue}
-  const basePrice=p.side==="LONG"?p.entry[1]:p.entry[0];
+  // Fill only within the actual traded intersection of bar and entry range.
+  const basePrice=p.side==="LONG"?Math.min(p.entry[1],bar.high):Math.max(p.entry[0],bar.low);
   const entryPrice=basePrice*(p.side==="LONG"?1+slippageRate:1-slippageRate);
   const entryFee=p.capital*feeRate;
   if(p.capital+entryFee>account.cash){events.push({id:p.id,type:"WAIT_CAPITAL"});continue}

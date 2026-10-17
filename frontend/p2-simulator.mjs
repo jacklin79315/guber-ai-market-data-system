@@ -47,7 +47,9 @@ export function processBar(account,bar,index,{feeRate,slippageRate}={}){
    for(const [key,hit] of [["entry",observation.entryTouched],["tp",observation.tpTouched],["sl",observation.slTouched]]){
     if(hit&&shadow.firstTouches[key]===null)shadow.firstTouches[key]=index;
    }
-   shadow.counterfactualStatus="OBSERVATION_ONLY";
+   const first=shadow.firstTouches;
+   shadow.counterfactualStatus=shadow.ambiguousBars.length?"AMBIGUOUS_SEQUENCE":first.entry===null?"ENTRY_NOT_REVISITED":first.tp!==null||first.sl!==null?"LEVELS_OBSERVED":"ENTRY_REVISITED";
+   // Classifications are evidence states, not counterfactual profit claims.
   }
  }
  for(const p of account.positions){if(p.symbol===bar.symbol&&p.timeframe===bar.timeframe)p.markPrice=bar.close}

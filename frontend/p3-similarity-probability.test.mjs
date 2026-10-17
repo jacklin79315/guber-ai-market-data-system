@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {estimateSimilarTradeProbability,applySimilarityProbability} from './p3-similarity-probability.mjs';
-const features={rsi:55,atrPercent:0.02,volumeRatio:1.2,trendStrength:0.4,momentum:0.03};
+const features={asOfMs:0,rsi:55,atrPercent:0.02,volumeRatio:1.2,trendStrength:0.4,momentum:0.03};
 const proposal={id:'p1',decisionTime:100000,marketSnapshot:{asOfMs:100000},modelVersion:'v1',symbol:'BTCUSDT',timeframe:'1h',side:'LONG',entryRange:[100,100],entryReason:'breakout',tpRange:[110,110],slRange:[95,95],riskReward:2,expectedGain:0.09,expectedLoss:0.06,rewardReason:'net costs'};
 const history=Array.from({length:5},(_,i)=>({id:'h'+i,decisionTime:i*1000,closedTime:i*1000+500,outcome:i<3?'WIN':'LOSS',symbol:'BTCUSDT',timeframe:'1h',side:'LONG',features}));
 test('similar historical closed trades produce probability and cost-adjusted expectancy',()=>{const r=applySimilarityProbability({proposal,features,history,minSamples:3});assert.equal(r.action,'CONTINUE');assert.equal(r.sampleCount,5);assert.equal(r.patch.winProbability,4/7);assert.ok(Math.abs(r.patch.expectedValue-(4/7*0.09-3/7*0.06))<1e-12);assert.equal(r.proposal.winProbability,4/7)});
@@ -7,3 +7,6 @@ test('future-closed trades cannot leak into probability',()=>{const future={...h
 test('insufficient history returns WAIT rather than invented probability',()=>{const r=estimateSimilarTradeProbability({proposal,features,history,minSamples:6});assert.equal(r.action,'WAIT');assert.equal(r.eligibleCount,5)});
 test('unrelated symbols cannot inflate samples',()=>{const extra={...history[0],id:'eth',symbol:'ETHUSDT'};const r=estimateSimilarTradeProbability({proposal,features,history:[...history,extra],minSamples:6});assert.equal(r.action,'WAIT')});
 test('invalid missing feature fails closed',()=>assert.throws(()=>estimateSimilarTradeProbability({proposal,features:{...features,rsi:undefined},history,minSamples:3}),/features/));
+
+test('rejects future feature snapshots',()=>assert.throws(()=>estimateSimilarTradeProbability({proposal,features:{...features,asOfMs:100001},history,minSamples:3}),/future or undated/));
+test('rejects future-derived historical features',()=>assert.throws(()=>estimateSimilarTradeProbability({proposal,features,history:[{...history[0],features:{...features,asOfMs:1}},...history.slice(1)],minSamples:3}),/future or undated/));

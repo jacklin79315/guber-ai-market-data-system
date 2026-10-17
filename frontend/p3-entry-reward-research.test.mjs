@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {analyzeEntryRewardHistory} from './p3-entry-reward-research.mjs';
+const make=(close,i)=>({symbol:'BTCUSDT',timeframe:'1h',closeTime:(i+1)*3600000-1,open:close,high:close+1,low:close-1,close});
+const bars=Array.from({length:20},(_,i)=>make(100,i));bars.push(make(105,20));
+test('Entry and Reward yield a partial, never-approved research proposal',()=>{const r=analyzeEntryRewardHistory({candles:bars,feeRate:0.001,slippageRate:0.001});assert.equal(r.entryCandidateCount,1);assert.equal(r.partialProposalCount,1);assert.equal(r.approvedCount,0);assert.equal(r.stage,'ENTRY_REWARD_ONLY');assert.equal(r.proposals[0].decisionTime,bars[20].closeTime);assert.ok(r.proposals[0].tpRange[0]>105);assert.ok(r.proposals[0].slRange[0]<105);assert.equal(r.proposals[0].winProbability,undefined)});
+test('future bars do not change previous partial proposals',()=>{const a=analyzeEntryRewardHistory({candles:bars,feeRate:0,slippageRate:0});const b=analyzeEntryRewardHistory({candles:[...bars,make(80,21)],feeRate:0,slippageRate:0});assert.deepEqual(b.proposals.filter(p=>p.decisionTime<=bars[20].closeTime),a.proposals)});
+test('explicit cost assumptions required',()=>assert.throws(()=>analyzeEntryRewardHistory({candles:bars}),/costs required/));
+test('no breakout means no proposal',()=>{const r=analyzeEntryRewardHistory({candles:Array.from({length:25},(_,i)=>make(100,i)),feeRate:0,slippageRate:0});assert.equal(r.partialProposalCount,0)});

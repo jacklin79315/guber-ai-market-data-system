@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {evaluateP4FrozenOOS} from './p4-frozen-oos.mjs';
 const boundary={researchEndMs:100,validationStartMs:101};const champion={version:'A'},challenger={version:'B'};const validationCandles=[{symbol:'BTCUSDT',timeframe:'1h',closeTime:101}];
 test('rejects OOS overlap before replay',async()=>assert.rejects(evaluateP4FrozenOOS({researchBoundary:boundary,champion,challenger,validationCandles:[{...validationCandles[0],closeTime:100}]}),/chronology/));
-test('rejects mismatched declared OOS boundary',async()=>assert.rejects(evaluateP4FrozenOOS({researchBoundary:boundary,validationCandles:[{...validationCandles[0],closeTime:102}]}),/boundary/));
+test('rejects mismatched declared OOS boundary',async()=>assert.rejects(evaluateP4FrozenOOS({researchBoundary:boundary,champion,challenger,validationCandles:[{...validationCandles[0],closeTime:102}]}),/boundary/));
 test('rejects replay overrides and unfrozen model identities',async()=>{await assert.rejects(evaluateP4FrozenOOS({researchBoundary:boundary,validationCandles,champion:{version:'A'},challenger:{version:'A'}}),/models/);await assert.rejects(evaluateP4FrozenOOS({researchBoundary:boundary,validationCandles,champion:{version:'A'},challenger:{version:'B'},otherReplayOptions:{trainingParameters:{}}}),/override/)});

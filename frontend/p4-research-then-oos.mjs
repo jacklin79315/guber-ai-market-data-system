@@ -5,7 +5,8 @@ import {validateTrainingParameters} from './p4-challenger-parameters.mjs';
 // Explicit, one-shot research -> freeze -> OOS evaluation. Never feeds OOS metrics
 // back into the research parent or performs automatic Champion promotion.
 export async function runP4ResearchThenOOS({candles,partitionOptions={},championVersion,championParameters,iterations,seed,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},otherReplayOptions={},shouldStop=()=>false,onIteration}={}){
- const partition=partitionP4ChronologicalCandles({candles,...partitionOptions});
+ if(partitionOptions===null||typeof partitionOptions!=='object'||Array.isArray(partitionOptions)||Object.hasOwn(partitionOptions,'candles'))throw Error('partition candles override forbidden');
+ const partition=partitionP4ChronologicalCandles({...partitionOptions,candles});
  if(otherReplayOptions.candles||otherReplayOptions.trainingParameters||otherReplayOptions.modelVersion||otherReplayOptions.validationCandles)throw Error('research/OOS override forbidden');
  const research=await runP4ResearchCycle({championVersion,championParameters,iterations,seed,candles:partition.research,featureAtDecision,historyAtDecision,brain,costs,accountOptions,otherReplayOptions,shouldStop,onIteration});
  if(research.status!=='RESEARCH_CYCLE_COMPLETED'||shouldStop())return {status:'RESEARCH_INCOMPLETE_NO_OOS',research,partition:{boundary:partition.boundary,researchCount:partition.researchCount,validationCount:partition.validationCount},independentValidationPassed:false,promotionAllowed:false};

@@ -69,3 +69,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  .top-actions{gap:5px}
  .logout-button{padding-inline:10px}
 }
+
+/* Keep brand identity legible while the original approved logo asset is not yet deployed. */
+.brand-wordmark{display:block;font-size:32px;letter-spacing:.16em;font-weight:800;line-height:1.2;color:#eaf3ff;padding:18px 0 30px}
+.brand-wordmark[hidden],.brand-logo[hidden]{display:none!important}

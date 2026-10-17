@@ -84,3 +84,9 @@
 - 已補上 `/api/health` 健康檢查、管理員身分 ID 驗證、受保護的 `/api/data/candles` 只讀行情代理。管理員未配置時登入／行情接口應拒絕請求。
 - 已加入 `frontend/server.test.mjs` 安全冒煙測試與 `.github/workflows/p1-frontend-tests.yml` 自動測試工作流程，待 GitHub Actions 執行結果確認，**不可宣稱測試通過**。
 - 已封鎖直接讀取伺服器 `.mjs` 程式及套件中繼資料。Logo 圖檔仍待 GitHub 上傳。
+
+
+### P1 新增資料品質頁（2026-10-17）
+- `frontend/main.js` 已加入 BTCUSDT 15m/1h/4h/1d 最近已收盤 K 線時間檢查，畫面以台北時間顯示並標示可能延遲；**僅代表最新資料時效，不代表全歷史缺漏或技術指標檢驗**。
+- `frontend/server.mjs` 已加入登入嘗試速率限制、行情唯讀 GET 方法限制、前端安全回應標頭；需待 CI 與實際部署驗證。
+- 管理員 Auth 內部身分仍未開通，`ADMIN_AUTH_EMAIL`/`ADMIN_AUTH_USER_ID` 尚未配置，無法正式登入。原始 Logo 二進位資產仍待上傳。

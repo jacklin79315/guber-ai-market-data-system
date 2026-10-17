@@ -35,3 +35,12 @@ test("viewer settings never invokes administrator user listing",async()=>{
  const ui=await read("main.js");
  assert.match(ui,/if\(active==="系統設定"&&signedInRole==="admin"\)\{bindAccountManagement\(\);loadViewerAccounts\(\)\}/);
 });
+
+test("missing brand image uses a CSP-safe visible wordmark fallback",async()=>{
+ const ui=await read("main.js");
+ const css=await read("styles.css");
+ assert.match(ui,/class="brand-wordmark" hidden>UBER/);
+ assert.match(ui,/logo\.addEventListener\("error",showFallback/);
+ assert.doesNotMatch(ui,/onerror=/);
+ assert.match(css,/\.brand-wordmark\[hidden\]/);
+});

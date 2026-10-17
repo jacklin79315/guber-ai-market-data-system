@@ -2,3 +2,5 @@ import test from 'node:test';import assert from 'node:assert/strict';import {run
 const candles=Array.from({length:150},(_,i)=>({symbol:'BTCUSDT',timeframe:'1h',closeTime:i+1}));
 test('rejects OOS candle injection before research',async()=>assert.rejects(runP4ResearchThenOOS({candles,otherReplayOptions:{validationCandles:candles}}),/override/));
 test('rejects insufficient chronological data before research',async()=>assert.rejects(runP4ResearchThenOOS({candles:candles.slice(0,10)}),/insufficient/));
+
+test('rejects partition candle replacement before research',async()=>assert.rejects(runP4ResearchThenOOS({candles,partitionOptions:{candles:[]}}),/override/));

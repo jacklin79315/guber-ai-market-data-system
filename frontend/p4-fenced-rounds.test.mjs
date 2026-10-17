@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createP4SupabaseRoundStore} from './p4-supabase-rounds.mjs';
+test('P4 fenced commit uses atomic owner-checked RPC, not direct insert',async()=>{let called=false;const store=createP4SupabaseRoundStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'server-test',fetchImpl:async(url,options)=>{called=true;assert.match(url,/\/rpc\/p4_commit_research_round$/);const body=JSON.parse(options.body);assert.equal(body.p_owner_token,'o'.repeat(32));assert.equal(body.p_iteration,1);return {ok:true,json:async()=>true}}});await store.commitLeased('job','o'.repeat(32),'a'.repeat(64),{iteration:1});assert.equal(called,true)});
+test('P4 fenced commit refuses expired or wrong owner response',async()=>{const store=createP4SupabaseRoundStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'server-test',fetchImpl:async()=>({ok:false,status:400})});await assert.rejects(store.commitLeased('job','o'.repeat(32),'a'.repeat(64),{iteration:1}),/request failed/)});

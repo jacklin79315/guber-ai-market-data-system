@@ -26,7 +26,7 @@ async function auth(req,res,pathname){
  if(pathname==="/api/auth/login"){
   if(req.method!=="POST"){send(res,405,{message:"不支援的方法"});return}
   const b=await body(req);const ip=req.socket.remoteAddress||"unknown";const now=Date.now();const attempts=(loginAttempts.get(ip)||[]).filter(t=>now-t<900000);
-  if(attempts.length>=8){send(res,429,{message:"登入嘗試過於頻繁"});return}
+  if(attempts.length>=8){send(res,429,{message:"登入嘗試次數過多，請稍後再試"});return}
   attempts.push(now);loginAttempts.set(ip,attempts);
   if(loginAttempts.size>1000)loginAttempts.clear();
   if(typeof b.username!=="string"||typeof b.password!=="string"){send(res,401,{message:"帳號或密碼不正確"});return}

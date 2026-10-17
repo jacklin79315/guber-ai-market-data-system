@@ -1,3 +1,4 @@
+import {reconcileP4ResearchProgress} from './p4-progress-reconcile.mjs';
 import {runP4WithLease} from './p4-lease-runner.mjs';
 import {fingerprintP4JobSpec,assertP4CheckpointCompatible} from './p4-job-spec.mjs';
 import {createP4Checkpoint} from './p4-checkpoints.mjs';
@@ -13,7 +14,7 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
  if((checkpointStore&&!jobId)||(!checkpointStore&&jobId)||checkpointStore&&(typeof checkpointStore.save!=='function'||typeof checkpointStore.load!=='function'))throw Error('P4 checkpoint requires store and jobId');
  const specFingerprint=checkpointStore?fingerprintP4JobSpec({symbol,timeframe,fromOpenTime,toOpenTime,maxCandlesPerWindow,codeRevision,championVersion,championParameters,iterations,seed,accountOptions,otherReplayOptions,...(asOfMs===undefined?{}:{asOfMs}),...(costs===undefined?{}:{costs})}):undefined;
  let resumeRounds=[];
- if(checkpointStore){const previous=await checkpointStore.load(jobId);if(previous){assertP4CheckpointCompatible(previous,{jobId,specFingerprint});if(!roundStore||previous.phase==='COMPLETED')throw Error('P4 job already exists; cannot safely resume');resumeRounds=await roundStore.load(jobId,specFingerprint);if(resumeRounds.length<previous.completedIterations||resumeRounds.length>previous.completedIterations+1)throw Error('P4 checkpoint and committed rounds disagree');}else if(roundStore){const orphanRounds=await roundStore.load(jobId,specFingerprint);if(orphanRounds.length)throw Error('P4 orphaned research rounds without checkpoint');}}
+ if(checkpointStore){const previous=await checkpointStore.load(jobId);if(previous){assertP4CheckpointCompatible(previous,{jobId,specFingerprint});if(!roundStore||previous.phase==='COMPLETED')throw Error('P4 job already exists; cannot safely resume');const persistedRounds=await roundStore.load(jobId,specFingerprint);resumeRounds=reconcileP4ResearchProgress({checkpoint:previous,rounds:persistedRounds}).resumeRounds;}else if(roundStore){const orphanRounds=await roundStore.load(jobId,specFingerprint);if(orphanRounds.length)throw Error('P4 orphaned research rounds without checkpoint');}}
  const saveProgress=async ({phase,completedWindows=0,loadedCandles=0,completedIterations=0})=>{if(checkpointStore)await checkpointStore.save(createP4Checkpoint({jobId,phase,completedWindows,loadedCandles,completedIterations,updatedAtMs:Date.now(),specFingerprint}));};
  if(!resumeRounds.length)await saveProgress({phase:'LOADING'});
  const loaded=await loadP4SegmentedHistoricalCandles({supabaseUrl,apiKey,fetchImpl,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,maxCandlesPerWindow,shouldStop,onProgress:async p=>{await saveProgress({phase:'LOADING',...p});await onProgress?.({phase:'LOADING',...p});}});

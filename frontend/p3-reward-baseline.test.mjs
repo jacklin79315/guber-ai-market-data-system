@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {estimateRewardBaseline} from './p3-reward-baseline.mjs';
+const bars=Array.from({length:16},(_,i)=>({symbol:'BTCUSDT',timeframe:'1h',closeTime:(i+1)*1000,high:102,low:98,close:100}));
+const base={symbol:'BTCUSDT',timeframe:'1h',decisionTime:16000,entryRange:[100,100]};
+test('LONG reward sets TP above and SL below entry with cost-aware ratio',()=>{const r=estimateRewardBaseline({candidate:{...base,side:'LONG'},candles:bars,feeRate:0.001,slippageRate:0.001});assert.equal(r.action,'CONTINUE');assert.ok(r.patch.tpRange[0]>100);assert.ok(r.patch.slRange[0]<100);assert.ok(r.patch.expectedGain>0);assert.ok(r.patch.expectedLoss>0);assert.ok(r.patch.riskReward<2)});
+test('SHORT reward reverses price directions',()=>{const r=estimateRewardBaseline({candidate:{...base,side:'SHORT'},candles:bars,feeRate:0,slippageRate:0});assert.equal(r.action,'CONTINUE');assert.ok(r.patch.tpRange[0]<100);assert.ok(r.patch.slRange[0]>100)});
+test('future candles cannot be used for ATR',()=>{const future=[...bars.slice(0,-1),{...bars.at(-1),closeTime:16001}];assert.throws(()=>estimateRewardBaseline({candidate:{...base,side:'LONG'},candles:future,feeRate:0,slippageRate:0}),/reward candle/)});
+test('insufficient ATR history waits',()=>{assert.equal(estimateRewardBaseline({candidate:{...base,side:'LONG'},candles:bars.slice(0,5),feeRate:0,slippageRate:0}).action,'WAIT')});

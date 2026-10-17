@@ -44,7 +44,7 @@ export async function runSequentialFiveExpertReplay({candles,featureAtDecision,h
   const committedCapital=[...account.pending,...account.positions].reduce((sum,p)=>sum+p.capital,0);
   const verdict=await runFiveExpertResearch({candidate,candles:prefix,features,tradeHistory:history.tradeHistory,holdingHistory:history.holdingHistory,account:{equity:account.equity,committedCapital},feeRate:costs.feeRate,slippageRate:costs.slippageRate,brain,minProbabilitySamples,minTimeSamples,rewardParameters,modelVersion});
   const riskDiagnostics=verdict.proposal&&Number.isFinite(verdict.proposal.allocation)&&Number.isFinite(verdict.proposal.expectedLoss)&&verdict.proposal.expectedLoss>0&&('expectedValue' in verdict.proposal)?estimateRiskPositionBaseline({proposal:verdict.proposal,account:{equity:account.equity,committedCapital}}):null;
-  decisions.push({id:candidate.id,decisionTime:bar.closeTime,action:verdict.action,reason:verdict.reason||null,allocation:verdict.proposal?.allocation??null,accountAtDecision:{equity:account.equity,committedCapital},riskDiagnostics:riskDiagnostics?.allocationDiagnostics??null,history:verdict.history});
+  decisions.push({id:candidate.id,decisionTime:bar.closeTime,action:verdict.action,reason:verdict.reason||null,allocation:verdict.proposal?.allocation??null,proposalAtDecision:structuredClone(verdict.proposal??null),accountAtDecision:{equity:account.equity,committedCapital},riskDiagnostics:riskDiagnostics?.allocationDiagnostics??null,history:verdict.history});
   if(verdict.action!=='APPROVE')continue;
   const proposal=approvedToSimulationProposal(verdict,{decisionIndex:i});
   const submission=submitProposal(account,proposal);

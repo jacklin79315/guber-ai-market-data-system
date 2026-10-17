@@ -44,14 +44,28 @@ async function auth(req,res,pathname){
   const actor=sessionUser(req);
   if(!actor){send(res,401,{message:"請先登入"});return}
   if(actor.role!=="admin"){send(res,403,{message:"僅管理員可以管理帳號"});return}
-  if(req.method!=="POST"){send(res,405,{message:"不支援的方法"});return}
   const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if(!serviceKey){send(res,503,{message:"管理員帳號建立服務尚未設定"});return}
+  if(!serviceKey){send(res,503,{message:"管理員帳號服務尚未設定"});return}
+  const headers={apikey:serviceKey,Authorization:"Bearer "+serviceKey,"Content-Type":"application/json"};
+  if(req.method==="GET"){
+   const response=await fetch(url+"/rest/v1/rpc/p1_admin_list_viewers",{method:"POST",headers,body:"{}"});
+   if(!response.ok){send(res,503,{message:"讀取帳號清單失敗"});return}
+   send(res,200,{users:await response.json()});return
+  }
+  if(req.method==="PATCH"){
+   const input=await body(req);
+   if(typeof input.username!=="string"||typeof input.enabled!=="boolean"||!/^[a-z][a-z0-9_]{2,39}$/.test(input.username)){send(res,400,{message:"帳號狀態格式不正確"});return}
+   const response=await fetch(url+"/rest/v1/rpc/p1_admin_set_viewer_enabled",{method:"POST",headers,body:JSON.stringify({p_username:input.username,p_enabled:input.enabled})});
+   if(!response.ok){send(res,503,{message:"更新帳號狀態失敗"});return}
+   const rows=await response.json();if(!Array.isArray(rows)||!rows.length){send(res,404,{message:"一般帳號不存在"});return}
+   send(res,200,{user:rows[0]});return
+  }
+  if(req.method!=="POST"){send(res,405,{message:"不支援的方法"});return}
   const input=await body(req);
   if(typeof input.username!=="string"||!/^[a-z][a-z0-9_]{2,39}$/.test(input.username)||typeof input.password!=="string"||input.password.length<12||input.password.length>256){send(res,400,{message:"帳號格式不正確或密碼少於12字元"});return}
-  const result=await fetch(url+"/rest/v1/rpc/p1_admin_create_viewer",{method:"POST",headers:{apikey:serviceKey,Authorization:"Bearer "+serviceKey,"Content-Type":"application/json"},body:JSON.stringify({p_username:input.username,p_password:input.password})});
+  const result=await fetch(url+"/rest/v1/rpc/p1_admin_create_viewer",{method:"POST",headers,body:JSON.stringify({p_username:input.username,p_password:input.password})});
   if(result.status===409){send(res,409,{message:"帳號已存在"});return}
-  if(!result.ok){send(res,503,{message:"建立帳號失敗，請確認資料庫函式及權限設定"});return}
+  if(!result.ok){send(res,503,{message:"建立帳號失敗"});return}
   const rows=await result.json();send(res,201,{user:Array.isArray(rows)?rows[0]:rows});return
  }
  if(pathname==="/api/auth/logout"){send(res,200,{ok:true});return}

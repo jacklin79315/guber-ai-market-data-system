@@ -2,6 +2,12 @@ name: P4 bounded research (manual only)
 on:
   workflow_dispatch:
     inputs:
+      research_scope:
+        description: "SMOKE (up to 500 candles) or HISTORICAL_24M (BTC 1h, partitioned)"
+        required: true
+        default: "SMOKE"
+        type: choice
+        options: ["SMOKE", "HISTORICAL_24M"]
       job_id:
         description: "Unique research job id (letters, digits, underscore, hyphen)"
         required: true
@@ -32,7 +38,7 @@ concurrency:
 jobs:
   bounded-research:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 90
     environment: p4-research
     defaults:
       run:
@@ -48,6 +54,8 @@ jobs:
       P4_TO_MS: ${{ inputs.to_ms }}
       P4_AS_OF_MS: ${{ inputs.as_of_ms }}
       P4_ITERATIONS: ${{ inputs.iterations }}
+      P4_RESEARCH_SCOPE: ${{ inputs.research_scope }}
+      P4_PARTITIONED: ${{ inputs.research_scope == 'HISTORICAL_24M' && 'TRUE' || 'FALSE' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,5 +67,5 @@ jobs:
           test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "SUPABASE_SERVICE_ROLE_KEY secret missing"; exit 1; }
       - name: Verify read-only Supabase access and research schema
         run: node p4-research-preflight.mjs
-      - name: Run bounded P4 research (no live orders)
+      - name: Run selected P4 research scope (no live orders)
         run: node p4-backend-runner.mjs

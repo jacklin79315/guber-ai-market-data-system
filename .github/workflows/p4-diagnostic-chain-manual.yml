@@ -1,0 +1,42 @@
+name: P4 autonomous diagnostic chain (research only)
+on:
+  workflow_dispatch:
+    inputs:
+      initial_task_id:
+        description: Existing PROPOSED diagnostic task ID
+        required: true
+        type: string
+      windows_json:
+        description: 'JSON array of 1-2 disjoint historical windows: fromOpenTime,toOpenTime,asOfMs (UTC milliseconds)'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: p4-diagnostic-research
+  cancel-in-progress: false
+jobs:
+  research-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P4_RESEARCH_CONFIRM: RESEARCH_ONLY
+      P4_ORDERS_ENABLED: 'false'
+      P4_MODEL_UPDATE_ALLOWED: 'false'
+      P4_CHAMPION_PROMOTION_ALLOWED: 'false'
+      P4_INITIAL_TASK_ID: ${{ inputs.initial_task_id }}
+      P4_WINDOWS_JSON: ${{ inputs.windows_json }}
+      P4_CHAIN_ID: chain_${{ github.run_id }}_${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute bounded autonomous historical research
+        run: node p4-diagnostic-chain-runner.mjs

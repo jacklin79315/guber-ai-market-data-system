@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {assessP4RiskEvidence,assessP4ExpertHistory} from './p4-rule-diagnostician.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {assessP4RiskEvidence,assessP4ExpertHistory,assessP4ProposalInvariants} from './p4-rule-diagnostician.mjs';
 import {collectP4DiagnosticEvidence} from './p4-diagnostic-evidence.mjs';
 test('hard cap breach assigns primary Risk responsibility regardless of profit',()=>{const a=assessP4RiskEvidence({outcome:'CLOSED',evidence:{action:'APPROVE',accountAtDecision:{equity:10000,committedCapital:7000},allocation:2000,netPnl:500}});assert.equal(a[0].quality,'FAULT');assert.equal(a[0].responsibility,'PRIMARY')});
 test('bounded risk is sound even when trade loses',()=>{const a=assessP4RiskEvidence({outcome:'CLOSED',evidence:{action:'APPROVE',accountAtDecision:{equity:10000,committedCapital:1000},allocation:1000,netPnl:-100}});assert.equal(a[0].quality,'SOUND')});
@@ -15,4 +15,22 @@ test('Brain approval mismatch without safety veto remains attributable',()=>{
  assert.equal(assessments.length,1);
  assert.equal(assessments[0].actor,'Brain');
  assert.equal(assessments[0].quality,'FAULT');
+});
+
+test('approved out-of-range probability is a Win fault, independent of PnL',()=>{
+ const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{winProbability:1.2},netPnl:1000}});
+ assert.equal(findings.length,1);
+ assert.equal(findings[0].actor,'Win');
+ assert.equal(findings[0].quality,'FAULT');
+});
+test('unknown probability is not treated as an error',()=>{
+ assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{winProbability:null}}}),[]);
+});
+test('explicit negative expected value is a Reward fault without reading outcome',()=>{
+ const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{expectedValue:-0.1},netPnl:100}});
+ assert.equal(findings.length,1);
+ assert.equal(findings[0].actor,'Reward');
+});
+test('non-approved WAIT with negative expectancy is not automatically a fault',()=>{
+ assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'WAIT',proposalAtDecision:{expectedValue:-0.1}}}),[]);
 });

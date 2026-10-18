@@ -1,0 +1,65 @@
+name: P4 diagnostic research (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Unique immutable diagnostic job ID"
+        required: true
+        type: string
+      from_ms:
+        description: "BTC 1h UTC first candle open (milliseconds)"
+        required: true
+        type: string
+      to_ms:
+        description: "BTC 1h UTC last candle open (milliseconds)"
+        required: true
+        type: string
+      as_of_ms:
+        description: "Historical cutoff after last candle close"
+        required: true
+        type: string
+      actor:
+        description: "Diagnostic research hypothesis owner"
+        required: true
+        type: choice
+        options: [Entry, Reward]
+      max_arms:
+        description: "Bounded diagnostic mutations"
+        required: true
+        default: '2'
+        type: choice
+        options: ['1', '2', '4', '6']
+permissions:
+  contents: read
+concurrency:
+  group: p4-manual-diagnostic
+  cancel-in-progress: false
+jobs:
+  diagnostic-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P4_RESEARCH_CONFIRM: RESEARCH_ONLY
+      P4_DIAGNOSTIC_JOB_ID: ${{ inputs.job_id }}
+      P4_FROM_MS: ${{ inputs.from_ms }}
+      P4_TO_MS: ${{ inputs.to_ms }}
+      P4_AS_OF_MS: ${{ inputs.as_of_ms }}
+      P4_DIAGNOSTIC_ACTOR: ${{ inputs.actor }}
+      P4_DIAGNOSTIC_MAX_ARMS: ${{ inputs.max_arms }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify server-only Supabase credentials
+        run: |
+          test -n "$SUPABASE_URL" || { echo "SUPABASE_URL missing"; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "SUPABASE_SERVICE_ROLE_KEY missing"; exit 1; }
+      - name: Execute research-only diagnostic simulation
+        run: node p4-diagnostic-manual-runner.mjs

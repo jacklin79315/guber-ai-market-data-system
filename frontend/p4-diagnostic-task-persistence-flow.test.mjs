@@ -22,3 +22,12 @@ test('rejects a mismatched source job and unsafe follow-up',async()=>{
  const store={load:async()=>null,create:async()=>{throw Error('must not create')}};
  await assert.rejects(()=>ensureP4DiagnosticFollowUpTask({store,summary:{...summary,jobId:'other'},taskId:'task_1',createdAtMs:1}),/unsafe/);
 });
+
+test('readback accepts semantically identical JSONB with reordered keys',async()=>{
+ const reverseKeys=value=>Array.isArray(value)?value.map(reverseKeys):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).reverse().map(([k,v])=>[k,reverseKeys(v)])):value;
+ let stored=null;
+ const store={load:async()=>stored,create:async record=>{stored=reverseKeys(record)}};
+ const outcome=await ensureP4DiagnosticFollowUpTask({store,summary,taskId:'jsonb_order_1',createdAtMs:10});
+ assert.equal(outcome.status,'CREATED');
+ assert.equal((await ensureP4DiagnosticFollowUpTask({store,summary,taskId:'jsonb_order_1',createdAtMs:10})).status,'ALREADY_EXISTS');
+});

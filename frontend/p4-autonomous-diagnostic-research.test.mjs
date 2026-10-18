@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {planAutonomousP4DiagnosticResearch,discoverAutonomousP4ResearchHypotheses,inspectPersistedP4DiagnosticReadiness,inspectPersistedP4ResearchRound} from './p4-autonomous-diagnostic-research.mjs';
+import {planAutonomousP4DiagnosticResearch,discoverAutonomousP4ResearchHypotheses,inspectPersistedP4DiagnosticReadiness,inspectPersistedP4ResearchRound,prioritizeP4DiagnosticEvidenceGaps} from './p4-autonomous-diagnostic-research.mjs';
 const parentParameters={entryLookback:20,entryThreshold:0.001,rewardAtrPeriod:14,rewardStopAtr:1.5,rewardTakeAtr:3};
 test('autonomous research remains disabled for orders and promotion with no causal evidence',()=>{
  const audit={schemaVersion:'P4_DIAGNOSTIC_AUDIT_V1',eventCount:0,actors:{},appliedToModels:false,fingerprint:'a'.repeat(64),requiresReview:0};
@@ -46,4 +46,14 @@ test('reads both diagnostic manifests without authorizing orders or model update
 });
 test('missing immutable manifest blocks persisted inspection',async()=>{
  await assert.rejects(()=>inspectPersistedP4ResearchRound({store:{read:async()=>[]},jobId:'test-round',iteration:1,manifests:{CHAMPION_DIAGNOSTICS:{}}}),/missing immutable diagnostic manifest/);
+});
+
+test('evidence gaps are ranked without inferring faults from losses',()=>{
+ const records=[{diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1',requiresReview:true,unassessedActors:['Entry','Reward','Brain'],attribution:[]}},{diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1',requiresReview:true,unassessedActors:['Entry','Brain'],attribution:[]}}];
+ const report=prioritizeP4DiagnosticEvidenceGaps({records});
+ assert.equal(report.priorities[0].missing,2);
+ assert.equal(report.priorities[0].actor,'Brain');
+ assert.equal(report.priorities.find(x=>x.actor==='Entry').missing,2);
+ assert.equal(report.nextAction,'IMPROVE_CAUSAL_EVIDENCE_COVERAGE');
+ assert.equal(report.ordersEnabled,false);
 });

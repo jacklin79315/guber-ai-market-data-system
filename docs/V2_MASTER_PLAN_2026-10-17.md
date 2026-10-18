@@ -447,3 +447,11 @@
 - 已直接查核 Supabase 任務 `p4_btc_24m_accept_20261018`：checkpoint `phase=RESEARCH`、`completedIterations=0`、`loadedCandles=17520`。
 - `p4_research_rounds` 此任務 0 筆，`p4_research_artifact_chunks` 此任務 0 筆；`p4_research_leases` 無該任務租約紀錄。
 - 無需刪除資料或換 job ID，可使用相同參數從現有 workflow_dispatch 重跑；仍須以實際 Actions SUCCESS 與 DB round/artifact/readback 驗收才算完成。
+
+
+## 13AE. 2026-10-18 24M 第二次執行：大批次讀回 HTTP 500
+
+- 使用相同 job `p4_btc_24m_accept_20261018`，完整 K 線及 feature prefetch 通過，診斷歸檔讀回時 `P4 artifact read failed: 500 offset=0`。
+- Supabase SQL 實查：`CHAMPION_DIAGNOSTICS` iteration 1 已寫入 254 chunks，JSONB payload 約 8,725,595 bytes；因此並非完全未寫入，且不能刪除這些不可變分塊。
+- `9e0d85f` 將 artifact GET 分頁由 500 縮至 25 筆，對 429/500/502/503/504 與暫時性網路例外增加最多三次重試；GitHub Actions CI `39090100198` SUCCESS。
+- 仍須真實重跑與 SHA256 readback/round commit 驗證；HTTP 500 根因尚未由服務端日誌獨立確認。注意：重跑同一 job 的既存 chunk 必須內容與 hash 相同才能由冪等 RPC 接受，禁止清空或覆蓋原始證據。

@@ -13,6 +13,8 @@ test('empty hypothesis task does not inspect OOS or promote model',async()=>{
  assert.equal(result.status,'NO_TRAIN_SELECTED_ARM');
  assert.equal(result.validationResult,null);
  assert.equal(result.independentValidation,false);
+ assert.equal(result.oosReplayEvaluated,false);
+ assert.equal(result.independentValidationPassed,false);
  assert.equal(result.championPromotionAllowed,false);
 });
 

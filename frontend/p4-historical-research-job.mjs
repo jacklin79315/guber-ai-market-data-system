@@ -1,3 +1,4 @@
+function deepEqualArtifact(a,b){if(a===b)return true;if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;const ak=Object.keys(a).sort(),bk=Object.keys(b).sort();return ak.length===bk.length&&ak.every((key,i)=>key===bk[i]&&deepEqualArtifact(a[key],b[key]));}
 import {reconcileP4ResearchProgress} from './p4-progress-reconcile.mjs';
 import {runP4WithLease} from './p4-lease-runner.mjs';
 import {fingerprintP4JobSpec,assertP4CheckpointCompatible} from './p4-job-spec.mjs';
@@ -47,7 +48,7 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
    for(const [side,kind] of [['champion','CHAMPION_DIAGNOSTICS'],['challenger','CHALLENGER_DIAGNOSTICS']]){
     manifest[side]=await artifactStore.write({jobId,ownerToken,specFingerprint,iteration:x.iteration,kind,records:evidence[side]});
     const restored=await artifactStore.read({jobId,iteration:x.iteration,kind,manifest:manifest[side]});
-    if(JSON.stringify(restored)!==JSON.stringify(evidence[side]))throw Error('P4 diagnostic archive readback mismatch: '+side);
+    if(restored.length!==evidence[side].length||restored.some((record,i)=>!deepEqualArtifact(record,evidence[side][i])))throw Error('P4 diagnostic archive readback mismatch: '+side);
    }
    // Evidence is removed from the round JSON only after all chunks have been durably acknowledged.
    // Earlier rounds retain their own manifests; full detail is in immutable artifact chunks.

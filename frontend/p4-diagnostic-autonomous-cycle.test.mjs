@@ -19,3 +19,10 @@ test('completed persisted research proposes next hypothesis without executing it
 test('cycle refuses non research execution',async()=>{
  await assert.rejects(()=>runP4DiagnosticAutonomousCycle({confirm:'LIVE'}),/research-only/);
 });
+
+test('completed task does not replay experiment after worker restart',async()=>{
+ const record={status:'COMPLETED',resultJobId:'job_1'};
+ const result=await runP4DiagnosticAutonomousCycle({confirm:'RESEARCH_ONLY',store:{load:async()=>record},taskId:'task_1',executionJobId:'job_1',createTaskId:async()=>{throw Error('should not create')},recordNextTask:async()=>{throw Error('should not write')},runResearch:async()=>{throw Error('must not replay')}});
+ assert.equal(result.status,'ALREADY_COMPLETED_REQUIRES_RECOVERY');
+ assert.equal(result.completedJobId,'job_1');
+});

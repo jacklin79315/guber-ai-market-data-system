@@ -6,6 +6,7 @@ export async function runP4PersistedDiagnosticResearch({confirm,researchJobId,su
  if(typeof researchJobId!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(researchJobId)||Object.hasOwn(options,'onResearchSummary'))throw Error('invalid diagnostic persisted research options');
  const store=summaryStore??createP4DiagnosticSummaryStore({supabaseUrl,serviceRoleKey,fetchImpl});
  if(typeof store.load!=='function'||typeof store.commit!=='function')throw Error('invalid diagnostic summary store');
+ if(options.symbol!=='BTCUSDT'||options.timeframe!=='1h'||!Number.isSafeInteger(options.fromOpenTime)||!Number.isSafeInteger(options.toOpenTime)||!Number.isSafeInteger(options.asOfMs)||options.fromOpenTime>=options.toOpenTime||options.toOpenTime>=options.asOfMs)throw Error('missing immutable diagnostic research window');
  const existing=await store.load(researchJobId);
  // The caller must not reuse a job id to silently change the research specification.
  // A completed job is returned read-only; this is not a fresh validation run.

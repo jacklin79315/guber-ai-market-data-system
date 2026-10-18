@@ -432,3 +432,11 @@
 - `92d2e68` 診斷分塊 HTTP 寫入除 429/500/502/503/504 外，亦在 `fetch failed`、timeout、abort、network 暫時性例外時最多嘗試 3 次；`1645842` 新增 fetch 失敗後重試成功測試，GitHub Actions run `39088872839` SUCCESS。
 - 確認已有 `.github/workflows/p4-manual-research.yml` 的 `workflow_dispatch`，具 `HISTORICAL_24M` 範圍與 Supabase secrets；**本輪沒有觸發完整 24M 工作**，不得標記 24M 驗收通過。
 - 建議隔離驗收 job ID `p4_btc_24m_accept_20261018`、BTCUSDT 1h、`from_ms=1727740800000`、`to_ms=1790809200000`、`as_of_ms=1790816400000`、iterations=1。正式跑前仍須檢查研究資料涵蓋與資源預算。
+
+
+## 13AC. 2026-10-18 24M 研究失敗根因與無損分塊修正
+
+- 使用者正式啟動 `p4_btc_24m_accept_20261018`，17,520 根 BTCUSDT 1h K 線及 feature prefetch 完成後，研究於診斷歸檔階段失敗：`P4 artifact record exceeds chunk size`；不能標示為研究完成。
+- 原實作只按完整 record 分塊，無法拆開超大單筆。`ae390b4` 暫提高預設上限至 1MiB，但不足以保證所有記錄可存。
+- `93db911` 實作超大單筆診斷 JSON 的無損分片，保留 SHA256 分塊完整性檢查，讀回按序重組；manifest 新增 `fragmented` 標記並保留原始 `recordCount`。
+- `4f1acf6` 新增大筆資料拆分、還原及損壞偵測測試，CI run `39089412059` SUCCESS。仍須以真實 24M 研究驗證長窗儲存與完整 round commit，單元測試成功不等於正式研究成功。

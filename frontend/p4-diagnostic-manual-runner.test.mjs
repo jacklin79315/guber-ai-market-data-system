@@ -13,3 +13,10 @@ test('diagnostic manual CLI refuses live and oversized research',()=>{
 });
 
 test('manual research accepts exactly 2000 candles',()=>{const r=parseP4DiagnosticManualOptions({...valid,P4_TO_MS:String(1999*3600000),P4_AS_OF_MS:String(2001*3600000)});assert.equal(r.expectedCandles,2000);});
+
+test('validation share is bounded and passed as an explicit research option',()=>{
+ assert.equal(parseP4DiagnosticManualOptions({...valid,P4_DIAGNOSTIC_VALIDATION_FRACTION:'0.35'}).validationFraction,0.35);
+ assert.equal(parseP4DiagnosticManualOptions(valid).validationFraction,0.2);
+ assert.throws(()=>parseP4DiagnosticManualOptions({...valid,P4_DIAGNOSTIC_VALIDATION_FRACTION:'0.5'}),/validation fraction/);
+ assert.throws(()=>parseP4DiagnosticManualOptions({...valid,P4_DIAGNOSTIC_VALIDATION_FRACTION:'NaN'}),/validation fraction/);
+});

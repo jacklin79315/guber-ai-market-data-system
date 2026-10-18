@@ -29,3 +29,8 @@ test('late training label blocks experiment',()=>{
 test('malformed persisted diagnostic record fails closed',()=>{
  assert.throws(()=>evaluateP4PersistedWinCalibration({records:[{diagnosis:{schemaVersion:'INVALID'},feedback:{schemaVersion:'P4_FEEDBACK_V1'}}],contract}),/unverified calibration diagnostic evidence/);
 });
+
+test('eligible calibration refuses undeclared closed observations',()=>{
+ const records=[...Array.from({length:30},(_,i)=>row(101+i,200+i)),...Array.from({length:30},(_,i)=>row(701+i,800+i)),row(601,650)];
+ assert.throws(()=>evaluateP4PersistedWinCalibration({records,contract}),/outside declared windows/);
+});

@@ -417,3 +417,11 @@
 - `371032b` 診斷分塊 POST 對 429/500/502/503/504 進行最多三次嘗試；初次 CI FAIL 因舊測試預期單次 503 直接失敗。
 - `16eb306` 更新重試耗盡後續傳模擬，新增單次 502 重試成功測試；GitHub CI SUCCESS。
 - 尚未啟動真實 24M 研究，未驗證正式 PostgREST HTTP 分塊路徑，無法宣稱長窗 502 已解決。正式資料庫 RPC 煙霧測試已完成。
+
+
+## 13AA. 2026-10-18 正式 Supabase HTTP 診斷分塊端到端驗收
+
+- 新增隔離驗收腳本 `frontend/p4-artifact-http-smoke.mjs`（`99e1305`）與獨立 GitHub Actions 工作 `.github/workflows/p4-artifact-http-smoke.yml`（`677a21a`）；使用 p4-research 環境 secrets、獨立 job ID、有效 lease，透過真實 PostgREST HTTP 完成 6 個分塊寫入、相同分塊重送、完整讀回，無交易指令。
+- 首次 run `39088170658` FAIL：HTTP 寫入／讀回已成功，唯 smoke script 使用 JSON.stringify 比對不同 JSONB 物件鍵順序。`f8d93d1` 改用 `isDeepStrictEqual`，`2c4404d` 設定 smoke 腳本更新時重新執行；run **`39088219655` SUCCESS**。
+- Supabase 查詢確認兩次測試各寫入 6 分塊；已透過 `p4_http_smoke_artifact_cleanup_20261018` 清除隔離測試資料。
+- **仍待完成**：24 個月真實研究成功跑完、round checkpoint 長窗 502 問題最終驗證、診斷回饋形成自主學習閉環；HTTP smoke 成功不等於 24M 成功。

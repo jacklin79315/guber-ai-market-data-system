@@ -28,3 +28,16 @@ test('prior OOS failure excludes same direction at same baseline but preserves a
  assert.equal(result.arms.some(a=>a.parameter==='entryLookback'&&a.direction===-1),false);
  assert.equal(result.arms.some(a=>a.parameter==='entryLookback'&&a.direction===1),true);
 });
+
+test('bounded multi-step exploration excludes prior failed direction across all step sizes',()=>{
+ const task={id:'COLLECT_ENTRY_CAUSAL_EVIDENCE',actor:'Entry',priority:'MEDIUM',sampleCount:40,avoidPriorFailedDirection:{parameter:'entryLookback',failedFrom:20,failedTo:21,avoidDirection:1,evidence:'PRIOR_OOS_NOT_IMPROVED'}};
+ const result=proposeP4DiagnosticExperimentArms({task,parentParameters:DEFAULT_TRAINING_PARAMETERS,maxArms:10,explorationSteps:[1,2,3]});
+ assert.equal(result.arms.some(a=>a.parameter==='entryLookback'&&a.direction===1),false);
+ assert.equal(result.arms.some(a=>a.parameter==='entryLookback'&&a.to===18),true);
+ assert.equal(result.arms.some(a=>a.parameter==='entryThreshold'&&a.to===0.0008),true);
+ assert.equal(result.arms.every(a=>a.to!==a.from),true);
+});
+test('reject excessive or duplicate exploration steps',()=>{
+ const task={id:'COLLECT_ENTRY_CAUSAL_EVIDENCE',actor:'Entry',priority:'MEDIUM',sampleCount:40};
+ for(const explorationSteps of [[0],[1,1],[1,2,3,4],[1,6],[-1]])assert.throws(()=>proposeP4DiagnosticExperimentArms({task,parentParameters:DEFAULT_TRAINING_PARAMETERS,explorationSteps}),/invalid exploration steps/);
+});

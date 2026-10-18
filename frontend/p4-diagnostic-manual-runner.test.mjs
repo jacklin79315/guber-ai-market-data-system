@@ -9,7 +9,7 @@ test('diagnostic manual CLI validates bounded historical smoke',()=>{
 });
 test('diagnostic manual CLI refuses live and oversized research',()=>{
  assert.throws(()=>parseP4DiagnosticManualOptions({...valid,P4_RESEARCH_CONFIRM:'LIVE'}),/RESEARCH_ONLY/);
- assert.throws(()=>parseP4DiagnosticManualOptions({...valid,P4_TO_MS:String(2000*3600000),P4_AS_OF_MS:String(502*3600000)}),/2000/);
+ assert.throws(()=>parseP4DiagnosticManualOptions({...valid,P4_TO_MS:String(2000*3600000),P4_AS_OF_MS:String(2002*3600000)}),/2000/);
 });
 
 test('manual research accepts exactly 2000 candles',()=>{const r=parseP4DiagnosticManualOptions({...valid,P4_TO_MS:String(1999*3600000),P4_AS_OF_MS:String(2001*3600000)});assert.equal(r.expectedCandles,2000);});

@@ -41,3 +41,9 @@ test('reject excessive or duplicate exploration steps',()=>{
  const task={id:'COLLECT_ENTRY_CAUSAL_EVIDENCE',actor:'Entry',priority:'MEDIUM',sampleCount:40};
  for(const explorationSteps of [[0],[1,1],[1,2,3,4],[1,6],[-1]])assert.throws(()=>proposeP4DiagnosticExperimentArms({task,parentParameters:DEFAULT_TRAINING_PARAMETERS,explorationSteps}),/invalid exploration steps/);
 });
+
+test('persisted failed directions force candidate exploration to a different parameter',()=>{
+ const task={id:'COLLECT_ENTRY_CAUSAL_EVIDENCE',actor:'Entry',priority:'MEDIUM',sampleCount:30};
+ const result=proposeP4DiagnosticExperimentArms({task,parentParameters:DEFAULT_TRAINING_PARAMETERS,maxArms:2,excludedDirections:[{parameter:'entryLookback',direction:-1},{parameter:'entryLookback',direction:1}]});
+ assert.deepEqual(result.arms.map(a=>[a.parameter,a.direction]),[['entryThreshold',-1],['entryThreshold',1]]);
+});

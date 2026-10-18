@@ -1,0 +1,1 @@
+One-shot locked lookback 17 vs 20 retrospective replay, research-only, no search and no promotion.

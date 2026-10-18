@@ -1,0 +1,60 @@
+name: P4 diagnostic research (manual only)
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Unique immutable diagnostic job ID"
+        required: true
+        type: string
+      from_ms:
+        description: "First BTCUSDT 1h candle open (UTC milliseconds)"
+        required: true
+        type: string
+      to_ms:
+        description: "Last BTCUSDT 1h candle open (UTC milliseconds; max 2000 candles)"
+        required: true
+        type: string
+      as_of_ms:
+        description: "Historical cutoff after last candle close (UTC milliseconds)"
+        required: true
+        type: string
+      actor:
+        description: "Expert for causal diagnostic research"
+        required: true
+        default: Entry
+        type: choice
+        options: [Entry, Reward]
+permissions:
+  contents: read
+concurrency:
+  group: p4-diagnostic-research
+  cancel-in-progress: false
+jobs:
+  research-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P4_RESEARCH_CONFIRM: RESEARCH_ONLY
+      P4_DIAGNOSTIC_JOB_ID: ${{ inputs.job_id }}
+      P4_FROM_MS: ${{ inputs.from_ms }}
+      P4_TO_MS: ${{ inputs.to_ms }}
+      P4_AS_OF_MS: ${{ inputs.as_of_ms }}
+      P4_DIAGNOSTIC_ACTOR: ${{ inputs.actor }}
+      P4_DIAGNOSTIC_MAX_ARMS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify credentials
+        run: |
+          test -n "$SUPABASE_URL" || { echo "SUPABASE_URL missing"; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "SUPABASE_SERVICE_ROLE_KEY missing"; exit 1; }
+      - name: Run verified bounded historical diagnostic research
+        run: node p4-diagnostic-manual-runner.mjs

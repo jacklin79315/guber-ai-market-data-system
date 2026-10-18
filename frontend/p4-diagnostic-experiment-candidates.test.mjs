@@ -21,3 +21,10 @@ test('a forged or mismatched task cannot nominate another expert parameter',()=>
  const result=proposeP4DiagnosticExperimentArms({task:{id:'COLLECT_REWARD_CAUSAL_EVIDENCE',actor:'Entry',priority:'MEDIUM',sampleCount:40},parentParameters:DEFAULT_TRAINING_PARAMETERS});
  assert.equal(result.arms.length,0);
 });
+
+test('prior OOS failure excludes same direction at same baseline but preserves alternatives',()=>{
+ const task={id:'COLLECT_ENTRY_CAUSAL_EVIDENCE',actor:'Entry',priority:'MEDIUM',sampleCount:40,avoidPriorFailedDirection:{parameter:'entryLookback',failedFrom:20,failedTo:19,avoidDirection:-1,evidence:'PRIOR_OOS_NOT_IMPROVED'}};
+ const result=proposeP4DiagnosticExperimentArms({task,parentParameters:DEFAULT_TRAINING_PARAMETERS});
+ assert.equal(result.arms.some(a=>a.parameter==='entryLookback'&&a.direction===-1),false);
+ assert.equal(result.arms.some(a=>a.parameter==='entryLookback'&&a.direction===1),true);
+});

@@ -1,0 +1,36 @@
+import {createP4ArtifactChunkStore} from './p4-supabase-artifact-chunks.mjs';
+import {inspectPersistedP4ResearchRound} from './p4-autonomous-diagnostic-research.mjs';
+
+// Read-only retrospective assessment. Build manifests from immutable stored
+// chunk hashes, then let the existing reader verify every SHA256 and fragment.
+const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+if(!url||!key)throw Error('missing read credentials');
+const jobId='p4_btc_24m_accept_20261018',iteration=1;
+const kinds=['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS'];
+const manifests={};
+for(const kind of kinds){
+ const rows=[];
+ for(let offset=0;;offset+=50){
+  const endpoint=new URL('/rest/v1/p4_research_artifact_chunks',url);
+  for(const [k,v] of Object.entries({job_id:'eq.'+jobId,iteration:'eq.1',artifact_kind:'eq.'+kind,select:'chunk_index,payload,payload_sha256',order:'chunk_index.asc',limit:'50',offset:String(offset)}))endpoint.searchParams.set(k,v);
+  const response=await fetch(endpoint,{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'},signal:AbortSignal.timeout(60000)});
+  if(!response.ok)throw Error('manifest read failed '+response.status);
+  const page=await response.json();if(!Array.isArray(page))throw Error('invalid manifest page');
+  rows.push(...page);if(page.length<50)break;
+ }
+ if(!rows.length)throw Error('missing existing diagnostic chunks: '+kind);
+ let fragments=0,parts=0,standalone=0;
+ for(let i=0;i<rows.length;i++){
+  if(rows[i].chunk_index!==i)throw Error('noncontiguous stored chunks');
+  for(const item of rows[i].payload){
+   if(item?.__p4_fragment_v1===true){parts++;if(item.part===0)fragments++;}
+   else standalone++;
+  }
+ }
+ const manifest={chunkCount:rows.length,recordCount:standalone+fragments,fragmented:parts>0,chunkHashes:rows.map(r=>r.payload_sha256)};
+ manifests[kind==='CHAMPION_DIAGNOSTICS'?'champion':'challenger']=manifest;
+}
+const store=createP4ArtifactChunkStore({supabaseUrl:url,serviceRoleKey:key});
+const result=await inspectPersistedP4ResearchRound({store,jobId,iteration,manifests});
+const summary=Object.fromEntries(['champion','challenger'].map(label=>[label,result.results[label].reassessment]));
+process.stdout.write(JSON.stringify({status:'PASS',jobId,iteration,manifestCounts:Object.fromEntries(Object.entries(manifests).map(([k,m])=>[k,{chunks:m.chunkCount,records:m.recordCount,fragmented:m.fragmented}])),summary,modelUpdateApplied:false,ordersEnabled:false})+'\n');

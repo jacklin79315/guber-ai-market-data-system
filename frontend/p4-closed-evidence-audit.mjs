@@ -14,5 +14,5 @@ export function auditP4ClosedEvidence(records){
   if(probability)counts.validProbability++;
   if(time&&outcome&&probability)counts.calibrationReady++;
  }
- return {schemaVersion:'P4_CLOSED_EVIDENCE_AUDIT_V1',...counts,complete:counts.closed===counts.calibrationReady,mode:'RESEARCH_ONLY',modelUpdateApplied:false};
+ return {schemaVersion:'P4_CLOSED_EVIDENCE_AUDIT_V1',...counts,complete:counts.closed>0&&counts.closed===counts.calibrationReady,mode:'RESEARCH_ONLY',modelUpdateApplied:false};
 }

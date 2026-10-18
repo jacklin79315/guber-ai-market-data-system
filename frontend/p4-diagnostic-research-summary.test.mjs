@@ -30,3 +30,9 @@ test('completed diagnostic summary carries a durable non-executable follow-up pl
  assert.equal(result.followUpPlan.ordersEnabled,false);
  assert.equal(result.championPromotionAllowed,false);
 });
+
+test('research summary retains OOS sample counts without falsely declaring sufficiency',()=>{
+ const s=summarizeP4DiagnosticResearch({jobId:'oos_count',createdAtMs:10,result:{status:'OOS_RESEARCH_EVALUATED',oosReplayEvaluated:true,validationResult:{feedback:{status:'INSUFFICIENT_RESEARCH_SAMPLES',champion:{closedTrades:24},challenger:{closedTrades:24}}}}});
+ assert.deepEqual(s.validationTradeCounts,{champion:24,challenger:24,requiredMinimum:30});
+ assert.equal(s.oosEvidenceStatus,'INSUFFICIENT_OOS_SAMPLES');
+});

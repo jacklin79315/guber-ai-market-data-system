@@ -1,0 +1,1 @@
+Research only. Continue persisted task from round two using disjoint BTCUSDT 1h evidence and exclude non-improving entryLookback directions based on both prior immutable summaries. No live orders, model updates, or promotion.

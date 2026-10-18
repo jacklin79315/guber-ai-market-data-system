@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/p4-artifact-http-smoke.yml'
+      - 'frontend/p4-artifact-http-smoke.mjs'
 permissions:
   contents: read
 concurrency:

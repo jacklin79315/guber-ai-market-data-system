@@ -9,3 +9,15 @@ test('compact summary excludes raw diagnostic replay evidence and disallows prom
  assert.equal(result.modelUpdateApplied,false);
  assert.equal(JSON.stringify(result).includes('secret'),false);
 });
+
+test('OOS evidence distinguishes missing samples from an actual validated improvement',()=>{
+ const base={jobId:'research_2',createdAtMs:2,result:{status:'OOS_RESEARCH_EVALUATED',oosReplayEvaluated:true,oosImprovedInReplay:false,validationResult:{feedback:{status:'INSUFFICIENT_RESEARCH_SAMPLES'}}}};
+ const insufficient=summarizeP4DiagnosticResearch(base);
+ assert.equal(insufficient.oosEvidenceStatus,'INSUFFICIENT_OOS_SAMPLES');
+ assert.equal(insufficient.championPromotionAllowed,false);
+ const worse=summarizeP4DiagnosticResearch({...base,result:{...base.result,validationResult:{feedback:{status:'RESEARCH_EVIDENCE_ONLY'}}}});
+ assert.equal(worse.oosEvidenceStatus,'OOS_NOT_IMPROVED');
+ const improved=summarizeP4DiagnosticResearch({...base,result:{...base.result,oosImprovedInReplay:true,validationResult:{feedback:{status:'RESEARCH_EVIDENCE_ONLY'}}}});
+ assert.equal(improved.oosEvidenceStatus,'OOS_IMPROVED_RESEARCH_ONLY');
+ assert.equal(improved.independentValidationPassed,false);
+});

@@ -3,6 +3,7 @@ import {randomBytes} from 'node:crypto';
 import {runP4HistoricalResearchJob} from './p4-historical-research-job.mjs';
 import {createP4SupabaseCheckpointStore} from './p4-supabase-checkpoints.mjs';
 import {createP4SupabaseRoundStore} from './p4-supabase-rounds.mjs';
+import {createP4ArtifactChunkStore} from './p4-supabase-artifact-chunks.mjs';
 import {createP4SupabaseLeaseStore} from './p4-supabase-leases.mjs';
 import {DEFAULT_TRAINING_PARAMETERS} from './p4-challenger-parameters.mjs';
 import {researchRuleBrain,RESEARCH_BRAIN_VERSION} from './p3-research-rule-brain.mjs';
@@ -33,7 +34,7 @@ export async function runP4BackendResearch({env=process.env,fetchImpl=fetch,onPr
  const supabaseUrl=env.SUPABASE_URL,serviceRoleKey=env.SUPABASE_SERVICE_ROLE_KEY;
  if(!supabaseUrl||!serviceRoleKey)throw Error('missing server Supabase credentials');
  const storeConfig={supabaseUrl,serviceRoleKey,fetchImpl};
- return runP4HistoricalResearchJob({...config,supabaseUrl,apiKey:serviceRoleKey,fetchImpl,brain:researchRuleBrain,championVersion:RESEARCH_BRAIN_VERSION,championParameters:DEFAULT_TRAINING_PARAMETERS,codeRevision:'P4_BOUNDED_RUNNER_V3_24M_OPT_IN',...(config.partitioned?{partitionOptions:{validationFraction:0.2,minResearch:100,minValidation:30}}:{}),costs:{feeRate:0.001,slippageRate:0},checkpointStore:createP4SupabaseCheckpointStore(storeConfig),roundStore:createP4SupabaseRoundStore(storeConfig),leaseStore:createP4SupabaseLeaseStore(storeConfig),ownerToken:randomBytes(24).toString('hex'),onProgress});
+ return runP4HistoricalResearchJob({...config,supabaseUrl,apiKey:serviceRoleKey,fetchImpl,brain:researchRuleBrain,championVersion:RESEARCH_BRAIN_VERSION,championParameters:DEFAULT_TRAINING_PARAMETERS,codeRevision:'P4_BOUNDED_RUNNER_V3_24M_OPT_IN',...(config.partitioned?{partitionOptions:{validationFraction:0.2,minResearch:100,minValidation:30}}:{}),costs:{feeRate:0.001,slippageRate:0},checkpointStore:createP4SupabaseCheckpointStore(storeConfig),roundStore:createP4SupabaseRoundStore(storeConfig),artifactStore:createP4ArtifactChunkStore(storeConfig),leaseStore:createP4SupabaseLeaseStore(storeConfig),ownerToken:randomBytes(24).toString('hex'),onProgress});
 }
 if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
  runP4BackendResearch({onProgress:p=>process.stdout.write(JSON.stringify({phase:p.phase,iteration:p.iteration,completedWindows:p.completedWindows})+'\n')}).then(result=>{process.stdout.write(JSON.stringify({status:result.status,completedIterations:result.completedIterations,loadedCandles:result.loadedCandles,independentValidation:false,liveTrading:false})+'\n')}).catch(e=>{process.stderr.write('P4 research failed: '+e.message+'\n');process.exitCode=1});

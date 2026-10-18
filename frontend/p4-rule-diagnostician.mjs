@@ -60,6 +60,17 @@ export function assessP4ProposalInvariants({evidence}={}){
  if([rr,gain,loss].every(v=>typeof v==='number'&&Number.isFinite(v))&&loss>0&&gain>=0){
   if(Math.abs(rr-gain/loss)>1e-6*Math.max(1,Math.abs(rr)))results.push({actor:'Reward',quality:'FAULT',responsibility:'PRIMARY',reason:'Recorded risk/reward contradicts expected gain divided by expected loss',evidenceKeys:['proposalAtDecision']});
  }
+ // Explicit probability bounds are a decision-time invariant, not an outcome label.
+ // Keep missing/uncalibrated probability UNKNOWN rather than inventing a fault.
+ if(typeof p.winProbability==='number'&&Number.isFinite(p.winProbability)&&(p.winProbability<0||p.winProbability>1)){
+  results.push({actor:'Win',quality:'FAULT',responsibility:'PRIMARY',reason:'Approved proposal contains a probability outside [0,1]',evidenceKeys:['proposalAtDecision']});
+  return results;
+ }
+ // An explicitly computed negative expectancy cannot justify an approval.
+ // Do not infer negativity when expectancy is absent or uncalibrated.
+ if(typeof p.expectedValue==='number'&&Number.isFinite(p.expectedValue)&&p.expectedValue<0){
+  results.push({actor:'Reward',quality:'FAULT',responsibility:'PRIMARY',reason:'Approved proposal has explicitly negative expected value',evidenceKeys:['proposalAtDecision']});
+ }
  const prob=p.winProbability,ev=p.expectedValue;
  if([prob,ev,gain,loss].every(v=>typeof v==='number'&&Number.isFinite(v))&&prob>=0&&prob<=1&&loss>0&&gain>=0){
   const expected=prob*gain-(1-prob)*loss;

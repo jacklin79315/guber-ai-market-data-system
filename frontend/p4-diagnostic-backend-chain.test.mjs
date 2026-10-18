@@ -37,3 +37,18 @@ test('future evidence cutoff is rejected before opening persistent stores',async
  future.asOfMs=Date.now()+86400000;
  await assert.rejects(()=>runP4DiagnosticBackendChain({grant:{maxRounds:1},windows:[future]}),/future historical cutoff/);
 });
+
+test('historical failed arms change the actual persisted replay candidates',async()=>{
+ const plan={schemaVersion:'P4_DIAGNOSTIC_FOLLOW_UP_PLAN_V1',sourceJobId:'seed',actor:'COLLECT_ENTRY_CAUSAL_EVIDENCE',action:'COLLECT_MORE_TRAIN_EVIDENCE',reason:'NO_ELIGIBLE_TRAIN_CHALLENGER',hypothesis:null,requiresFreshNonOverlappingEvidence:false,status:'PROPOSED_NOT_EXECUTED',researchOnly:true,autoExecutionAuthorized:false,ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false};
+ const records=new Map([['t0',createP4DiagnosticTaskRecord(plan,{taskId:'t0',createdAtMs:1})]]);
+ const taskStore={load:async id=>records.get(id),transition:async(a,b)=>records.set(a.taskId,b),create:async r=>records.set(r.taskId,r)};
+ const prior=(jobId)=>({schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId,taskId:'COLLECT_ENTRY_CAUSAL_EVIDENCE',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,trainingResults:[{arm:{parameter:'entryLookback',from:20,direction:-1},feedback:{improvedInSameWindow:false}},{arm:{parameter:'entryLookback',from:20,direction:1},feedback:{improvedInSameWindow:false}}]});
+ const summaryStore={load:async id=>prior(id)};
+ let observed;
+ const result=await runP4DiagnosticBackendChain({taskStore,summaryStore,initialTaskId:'t0',confirm:'RESEARCH_ONLY',atMs:Date.now()+1000,grant:{mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false,maxRounds:1,autoContinueProposals:true,expiresAtMs:9999999999999,allowedTaskIds:['t0']},windows:[w(1000)],priorResearchJobIds:['prior_a','prior_b'],createExecutionJobId:async()=> 'job_1',createTaskId:async()=> 'next_1',runPersisted:async args=>{
+  observed=args;
+  return {status:'COMMITTED',summary:{schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId:'job_1',taskId:args.task.id,status:'NO_TRAIN_SELECTED_ARM',loadedCandles:200,trainingResults:[],selectedArm:null,oosEvidenceStatus:'NOT_EVALUATED',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false}};
+ }});
+ assert.equal(result.status,'STOPPED_MAX_ROUNDS');
+ assert.deepEqual(observed.excludedDirections,[{parameter:'entryLookback',direction:-1},{parameter:'entryLookback',direction:1}]);
+});

@@ -1,3 +1,4 @@
+import {attachClosedTimes} from './p3-causal-history.mjs';
 import {diagnoseP4Decision,scoreP4DiagnosticFeedback} from './p4-independent-diagnosis.mjs';
 import {assessP4ExpertHistory,assessP4RiskEvidence,assessP4ProposalInvariants} from './p4-rule-diagnostician.mjs';
 // Evidence adapter: preserve observed facts; do not infer fault from realized profit or loss.
@@ -5,11 +6,12 @@ import {assessP4ExpertHistory,assessP4RiskEvidence,assessP4ProposalInvariants} f
 export function collectP4DiagnosticEvidence(replay){
  if(!replay||!Array.isArray(replay.decisions)||!Array.isArray(replay.account?.closed)||!Array.isArray(replay.account?.shadowOrders))throw Error('invalid P4 replay evidence');
  const decisions=new Map(replay.decisions.map(d=>[d.id,d]));
+ const closed=Array.isArray(replay.candles)?attachClosedTimes({closed:replay.account.closed,candles:replay.candles}):replay.account.closed;
  const events=[];
- for(const trade of replay.account.closed){
+ for(const trade of closed){
   const decision=decisions.get(trade.id);
   if(!decision)throw Error('closed trade lacks original decision: '+trade.id);
-  events.push({decisionId:trade.id,outcome:'CLOSED',evidence:{decisionTime:decision.decisionTime,action:decision.action,reason:decision.reason,expertHistory:decision.history,allocation:decision.allocation,proposalAtDecision:decision.proposalAtDecision,accountAtDecision:decision.accountAtDecision,riskDiagnostics:decision.riskDiagnostics,entryPrice:trade.entryPrice,exitPrice:trade.exitPrice,exitReason:trade.exitReason,netPnl:trade.pnl,fees:trade.totalFees},assessments:[]});
+  events.push({decisionId:trade.id,outcome:'CLOSED',evidence:{decisionTime:decision.decisionTime,closedAt:trade.closedTime??null,realizedWin:Number.isFinite(trade.pnl)&&trade.pnl!==0?trade.pnl>0:null,action:decision.action,reason:decision.reason,expertHistory:decision.history,allocation:decision.allocation,proposalAtDecision:decision.proposalAtDecision,accountAtDecision:decision.accountAtDecision,riskDiagnostics:decision.riskDiagnostics,entryPrice:trade.entryPrice,exitPrice:trade.exitPrice,exitReason:trade.exitReason,netPnl:trade.pnl,fees:trade.totalFees},assessments:[]});
  }
  for(const shadow of replay.account.shadowOrders){
   const decision=decisions.get(shadow.proposal?.id);

@@ -85,3 +85,21 @@ export function inspectP4DecisionInputCoverage({records}={}){
  const count=records.length;
  return {schemaVersion:'P4_DECISION_INPUT_COVERAGE_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,totalEvents:count,missing,unknownProbability,unknownExpectedValue,approvedWithUnknownProbability,notes:'Unknown probability in explicit exploration mode is not automatically a decision fault; collect calibration evidence before assigning blame.'};
 }
+
+/**
+ * Deterministic, bounded research queue derived solely from observed evidence.
+ * Tasks are diagnostic investigations, never executable parameter changes.
+ */
+export function planP4EvidenceResearchTasks({records,minEvents=30}={}){
+ if(!Array.isArray(records)||!Number.isSafeInteger(minEvents)||minEvents<2)throw Error('invalid research evidence');
+ const coverage=prioritizeP4DiagnosticEvidenceGaps({records});
+ const inputs=inspectP4DecisionInputCoverage({records});
+ const tasks=[];
+ if(records.length===0)tasks.push({id:'COLLECT_DIAGNOSTIC_RECORDS',priority:'BLOCKING',sampleCount:0,actor:null,question:'Collect immutable, independently auditable replay diagnoses'});
+ else{
+  if(inputs.unknownProbability>0)tasks.push({id:'CALIBRATE_UNKNOWN_WIN_PROBABILITY',priority:'HIGH',sampleCount:inputs.unknownProbability,actor:'Win',question:'Evaluate probability calibration using strictly past closed simulated trades; keep uncalibrated exploration separate'});
+  if(inputs.unknownExpectedValue>0)tasks.push({id:'AUDIT_UNKNOWN_EXPECTED_VALUE',priority:'HIGH',sampleCount:inputs.unknownExpectedValue,actor:'Reward',question:'Verify decision-time expected value availability without hindsight or invented win probabilities'});
+  for(const gap of coverage.priorities.filter(g=>g.missing>0))tasks.push({id:'COLLECT_'+gap.actor.toUpperCase()+'_CAUSAL_EVIDENCE',priority:'MEDIUM',sampleCount:gap.missing,actor:gap.actor,question:'Collect independent decision-time evidence and counterfactual checks for '+gap.actor+'; do not infer fault from PnL'});
+ }
+ return {schemaVersion:'P4_EVIDENCE_RESEARCH_TASKS_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,minimumCausalEvents:minEvents,taskCount:tasks.length,tasks};
+}

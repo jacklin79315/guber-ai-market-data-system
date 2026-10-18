@@ -8,7 +8,8 @@ export function inspectP4CalibrationWindows({records,contract}={}){
  if(expected!==fingerprint)throw Error('modified calibration contract');
  const {observations,excluded}=extractP4ClosedWinObservations({records});
  const train=contract.train,validation=contract.validation,min=contract.minimumSamples;
- if(!train||!validation||!Number.isSafeInteger(min)||min<30||train.to>=validation.from||train.asOf>validation.from)throw Error('invalid chronological windows');
+ const validWindow=w=>w&&Number.isSafeInteger(w.from)&&w.from>0&&Number.isSafeInteger(w.to)&&w.to>w.from&&Number.isSafeInteger(w.asOf)&&w.asOf>w.to;
+ if(!validWindow(train)||!validWindow(validation)||!Number.isSafeInteger(min)||min<30||train.to>=validation.from||train.asOf>validation.from||contract.mode!=='RESEARCH_ONLY'||contract.ordersEnabled!==false||contract.modelUpdateApplied!==false||contract.championPromotionAllowed!==false||contract.liveTrading!==false||contract.symbol!=='BTCUSDT'||contract.timeframe!=='1h')throw Error('invalid chronological windows or research-only controls');
  let trainCount=0,validationCount=0,lateTrain=0,lateValidation=0;
  for(const r of observations){
   if(r.decidedAt>=train.from&&r.decidedAt<train.to){if(r.closedAt<=train.asOf)trainCount++;else lateTrain++;}

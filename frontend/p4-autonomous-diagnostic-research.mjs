@@ -1,6 +1,7 @@
 // Research-only diagnostic hypothesis orchestrator. No orders, parameter application or promotion.
 import {planP4LearningFromDiagnostics} from './p4-diagnostic-learning-gate.mjs';
 import {discoverP4DiagnosticPatterns} from './p4-diagnostic-patterns.mjs';
+import {summarizeP4ExpertReliability} from './p4-expert-reliability-research.mjs';
 import {checkP4CalibrationEligibility} from './p4-calibration-eligibility.mjs';
 import {evaluateP4PersistedWinCalibration} from './p4-persisted-win-calibration.mjs';
 
@@ -42,7 +43,7 @@ export async function inspectPersistedP4ResearchRound({store,jobId,iteration,man
   const manifest=manifests[label]??manifests[kind];
   if(!manifest)throw Error('missing immutable diagnostic manifest: '+kind);
   const records=await store.read({jobId,iteration,kind,manifest});
-  results[label]={...inspectPersistedP4DiagnosticReadiness({records,minEvents}),evidenceGaps:prioritizeP4DiagnosticEvidenceGaps({records}),decisionInputs:inspectP4DecisionInputCoverage({records}),calibrationEligibility:checkP4CalibrationEligibility(records,minEvents),calibrationResearch:calibrationContract?evaluateP4PersistedWinCalibration({records,contract:calibrationContract}):null,researchTasks:planP4EvidenceResearchTasks({records,minEvents})};
+  results[label]={...inspectPersistedP4DiagnosticReadiness({records,minEvents}),evidenceGaps:prioritizeP4DiagnosticEvidenceGaps({records}),decisionInputs:inspectP4DecisionInputCoverage({records}),calibrationEligibility:checkP4CalibrationEligibility(records,minEvents),calibrationResearch:calibrationContract?evaluateP4PersistedWinCalibration({records,contract:calibrationContract}):null,researchTasks:planP4EvidenceResearchTasks({records,minEvents}),expertReliability:summarizeP4ExpertReliability({records,minReviewed:minEvents})};
  }
  return {schemaVersion:'P4_PERSISTED_RESEARCH_READINESS_V1',mode:'RESEARCH_ONLY',liveTrading:false,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,jobId,iteration,results};
 }

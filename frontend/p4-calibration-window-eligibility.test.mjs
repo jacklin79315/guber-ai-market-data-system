@@ -17,3 +17,8 @@ test('missing validation samples never passes',()=>{
  assert.equal(result.ready,false);
  assert.equal(result.validationCount,0);
 });
+
+test('tampered calibration contract is rejected before evidence check',()=>{
+ const modified={...contract,minimumSamples:31};
+ assert.throws(()=>inspectP4CalibrationWindows({records:[],contract:modified}),/modified calibration contract/);
+});

@@ -6,7 +6,6 @@ export async function runP4PersistedDiagnosticResearch({confirm,researchJobId,su
  if(typeof researchJobId!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(researchJobId)||Object.hasOwn(options,'onResearchSummary'))throw Error('invalid diagnostic persisted research options');
  const store=summaryStore??createP4DiagnosticSummaryStore({supabaseUrl,serviceRoleKey,fetchImpl});
  if(typeof store.load!=='function'||typeof store.commit!=='function')throw Error('invalid diagnostic summary store');
- if(typeof options.brain!=='function')throw Error('diagnostic persisted research requires explicit Brain');
  const existing=await store.load(researchJobId);
  // The caller must not reuse a job id to silently change the research specification.
  // A completed job is returned read-only; this is not a fresh validation run.

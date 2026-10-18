@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {planAutonomousP4DiagnosticResearch} from './p4-autonomous-diagnostic-research.mjs';
+import {planAutonomousP4DiagnosticResearch,discoverAutonomousP4ResearchHypotheses} from './p4-autonomous-diagnostic-research.mjs';
 const parentParameters={entryLookback:20,entryThreshold:0.001,rewardAtrPeriod:14,rewardStopAtr:1.5,rewardTakeAtr:3};
 test('autonomous research remains disabled for orders and promotion with no causal evidence',()=>{
  const audit={schemaVersion:'P4_DIAGNOSTIC_AUDIT_V1',eventCount:0,actors:{},appliedToModels:false,fingerprint:'a'.repeat(64),requiresReview:0};
@@ -11,4 +11,13 @@ test('autonomous research remains disabled for orders and promotion with no caus
  assert.equal(result.championPromotionAllowed,false);
  assert.equal(result.modelUpdateApplied,false);
  assert.deepEqual(result.proposals,[]);
+});
+
+test('empty diagnostic evidence produces no actionable hypotheses or orders',()=>{
+ const result=discoverAutonomousP4ResearchHypotheses({rows:[]});
+ assert.equal(result.ordersEnabled,false);
+ assert.equal(result.modelUpdateApplied,false);
+ assert.equal(result.championPromotionAllowed,false);
+ assert.deepEqual(result.hypotheses,[]);
+ assert.deepEqual(result.pendingEvidence,[]);
 });

@@ -63,3 +63,25 @@ export function prioritizeP4DiagnosticEvidenceGaps({records}={}){
  const priorities=Object.entries(gaps).map(([actor,missing])=>({actor,missing,coverage:records.length?Number(((records.length-missing)/records.length).toFixed(4)):null})).sort((a,b)=>b.missing-a.missing||a.actor.localeCompare(b.actor));
  return {schemaVersion:'P4_DIAGNOSTIC_EVIDENCE_GAPS_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,totalEvents:records.length,fullyReviewed:complete,priorities,nextAction:records.length===0?'COLLECT_DIAGNOSTIC_EVIDENCE':priorities[0]?.missing>0?'IMPROVE_CAUSAL_EVIDENCE_COVERAGE':'REVIEW_VALIDATED_CAUSAL_HYPOTHESES'};
 }
+
+/**
+ * Identify missing or explicitly unknown decision-time inputs. These are
+ * research priorities, not retrospective blame or evidence of bad trades.
+ */
+export function inspectP4DecisionInputCoverage({records}={}){
+ if(!Array.isArray(records))throw Error('invalid diagnostic records');
+ const keys=['proposalAtDecision','expertHistory','accountAtDecision','riskDiagnostics'];
+ const missing=Object.fromEntries(keys.map(k=>[k,0]));
+ let unknownProbability=0,unknownExpectedValue=0,approvedWithUnknownProbability=0;
+ for(const row of records){
+  if(row?.diagnosis?.schemaVersion!=='P4_DIAGNOSIS_V1'||!row.evidence||typeof row.evidence!=='object')throw Error('invalid diagnostic evidence');
+  const e=row.evidence,p=e.proposalAtDecision;
+  for(const key of keys)if(e[key]==null)missing[key]++;
+  if(p&&typeof p==='object'){
+   if(p.winProbability==null){unknownProbability++;if(e.action==='APPROVE')approvedWithUnknownProbability++;}
+   if(p.expectedValue==null)unknownExpectedValue++;
+  }
+ }
+ const count=records.length;
+ return {schemaVersion:'P4_DECISION_INPUT_COVERAGE_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,totalEvents:count,missing,unknownProbability,unknownExpectedValue,approvedWithUnknownProbability,notes:'Unknown probability in explicit exploration mode is not automatically a decision fault; collect calibration evidence before assigning blame.'};
+}

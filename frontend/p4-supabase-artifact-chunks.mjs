@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+function stableJson(value){return JSON.stringify(value,(_key,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v)}
 // Durable diagnostic artifact writer. Chunks are immutable and fenced by the research lease.
 // This module does not alter the existing round checkpoint protocol.
 export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl=fetch}={}){
@@ -22,7 +23,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
    const records=[];
    for(let i=0;i<rows.length;i++){
     const row=rows[i];
-    if(row.chunk_index!==i||!Array.isArray(row.payload)||createHash('sha256').update(JSON.stringify(row.payload)).digest('hex')!==row.payload_sha256||row.payload_sha256!==manifest.chunkHashes[i])throw Error('P4 artifact integrity mismatch');
+    if(row.chunk_index!==i||!Array.isArray(row.payload)||createHash('sha256').update(stableJson(row.payload)).digest('hex')!==row.payload_sha256||row.payload_sha256!==manifest.chunkHashes[i])throw Error('P4 artifact integrity mismatch');
     records.push(...row.payload);
    }
    if(records.length!==manifest.recordCount)throw Error('P4 artifact record count mismatch');
@@ -42,13 +43,13 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
    if(current.length)chunks.push(current);
    for(let index=0;index<chunks.length;index++){
     const payload=chunks[index];
-    const hash=createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+    const hash=createHash('sha256').update(stableJson(payload)).digest('hex');
     const body=JSON.stringify({p_job_id:jobId,p_owner_token:ownerToken,p_iteration:iteration,p_spec_fingerprint:specFingerprint,p_artifact_kind:kind,p_chunk_index:index,p_payload:payload,p_payload_sha256:hash});
     const response=await fetchImpl(url.toString(),{method:'POST',headers,body,signal:AbortSignal.timeout(60000)});
     if(!response.ok)throw Error('P4 artifact chunk commit failed: '+response.status+' index='+index);
     if(await response.json()!==true)throw Error('P4 artifact chunk commit denied');
    }
-   return {chunkCount:chunks.length,recordCount:records.length,chunkHashes:chunks.map(payload=>createHash('sha256').update(JSON.stringify(payload)).digest('hex'))};
+   return {chunkCount:chunks.length,recordCount:records.length,chunkHashes:chunks.map(payload=>createHash('sha256').update(stableJson(payload)).digest('hex'))};
   }
  };
 }

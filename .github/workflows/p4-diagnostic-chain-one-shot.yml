@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'research-triggers/p4-autonomous-chain-20261019.txt'
+      - 'research-triggers/p4-autonomous-chain-round2-20261019.txt'
 permissions:
   contents: read
 concurrency:
@@ -24,10 +25,10 @@ jobs:
       P4_ORDERS_ENABLED: 'false'
       P4_MODEL_UPDATE_ALLOWED: 'false'
       P4_CHAMPION_PROMOTION_ALLOWED: 'false'
-      P4_INITIAL_TASK_ID: p4_autonomous_20261019_initial
-      P4_SOURCE_SUMMARY_JOB_ID: p4_diag_entry_followup_20261019_01
-      P4_CHAIN_ID: p4_auto_20261019_a
-      P4_WINDOWS_JSON: '[{"fromOpenTime":1748736000000,"toOpenTime":1755932400000,"asOfMs":1755936000000}]'
+      P4_INITIAL_TASK_ID: p4_auto_20261019_a_next_p4_auto_20261019_a_job_1
+      P4_SOURCE_SUMMARY_JOB_ID: ''
+      P4_CHAIN_ID: p4_auto_20261019_b
+      P4_WINDOWS_JSON: '[{"fromOpenTime":1756684800000,"toOpenTime":1763881200000,"asOfMs":1763884800000}]'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

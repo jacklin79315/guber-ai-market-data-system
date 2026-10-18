@@ -17,7 +17,8 @@ export async function runP4DiagnosticOneShot({env=process.env,fetchImpl=fetch,pr
  if(prepared.status!=='READY')throw Error('follow-up not READY: '+prepared.status);
  const sourceWindow=env.P4_SOURCE_WINDOW_END_MS===undefined?null:Number(env.P4_SOURCE_WINDOW_END_MS);
  if(!Number.isSafeInteger(sourceWindow)||sourceWindow<0||toOpenTime>=sourceWindow)throw Error('follow-up window must end strictly before prior evaluated window');
- const result=await runBackend({store,taskId,executionJobId,atMs:Date.now(),confirm:'RESEARCH_ONLY',supabaseUrl:env.SUPABASE_URL,serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl,fromOpenTime,toOpenTime,asOfMs,validationFraction:0.35,maxArms:2});
+ const explorationSteps=env.P4_EXPLORATION_STEPS?env.P4_EXPLORATION_STEPS.split(',').map(Number):[1];
+ const result=await runBackend({store,taskId,executionJobId,atMs:Date.now(),confirm:'RESEARCH_ONLY',supabaseUrl:env.SUPABASE_URL,serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl,fromOpenTime,toOpenTime,asOfMs,validationFraction:0.35,maxArms:6,explorationSteps});
  return {...result,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
 }
 if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){

@@ -9,5 +9,5 @@ test('diagnostic manual CLI validates bounded historical smoke',()=>{
 });
 test('diagnostic manual CLI refuses live and oversized research',()=>{
  assert.throws(()=>parseP4DiagnosticManualOptions({...valid,P4_RESEARCH_CONFIRM:'LIVE'}),/RESEARCH_ONLY/);
- assert.throws(()=>parseP4DiagnosticManualOptions({...valid,P4_TO_MS:String(500*3600000)}),/500/);
+ assert.throws(()=>parseP4DiagnosticManualOptions({...valid,P4_TO_MS:String(500*3600000),P4_AS_OF_MS:String(502*3600000)}),/500/);
 });

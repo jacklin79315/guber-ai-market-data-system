@@ -26,17 +26,48 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
     if(row.chunk_index!==i||!Array.isArray(row.payload)||createHash('sha256').update(stableJson(row.payload)).digest('hex')!==row.payload_sha256||row.payload_sha256!==manifest.chunkHashes[i])throw Error('P4 artifact integrity mismatch');
     records.push(...row.payload);
    }
-   if(records.length!==manifest.recordCount)throw Error('P4 artifact record count mismatch');
-   return records;
+   const reconstructed=[];
+   for(let i=0;i<records.length;i++){
+    const item=records[i];
+    if(item&&item.__p4_fragment_v1===true){
+     if(manifest.fragmented!==true||item.part!==0||!Number.isSafeInteger(item.total)||item.total<1||item.total>100000)throw Error('P4 artifact fragment integrity mismatch');
+     let json='';
+     for(let j=0;j<item.total;j++){
+      const part=records[i+j];
+      if(!part||part.__p4_fragment_v1!==true||part.part!==j||part.total!==item.total||typeof part.data!=='string')throw Error('P4 artifact fragment integrity mismatch');
+      json+=part.data;
+     }
+     try{reconstructed.push(JSON.parse(json));}catch{throw Error('P4 artifact fragment JSON integrity mismatch');}
+     i+=item.total-1;
+    }else reconstructed.push(item);
+   }
+   if(reconstructed.length!==manifest.recordCount)throw Error('P4 artifact record count mismatch');
+   return reconstructed;
   },
   async write({jobId,ownerToken,specFingerprint,iteration,kind,records,maxChunkBytes=1024*1024}={}){
    if(typeof jobId!=='string'||!jobId||typeof ownerToken!=='string'||ownerToken.length<16||!Number.isSafeInteger(iteration)||iteration<1||iteration>100||typeof specFingerprint!=='string'||!/^[a-f0-9]{64}$/.test(specFingerprint)||!['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS','TRADE_EVIDENCE'].includes(kind)||!Array.isArray(records)||!Number.isSafeInteger(maxChunkBytes)||maxChunkBytes<1024||maxChunkBytes>1024*1024)throw Error('invalid P4 artifact records');
-   const chunks=[];let current=[],bytes=2;
+   const chunks=[];let current=[],bytes=2,fragmented=false;
    for(const record of records){
     const encoded=JSON.stringify(record);
     if(encoded===undefined)throw Error('invalid P4 artifact record');
     const size=Buffer.byteLength(encoded,'utf8')+(current.length?1:0);
-    if(size+2>maxChunkBytes)throw Error('P4 artifact record exceeds 1MiB maximum; bytes='+String(size+2));
+    if(size+2>maxChunkBytes){
+     fragmented=true;
+     if(current.length){chunks.push(current);current=[];bytes=2;}
+     const parts=[];let offset=0;
+     while(offset<encoded.length){
+      let low=1,high=Math.min(encoded.length-offset,maxChunkBytes),take=0;
+      while(low<=high){
+       const mid=Math.floor((low+high)/2);
+       const probe={__p4_fragment_v1:true,part:parts.length,total:999999,data:encoded.slice(offset,offset+mid)};
+       if(Buffer.byteLength(JSON.stringify([probe]),'utf8')<=maxChunkBytes){take=mid;low=mid+1;}else high=mid-1;
+      }
+      if(!take)throw Error('P4 artifact fragment budget too small');
+      parts.push(encoded.slice(offset,offset+take));offset+=take;
+     }
+     for(let i=0;i<parts.length;i++)chunks.push([{__p4_fragment_v1:true,part:i,total:parts.length,data:parts[i]}]);
+     continue;
+    }
     if(current.length&&bytes+size>maxChunkBytes){chunks.push(current);current=[];bytes=2;}
     current.push(record);bytes+=Buffer.byteLength(encoded,'utf8')+(current.length>1?1:0);
    }
@@ -54,7 +85,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
      if(![429,500,502,503,504].includes(response.status)||attempt===2)throw Error('P4 artifact chunk commit failed: '+response.status+' index='+index);
     }
    }
-   return {chunkCount:chunks.length,recordCount:records.length,chunkHashes:chunks.map(payload=>createHash('sha256').update(stableJson(payload)).digest('hex'))};
+   return {fragmented,chunkCount:chunks.length,recordCount:records.length,chunkHashes:chunks.map(payload=>createHash('sha256').update(stableJson(payload)).digest('hex'))};
   }
  };
 }

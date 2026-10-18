@@ -19,6 +19,8 @@ export async function runP4DiagnosticBackendChain({supabaseUrl,serviceRoleKey,fe
    if(w.fromOpenTime<=previous.toOpenTime&&previous.fromOpenTime<=w.toOpenTime)throw Error('overlapping historical research windows');
   }
  }
+ // Prevent backtests from evaluating candles beyond the declared research cutoff.
+ if(windows.some(w=>w.asOfMs>Date.now()))throw Error('future historical cutoff is not permitted');
  const store=taskStore??createP4DiagnosticTaskStore({supabaseUrl,serviceRoleKey,fetchImpl});
  const summaries=summaryStore??createP4DiagnosticSummaryStore({supabaseUrl,serviceRoleKey,fetchImpl});
  let round=0;

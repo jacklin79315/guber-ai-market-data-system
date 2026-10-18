@@ -9,6 +9,16 @@ export async function runP4WithLease({leaseStore,jobId,ownerToken,leaseSeconds=9
  const ensureLease=async()=>{if(lost)throw heartbeatError??Error('P4 research lease lost');if(renewing)return renewing;renewing=(async()=>{try{if(!await leaseStore.renew(jobId,ownerToken,leaseSeconds))throw Error('P4 research lease lost')}catch(e){lost=true;heartbeatError=e;throw e}finally{renewing=null}})();return renewing};
  const timer=setInterval(()=>{void ensureLease().catch(()=>{})},intervalMs);
  timer.unref?.();
+ let primaryError=null;
  try{const result=await run({ensureLease,isLeaseLost:()=>lost});if(lost)throw heartbeatError??Error('P4 research lease lost');return result}
- finally{clearInterval(timer);if(renewing)await renewing.catch(()=>{});try{await leaseStore.release(jobId,ownerToken)}catch(e){if(!lost)throw e}}
+ catch(e){primaryError=e;throw e}
+ finally{
+  clearInterval(timer);
+  if(renewing)await renewing.catch(()=>{});
+  try{await leaseStore.release(jobId,ownerToken)}
+  catch(e){
+   if(primaryError){primaryError.cleanupError=e;process.emitWarning('P4 lease cleanup also failed: '+e.message)}
+   else if(!lost)throw e;
+  }
+ }
 }

@@ -1,0 +1,42 @@
+name: P4 one-shot 35pct historical research
+on:
+  push:
+    paths:
+      - 'research-triggers/p4-entry-priorwindow-35pct-20261019.txt'
+permissions:
+  contents: read
+concurrency:
+  group: p4-diagnostic-research
+  cancel-in-progress: false
+jobs:
+  research-only:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P4_RESEARCH_CONFIRM: RESEARCH_ONLY
+      P4_DIAGNOSTIC_JOB_ID: p4_diag_entry_priorwindow_35pct_20261019_01
+      P4_FROM_MS: '1777903200000'
+      P4_TO_MS: '1785099600000'
+      P4_AS_OF_MS: '1785106800000'
+      P4_DIAGNOSTIC_ACTOR: Entry
+      P4_DIAGNOSTIC_MAX_ARMS: '2'
+      P4_DIAGNOSTIC_VALIDATION_FRACTION: '0.35'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify research-only credentials
+        run: |
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+          test "$P4_RESEARCH_CONFIRM" = RESEARCH_ONLY
+      - name: Execute bounded research-only replay
+        run: node p4-diagnostic-manual-runner.mjs

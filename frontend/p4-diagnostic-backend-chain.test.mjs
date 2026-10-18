@@ -31,3 +31,9 @@ test('backend chain runs two distinct historical windows and passes prior diagno
  assert.equal(requests[1].fromOpenTime,1300*hour);
  assert.equal(requests[1].task.sourceJobId,'backend_job_1');
 });
+
+test('future evidence cutoff is rejected before opening persistent stores',async()=>{
+ const future=w(1000);
+ future.asOfMs=Date.now()+86400000;
+ await assert.rejects(()=>runP4DiagnosticBackendChain({grant:{maxRounds:1},windows:[future]}),/future historical cutoff/);
+});

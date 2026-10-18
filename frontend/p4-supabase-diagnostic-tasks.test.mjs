@@ -11,5 +11,5 @@ test('optimistic task transition rejects concurrent stale updates',async()=>{
  const store=createP4DiagnosticTaskStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'secret',fetchImpl:async(u,options)=>{calls.push({url:String(u),method:options.method});return {ok:true,json:async()=>[]};}});
  await assert.rejects(()=>store.transition(record,{...record,status:'READY',updatedAtMs:2}),/concurrent transition conflict/);
  assert.equal(calls[0].method,'PATCH');
- assert.match(calls[0].url,/record_sha256=eq%./);
+ assert.match(calls[0].url,/record_sha256=eq\\./);
 });

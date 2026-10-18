@@ -389,3 +389,10 @@
 - `53a3182` 新增診斷分塊讀取、順序／筆數／SHA-256 驗證與重建；`86f82fd` 將完整讀回比對設為研究 round commit 的前置條件，要求有效租約；`3e8640e` 新增正常讀寫、竄改偵測與單筆過大防護測試。
 - CI 已確認 `53a3182` 與 `86f82fd` SUCCESS；新增測試提交的 CI 尚待驗證。未執行真實 Supabase 分塊寫入端到端及 24M 研究，不得宣稱 502 已修復。
 - 未完成：DB 端獨立計算內容雜湊、跨租約中斷續寫驗證、manifest 的完整 chunk hash 清單／版本驗證，以及大量診斷證據的讀取分頁。
+
+
+## 13W. 2026-10-18 診斷分塊 JSONB 相容性
+
+- `4cba5e1`：診斷分塊雜湊改為固定物件鍵順序的 JSON 序列化，避免 Supabase JSONB 讀回鍵順序不同而誤報資料損毀；CI SUCCESS。
+- `320cee8`：新增 JSONB 模擬鍵順序變更與 manifest hash 不一致測試；CI 仍待確認。
+- 正式 Supabase `p4_research_artifact_chunks` 目前 0 筆；舊 `p4_btc_24m_001` lease 已過期。尚未做實際資料庫端到端讀寫／中斷續傳／24M 研究驗收；舊研究 job ID 不可重用。

@@ -45,9 +45,12 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
     const payload=chunks[index];
     const hash=createHash('sha256').update(stableJson(payload)).digest('hex');
     const body=JSON.stringify({p_job_id:jobId,p_owner_token:ownerToken,p_iteration:iteration,p_spec_fingerprint:specFingerprint,p_artifact_kind:kind,p_chunk_index:index,p_payload:payload,p_payload_sha256:hash});
-    const response=await fetchImpl(url.toString(),{method:'POST',headers,body,signal:AbortSignal.timeout(60000)});
-    if(!response.ok)throw Error('P4 artifact chunk commit failed: '+response.status+' index='+index);
-    if(await response.json()!==true)throw Error('P4 artifact chunk commit denied');
+    let saved=false;
+    for(let attempt=0;attempt<3&&!saved;attempt++){
+     const response=await fetchImpl(url.toString(),{method:'POST',headers,body,signal:AbortSignal.timeout(60000)});
+     if(response.ok){if(await response.json()!==true)throw Error('P4 artifact chunk commit denied');saved=true;break;}
+     if(![429,500,502,503,504].includes(response.status)||attempt===2)throw Error('P4 artifact chunk commit failed: '+response.status+' index='+index);
+    }
    }
    return {chunkCount:chunks.length,recordCount:records.length,chunkHashes:chunks.map(payload=>createHash('sha256').update(stableJson(payload)).digest('hex'))};
   }

@@ -38,6 +38,13 @@ export async function runP4DiagnosticBackendChain({supabaseUrl,serviceRoleKey,fe
    const arm=item?.arm,feedback=item?.feedback;
    if(s.taskId===mapped.task.id&&arm&&feedback?.improvedInSameWindow===false&&Number.isFinite(arm.from)&&Math.abs(arm.from-parentParameters[arm.parameter])<1e-9)seen.add(arm.parameter+':'+arm.direction);
   }
+  for(const previous of prior){
+   const evidence=previous.learningEvidence;
+   if(previous.taskId!==mapped.task.id||evidence?.assessment!=='NO_OOS_IMPROVEMENT'||evidence.oosSufficient!==true||evidence.oosImproved!==false)continue;
+   const key=evidence.selectedParameter;
+   if(!Object.hasOwn(parentParameters,key)||!Number.isFinite(evidence.from)||!Number.isFinite(evidence.to)||evidence.from===evidence.to||Math.abs(parentParameters[key]-evidence.from)>1e-9)continue;
+   seen.add(key+':'+Math.sign(evidence.to-evidence.from));
+  }
   const excludedDirections=[...seen].map(key=>{const [parameter,direction]=key.split(':');return {parameter,direction:Number(direction)}});
   // The latest OOS failure is a stronger restriction than same-window training evidence.
   // Include it even when the preceding training result improved.

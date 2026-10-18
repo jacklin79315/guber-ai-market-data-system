@@ -3,6 +3,7 @@
 import {runP4DiagnosticExperiments} from './p4-diagnostic-experiment-runner.mjs';
 import {replayP4DiagnosticArm} from './p4-diagnostic-arm-replay.mjs';
 export async function runP4DiagnosticOosExperiment({task,parentParameters,trainCandles,validationCandles,maxArms=6,shouldStop=()=>false,...replayInputs}={}){
+ if(Object.hasOwn(replayInputs,'candles')||Object.hasOwn(replayInputs,'validationCandles')||Object.hasOwn(replayInputs,'onExperiment')||Object.hasOwn(replayInputs,'onIteration'))throw Error('P4 OOS replay input override forbidden');
  if(!Array.isArray(trainCandles)||trainCandles.length<2||!Array.isArray(validationCandles)||validationCandles.length<2||typeof shouldStop!=='function')throw Error('invalid P4 diagnostic OOS windows');
  const interval=rows=>{
   let previous=-Infinity;

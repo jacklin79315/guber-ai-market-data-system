@@ -14,3 +14,12 @@ test('backend refuses live confirmation and unsupported symbols',async()=>{
  await assert.rejects(()=>runP4DiagnosticFollowUpBackend({confirm:'LIVE'}),/confirmation/);
  await assert.rejects(()=>runP4DiagnosticFollowUpBackend({confirm:'RESEARCH_ONLY',symbol:'DOGEUSDT',fromOpenTime:0,toOpenTime:1,asOfMs:2}),/invalid bounded/);
 });
+
+test('follow-up historical replay rejects oversized, unaligned and future-leaking windows',async()=>{
+ const base={confirm:'RESEARCH_ONLY',fromOpenTime:0,toOpenTime:1999*3600000,asOfMs:2001*3600000};
+ const fail=options=>assert.rejects(()=>runP4DiagnosticFollowUpBackend({...base,...options}),/invalid bounded/);
+ await fail({toOpenTime:2000*3600000,asOfMs:2002*3600000});
+ await fail({fromOpenTime:1});
+ await fail({toOpenTime:129*3600000-1});
+ await fail({asOfMs:1999*3600000+3600000-1});
+});

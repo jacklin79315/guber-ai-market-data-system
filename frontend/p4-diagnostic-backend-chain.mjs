@@ -43,6 +43,7 @@ export async function runP4DiagnosticBackendChain({supabaseUrl,serviceRoleKey,fe
   const proposed=proposeP4DiagnosticExperimentArms({task:mapped.task,parentParameters,maxArms,explorationSteps,excludedDirections});
   if(proposed.arms.length===0)throw Error('NO_UNTESTED_DIAGNOSTIC_ARMS: prior research exhausted available hypotheses');
   if(mapped.task.avoidPriorFailedDirection&&proposed.arms.some(arm=>arm.parameter===mapped.task.avoidPriorFailedDirection.parameter&&arm.direction===mapped.task.avoidPriorFailedDirection.avoidDirection))throw Error('previous failed hypothesis must not be repeated');
-  return runPersisted({confirm:researchConfirm,researchJobId:executionJobId,supabaseUrl,serviceRoleKey,fetchImpl,summaryStore:summaries,...window,task:mapped.task,parentParameters,brain,costs,maxArms,explorationSteps,validationFraction});
+  const effectiveExplorationSteps=explorationSteps;
+  return runPersisted({confirm:researchConfirm,researchJobId:executionJobId,supabaseUrl,serviceRoleKey,fetchImpl,summaryStore:summaries,...window,task:mapped.task,parentParameters,brain,costs,maxArms,explorationSteps:effectiveExplorationSteps,excludedDirections,validationFraction});
  }});
 }

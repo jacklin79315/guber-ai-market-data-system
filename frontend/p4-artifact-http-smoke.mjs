@@ -1,3 +1,4 @@
+import {isDeepStrictEqual} from 'node:util';
 // Isolated HTTP smoke test for P4 artifact persistence; no research or live orders.
 import {randomBytes,createHash} from 'node:crypto';
 import {createP4SupabaseLeaseStore} from './p4-supabase-leases.mjs';
@@ -20,7 +21,7 @@ try{
  const second=await chunks.write(args);
  if(JSON.stringify(manifest)!==JSON.stringify(second))throw Error('P4 smoke idempotency mismatch');
  const restored=await chunks.read({jobId,iteration:1,kind:args.kind,manifest});
- if(JSON.stringify(restored)!==JSON.stringify(records))throw Error('P4 smoke roundtrip mismatch');
+ if(!isDeepStrictEqual(restored,records))throw Error('P4 smoke roundtrip mismatch');
  process.stdout.write(JSON.stringify({status:'PASS',chunkCount:manifest.chunkCount,recordCount:manifest.recordCount,jobId})+'\n');
 }finally{
  if(claimed){const released=await leases.release(jobId,token);if(!released)process.stderr.write('P4 smoke lease release unconfirmed\n');}

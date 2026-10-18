@@ -5,6 +5,7 @@ import {assessP4ExpertHistory,assessP4RiskEvidence,assessP4ProposalInvariants} f
 // Actual expert quality assessment must be supplied by a separately validated diagnostician.
 export function collectP4DiagnosticEvidence(replay){
  if(!replay||!Array.isArray(replay.decisions)||!Array.isArray(replay.account?.closed)||!Array.isArray(replay.account?.shadowOrders))throw Error('invalid P4 replay evidence');
+ if(replay.decisions.some(d=>!d||typeof d.id!=='string'||!d.id)||new Set(replay.decisions.map(d=>d.id)).size!==replay.decisions.length)throw Error('duplicate or invalid replay decision id');
  const decisions=new Map(replay.decisions.map(d=>[d.id,d]));
  const closed=Array.isArray(replay.candles)?attachClosedTimes({closed:replay.account.closed,candles:replay.candles}):replay.account.closed;
  // A supplied candle series must resolve all exits; never silently fall back to unverified timestamps.

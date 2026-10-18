@@ -24,6 +24,15 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
    parentParameters=validateTrainingParameters(result.candidate.parameters);
   }
   if(onIteration)await onIteration(completed.at(-1));
+  // The callback may archive large diagnostics to immutable chunks and replace them
+  // with a manifest. Mirror that durable reference into the in-memory ledger so
+  // later rounds do not re-embed earlier rounds' full diagnostic evidence.
+  const archived=completed.at(-1)?.ledgerSnapshot?.runs?.at(-1)?.result?.comparison;
+  const active=ledger.runs.at(-1)?.result?.comparison;
+  if(archived?.diagnosticArtifactManifest&&active?.diagnosticEvidence){
+   delete active.diagnosticEvidence;
+   active.diagnosticArtifactManifest=structuredClone(archived.diagnosticArtifactManifest);
+  }
  }
  return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,iterations:completed,ledger:structuredClone(ledger),ledgerHistoryComplete,independentValidation:false,promotionAllowed:false};
 }

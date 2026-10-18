@@ -30,11 +30,11 @@ test('P4 readback rejects manifest hash mismatch',async()=>{
 });
 
 test('P4 chunk upload resumes after partial failure without changing prior chunks',async()=>{
- const chunks=new Map();let failOnce=true;
+ const chunks=new Map();let failuresRemaining=3;
  const fetchImpl=async(_url,opts)=>{
   if(opts.method==='POST'){
    const b=JSON.parse(opts.body);
-   if(b.p_chunk_index===1&&failOnce){failOnce=false;return {ok:false,status:503};}
+   if(b.p_chunk_index===1&&failuresRemaining>0){failuresRemaining--;return {ok:false,status:503};}
    const key=b.p_chunk_index;
    if(chunks.has(key)&&chunks.get(key).payload_sha256!==b.p_payload_sha256)return {ok:false,status:409};
    chunks.set(key,{chunk_index:key,payload:b.p_payload,payload_sha256:b.p_payload_sha256});
@@ -50,4 +50,16 @@ test('P4 chunk upload resumes after partial failure without changing prior chunk
  const manifest=await store.write(args);
  assert.equal(chunks.size,2);
  assert.deepEqual(await store.read({jobId:'job',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest}),records);
+});
+
+test('P4 artifact retries one transient 502 and finishes upload',async()=>{
+ let attempts=0;
+ const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async(_url,opts)=>{
+  attempts++;
+  if(attempts===1)return {ok:false,status:502};
+  return {ok:true,json:async()=>true};
+ }});
+ const result=await store.write({jobId:'job',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records:[{id:1}]});
+ assert.equal(result.chunkCount,1);
+ assert.equal(attempts,2);
 });

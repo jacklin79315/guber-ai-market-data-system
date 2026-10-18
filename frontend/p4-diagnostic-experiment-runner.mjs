@@ -2,9 +2,9 @@
 // Never updates Champion or submits live orders; no independent OOS claim.
 import {proposeP4DiagnosticExperimentArms} from './p4-diagnostic-experiment-candidates.mjs';
 import {replayP4DiagnosticArm} from './p4-diagnostic-arm-replay.mjs';
-export async function runP4DiagnosticExperiments({task,parentParameters,maxArms=6,explorationSteps=[1],shouldStop=()=>false,onExperiment,...replayInputs}={}){
+export async function runP4DiagnosticExperiments({task,parentParameters,maxArms=6,explorationSteps=[1],excludedDirections=[],shouldStop=()=>false,onExperiment,...replayInputs}={}){
  if(typeof shouldStop!=='function'||(onExperiment!==undefined&&typeof onExperiment!=='function'))throw Error('invalid diagnostic experiment callbacks');
- const proposal=proposeP4DiagnosticExperimentArms({task,parentParameters,maxArms,explorationSteps});
+ const proposal=proposeP4DiagnosticExperimentArms({task,parentParameters,maxArms,explorationSteps,excludedDirections});
  const completed=[];
  for(const arm of proposal.arms){
   if(shouldStop())break;

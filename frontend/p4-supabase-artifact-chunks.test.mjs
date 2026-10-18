@@ -109,3 +109,27 @@ test('P4 artifact read paginates beyond 25 chunks without false count mismatch',
  assert.deepEqual(await store.read({jobId:'job',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest}),records);
  assert.equal(reads,2);
 });
+
+test('P4 restart reuses immutable chunks with matching hashes and restores evidence',async()=>{
+ const rows=new Map();
+ const fetchImpl=async(url,opts)=>{
+  if(opts.method==='POST'){
+   const b=JSON.parse(opts.body),key=b.p_chunk_index;
+   const previous=rows.get(key);
+   if(previous&&previous.payload_sha256!==b.p_payload_sha256)return {ok:false,status:409};
+   if(!previous)rows.set(key,{chunk_index:key,payload:b.p_payload,payload_sha256:b.p_payload_sha256});
+   return {ok:true,json:async()=>true};
+  }
+  const u=new URL(url),offset=Number(u.searchParams.get('offset')),limit=Number(u.searchParams.get('limit'));
+  return {ok:true,json:async()=>[...rows.values()].sort((a,b)=>a.chunk_index-b.chunk_index).slice(offset,offset+limit)};
+ };
+ const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});
+ const records=[{id:1,value:'z'.repeat(5000)},{id:2,detail:'x'.repeat(700)}];
+ const args={jobId:'restart',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records,maxChunkBytes:1024};
+ const first=await store.write(args),count=rows.size;
+ const replay=await store.write(args);
+ assert.deepEqual(replay,first);
+ assert.equal(rows.size,count);
+ assert.deepEqual(await store.read({jobId:'restart',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest:replay}),records);
+ await assert.rejects(store.write({...args,records:[{id:1,value:'different'}]}),/409/);
+});

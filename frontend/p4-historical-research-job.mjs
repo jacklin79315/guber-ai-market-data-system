@@ -38,6 +38,7 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
   await onProgress?.({phase:'FEATURE_PREFETCH_COMPLETE'});
  }
  const research=await (partitionOptions===undefined?runP4ResearchCycle:runP4PartitionedResearchCycle)({partitionOptions,championVersion,championParameters,iterations,seed,candles:loaded.candles,featureAtDecision:featureReader,historyAtDecision,brain,costs,accountOptions,otherReplayOptions,shouldStop,resumeRounds,onIteration:async x=>{if(leaseGuard)await leaseGuard();if(roundStore){if(artifactStore){
+   if(!leaseGuard||typeof artifactStore.write!=='function'||typeof artifactStore.read!=='function')throw Error('P4 artifact archive requires fenced lease and readback');
    const runs=x.ledgerSnapshot?.runs;
    const latest=runs?.at(-1);
    const evidence=latest?.result?.comparison?.diagnosticEvidence;
@@ -45,6 +46,8 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
    const manifest={};
    for(const [side,kind] of [['champion','CHAMPION_DIAGNOSTICS'],['challenger','CHALLENGER_DIAGNOSTICS']]){
     manifest[side]=await artifactStore.write({jobId,ownerToken,specFingerprint,iteration:x.iteration,kind,records:evidence[side]});
+    const restored=await artifactStore.read({jobId,iteration:x.iteration,kind,manifest:manifest[side]});
+    if(JSON.stringify(restored)!==JSON.stringify(evidence[side]))throw Error('P4 diagnostic archive readback mismatch: '+side);
    }
    // Evidence is removed from the round JSON only after all chunks have been durably acknowledged.
    // Earlier rounds retain their own manifests; full detail is in immutable artifact chunks.

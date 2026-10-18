@@ -24,6 +24,7 @@ on:
         type: string
       actor:
         description: "Diagnostic research hypothesis owner"
+        default: Entry
         required: true
         type: choice
         options: [Entry, Reward]

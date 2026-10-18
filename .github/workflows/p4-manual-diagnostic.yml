@@ -4,22 +4,22 @@ on:
     inputs:
       job_id:
         description: "Unique immutable diagnostic job ID"
-        default: "p4_diag_entry_smoke_20261019_01"
+        default: "p4_diag_entry_500_20261019_01"
         required: true
         type: string
       from_ms:
         description: "BTC 1h UTC first candle open (milliseconds)"
-        default: "1791792000000"
+        default: "1790503200000"
         required: true
         type: string
       to_ms:
         description: "BTC 1h UTC last candle open (milliseconds)"
-        default: "1792292400000"
+        default: "1792299600000"
         required: true
         type: string
       as_of_ms:
         description: "Historical cutoff after last candle close"
-        default: "1792299600000"
+        default: "1792306800000"
         required: true
         type: string
       actor:

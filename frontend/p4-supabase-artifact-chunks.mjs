@@ -29,14 +29,14 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
    if(records.length!==manifest.recordCount)throw Error('P4 artifact record count mismatch');
    return records;
   },
-  async write({jobId,ownerToken,specFingerprint,iteration,kind,records,maxChunkBytes=256*1024}={}){
+  async write({jobId,ownerToken,specFingerprint,iteration,kind,records,maxChunkBytes=1024*1024}={}){
    if(typeof jobId!=='string'||!jobId||typeof ownerToken!=='string'||ownerToken.length<16||!Number.isSafeInteger(iteration)||iteration<1||iteration>100||typeof specFingerprint!=='string'||!/^[a-f0-9]{64}$/.test(specFingerprint)||!['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS','TRADE_EVIDENCE'].includes(kind)||!Array.isArray(records)||!Number.isSafeInteger(maxChunkBytes)||maxChunkBytes<1024||maxChunkBytes>1024*1024)throw Error('invalid P4 artifact records');
    const chunks=[];let current=[],bytes=2;
    for(const record of records){
     const encoded=JSON.stringify(record);
     if(encoded===undefined)throw Error('invalid P4 artifact record');
     const size=Buffer.byteLength(encoded,'utf8')+(current.length?1:0);
-    if(size+2>maxChunkBytes)throw Error('P4 artifact record exceeds chunk size');
+    if(size+2>maxChunkBytes)throw Error('P4 artifact record exceeds 1MiB maximum; bytes='+String(size+2));
     if(current.length&&bytes+size>maxChunkBytes){chunks.push(current);current=[];bytes=2;}
     current.push(record);bytes+=Buffer.byteLength(encoded,'utf8')+(current.length>1?1:0);
    }

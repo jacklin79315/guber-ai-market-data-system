@@ -1,0 +1,1 @@
+Replay the previously used fixed-candidate retrospective window for descriptive regime attribution only. No new independent validation.

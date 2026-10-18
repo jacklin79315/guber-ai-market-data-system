@@ -485,3 +485,14 @@
 6. **驗收邊界**：單元測試通過 ≠ 真實 Supabase 端到端研究任務已自動執行 ≠ 模型已學習 ≠ 有可驗證的樣本外績效。以上尚未完成項目保持未完成狀態。
 
 **下一個工程里程碑**：把已產生的研究任務接上真正可執行、可恢復、可審計的歷史診斷實驗循環；首先針對 Win 勝率校準與 WAIT／影子單決策品質建立因果可驗證的實驗契約，而非先假定參數調整方向。研究與真實交易嚴格隔離。
+
+
+## 13AH. 2026-10-18 新對話實測：P4 網頁啟動驗收與前端里程碑校正
+
+- 本輪直接查詢 Supabase（非沿用交接敘述）：網頁啟動 job `p4_web_1792275402566_e9408c05` checkpoint phase=`COMPLETED`、loadedCandles=168、completedIterations=1、completedWindows=1；`p4_research_rounds` iteration=1 有持久化資料，與 checkpoint 一致，spec fingerprint 亦一致。
+- 該網頁研究的 feedback=`INSUFFICIENT_RESEARCH_SAMPLES`，Champion 結算 9 筆、淨 -9.185272161901123 USDT、手續費 4.509123386129542；Challenger 結算 9 筆、淨 -10.130507769005963 USDT、手續費 4.508927760071057。最少需 30 筆；`promotionAllowed=false`、`independentValidation=false`。同一組 168 K 線回放結果與既有 smoke 記錄吻合；不可宣稱 AI 訓練成功。
+- `p4_research_leases` 未找到該網頁 job 的 lease，且唯讀查詢顯示目前所有現存 P4 lease 都不是有效中的租約。此網頁 job 的資料庫層級持久化端到端研究路徑驗收通過；未另外以登入瀏覽器重新觸發按鈕、亦未人工驗證 UI 視覺呈現。
+- 24M `p4_btc_24m_accept_20261018` checkpoint 完成、round iteration=1，Champion 118 筆淨 -287.006478589939 USDT、Challenger 119 筆淨 -311.26640343918757 USDT；診斷證據 chunks：Champion 254、Challenger 201，索引無重複且連續。獨立樣本外驗證仍為 false，模型不得自動晉升。
+- GitHub CI run `39117192907` 已核對 success（對應 `a2f4342`）；Railway production `920031a` deployment `148b6076-a887-47c4-8b28-32f71f05f8ab` status=SUCCESS。Railway 可見舊容器終止時 SIGTERM 訊息，不可當成最新部署失敗。
+- 原前端 `frontend/main.js` 里程碑仍使用舊 P0–P7 表示並把 P2/P3 等標為「尚未開始」，與本規劃 §13 P1–P5 不符；已以 commit `a08b789` 修正前端里程碑及精確狀態。此為 UI 呈現修正，不更動核心研究與資料；其 CI / Railway 部署仍須獨立核對，不因提交即視為已上線。
+- 下一個 P4 工程里程碑仍以 §13AG 為準：實際執行、可恢復、可審計的因果診斷實驗循環（先 Win 機率校準及 WAIT／影子單品質）；避免僅新增統計報表。研究 / 模型更新 / Champion 晉升各自有獨立控制；不得自動真實下單。

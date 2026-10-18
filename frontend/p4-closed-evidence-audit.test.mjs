@@ -10,3 +10,8 @@ test('unresolved attribution does not erase verifiable closed evidence',()=>{
  const a=auditP4ClosedEvidence([{...row({decisionTime:100,closedAt:200,realizedWin:true,proposalAtDecision:{winProbability:0.4}}),diagnosis:{outcome:'CLOSED',requiresReview:true}}]);
  assert.equal(a.calibrationReady,1);assert.equal(a.modelUpdateApplied,false);
 });
+
+test('audit results are stable across serialized artifact readback',()=>{
+ const records=[row({decisionTime:100,closedAt:200,realizedWin:false,proposalAtDecision:{winProbability:0.7}}),row({decisionTime:300,closedAt:400,realizedWin:true,proposalAtDecision:{winProbability:0.5}})];
+ assert.deepEqual(auditP4ClosedEvidence(JSON.parse(JSON.stringify(records))),auditP4ClosedEvidence(records));
+});

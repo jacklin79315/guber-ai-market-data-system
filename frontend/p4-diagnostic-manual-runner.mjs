@@ -10,7 +10,7 @@ export function parseP4DiagnosticManualOptions(env=process.env){
  const step=3600000;
  if(![fromOpenTime,toOpenTime,asOfMs].every(Number.isSafeInteger)||fromOpenTime<0||fromOpenTime%step||toOpenTime%step||toOpenTime<fromOpenTime+step*129||asOfMs<=toOpenTime+step-1)throw Error('invalid diagnostic historical window');
  const expectedCandles=(toOpenTime-fromOpenTime)/step+1;
- if(expectedCandles>500)throw Error('diagnostic manual smoke limited to 500 BTC 1h candles');
+ if(expectedCandles>2000)throw Error('diagnostic manual research limited to 2000 BTC 1h candles');
  const actor=env.P4_DIAGNOSTIC_ACTOR||'Entry';
  if(!['Entry','Reward'].includes(actor))throw Error('unsupported diagnostic actor');
  const maxArms=Number(env.P4_DIAGNOSTIC_MAX_ARMS||2);

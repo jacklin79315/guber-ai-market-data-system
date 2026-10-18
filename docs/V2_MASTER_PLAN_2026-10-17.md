@@ -503,3 +503,13 @@
 - 新增 `frontend/p4-causal-experiment.mjs` 與 `frontend/p4-causal-experiment.test.mjs`（commits `0d88c9d`, `7141d7e`）。支援 Win 勝率校準、WAIT／影子單決策品質兩類研究契約；強制時間先後與互斥訓練／驗證窗口、最小樣本數、fingerprint 防修改、結果僅供獨立審查。
 - 本次只完成可測試的實驗契約與安全邊界，尚未連接歷史診斷執行器、反事實計算、可恢復任務佇列、持久化研究結果或自動學習更新；不可稱完成自主學習。
 - CI 與 Railway 仍須依最新提交查核。後續應接上可重現的實際歷史實驗，並確認未來資訊隔離及負面結果保存；不得真實下單或自動晉升。
+
+
+## 13AJ. P4 勝率校準實驗與實際資料品質驗收（2026-10-18）
+
+- 新增因果實驗後續研究元件：`p4-win-calibration-replay.mjs`（訓練窗擬合、後續驗證窗 Brier Score，無獨立 OOS 結論）、`p4-win-evidence-adapter.mjs`、`p4-calibration-eligibility.mjs`、`p4-calibration-window-eligibility.mjs`、`p4-persisted-win-calibration.mjs`；`p4-autonomous-diagnostic-research.mjs` 可選擇附上 Champion／Challenger 各自的校準研究結果。實驗契約經 SHA256 指紋核對；所有結果仍僅供研究，禁止下單、套用模型、晉升 Champion。
+- `p4-challenger-comparison.mjs` 已將原始 K 線交給 `collectP4DiagnosticEvidence`，透過 `attachClosedTimes` 以交易 exitIndex 對應原始 K 線 closeTime，產生 `closedAt` 及依實際淨損益產生的 `realizedWin`；損益為零不捏造勝負。新增結算時間必須晚於決策時間的防護。診斷是否仍需專家責任歸因審查，已與可核驗交易勝負標籤分離，不得混為一談。
+- Supabase 唯讀實測 `p4_btc_24m_accept_20261018`：Champion 診斷事件 1470、已結算 118、數值勝率 58、有效結算時間 0、診斷完成審查 0；Challenger 分別為 1421、119、58、0、0。這是舊版已存檔資料，**無法通過目前校準資格**；不得補造時間戳或稱校準成功。
+- 新增 `p4-closed-evidence-audit.mjs` 並整合 `p4-historical-research-job.mjs`：新研究輪次將保存兩側已結算交易的時間／勝負／勝率欄位完整性統計；診斷 artifacts 寫入並讀回後再次計算，必須與原始稽核一致。提交 `63bd0bd`、`6a9f93e`、`a8e9a5e`、`260c225`、`7b3763c`，GitHub CI 均已核對 SUCCESS。
+- **尚未完成**：以新版本真正執行一輪研究並核對 Supabase 實際 `closedEvidenceAudit` 與 chunks；驗證實際校準樣本能跨越訓練／驗證窗；研究結果持久化與自主診斷訓練閉環、獨立 OOS、模型品質晉升。GitHub 已有手動 `p4-manual-research.yml`，但目前連線未提供觸發 workflow_dispatch 的工具，故本輪**未觸發新研究**。不可把 CI 測試等同真實歷史資料端到端驗收。
+- 下一優先順序：執行新的受控 SMOKE（獨立 job_id），核對稽核／持久化診斷實際欄位；確認時間因果與樣本充分後才做歷史校準實驗，再進入可恢復研究閉環。任何階段都不允許自主真實交易。

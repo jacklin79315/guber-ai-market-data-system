@@ -29,6 +29,10 @@ export function assessP4ExpertHistory({evidence}={}){
   seen.add(actor);
   // A recorded Brain approval must match the final replay action. A mismatch is
   // an auditable decision-chain fault, independent of subsequent PnL.
+  // Brain safety veto is a distinct final gate, not a contradictory Brain verdict.
+  // Do not punish a Brain approval simply because the safety layer blocked it.
+  const safetyVeto=history.some(h=>h?.expert==='brainSafety'&&h.action==='WAIT'&&Array.isArray(h.issues)&&h.issues.length>0);
+  if(actor==='Brain'&&step.action==='APPROVE'&&evidence.action!=='APPROVE'&&safetyVeto)continue;
   if(actor==='Brain'&&step.action==='APPROVE'&&evidence.action!=='APPROVE'){
    results.push({actor,quality:'FAULT',responsibility:'PRIMARY',reason:'Brain approval conflicts with the final recorded decision',evidenceKeys:['expertHistory','action']});
    continue;

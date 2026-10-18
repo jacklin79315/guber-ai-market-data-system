@@ -60,3 +60,15 @@ test('shadow diagnostics preserve original decision-time account context',()=>{
 test('duplicate replay decisions cannot silently overwrite diagnostic provenance',()=>{
  assert.throws(()=>collectP4DiagnosticEvidence({decisions:[{id:'dup'},{id:'dup'}],account:{closed:[],shadowOrders:[]}}),/duplicate/);
 });
+
+test('Risk WAIT on recorded negative expectancy is sound guardrail only',()=>{
+ const findings=assessP4ExpertHistory({evidence:{action:'WAIT',proposalAtDecision:{expectedValue:-0.02},expertHistory:[{expert:'riskPosition',action:'WAIT',reason:'NON_POSITIVE_EXPECTANCY'}]}});
+ assert.equal(findings.length,1);assert.equal(findings[0].actor,'Risk');assert.equal(findings[0].quality,'SOUND');
+});
+test('Risk WAIT claiming negative expectancy despite positive EV is attributable',()=>{
+ const findings=assessP4ExpertHistory({evidence:{action:'WAIT',proposalAtDecision:{expectedValue:0.02},expertHistory:[{expert:'riskPosition',action:'WAIT',reason:'NON_POSITIVE_EXPECTANCY'}]}});
+ assert.equal(findings.length,1);assert.equal(findings[0].quality,'FAULT');
+});
+test('Risk WAIT with unknown EV cannot earn a diagnostic rating',()=>{
+ assert.deepEqual(assessP4ExpertHistory({evidence:{action:'WAIT',proposalAtDecision:{expectedValue:null},expertHistory:[{expert:'riskPosition',action:'WAIT',reason:'NON_POSITIVE_EXPECTANCY'}]}}),[]);
+});

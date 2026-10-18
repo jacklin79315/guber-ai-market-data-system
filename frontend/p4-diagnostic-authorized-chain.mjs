@@ -11,7 +11,7 @@ export async function runP4AuthorizedDiagnosticChain({store,initialTaskId,grant,
  for(let i=0;i<grant.maxRounds;i++){
   if(seen.has(taskId))throw Error('research cycle detected');
   seen.add(taskId);
-  const now=atMs+i*2;
+  const now=atMs+i*4;
   if(now+1>=grant.expiresAtMs)return {status:'STOPPED_GRANT_EXPIRED',rounds,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
   const jobId=await createExecutionJobId({taskId,round:i+1});
   if(typeof jobId!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(jobId))throw Error('invalid research job ID');

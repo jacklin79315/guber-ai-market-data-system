@@ -425,3 +425,10 @@
 - 首次 run `39088170658` FAIL：HTTP 寫入／讀回已成功，唯 smoke script 使用 JSON.stringify 比對不同 JSONB 物件鍵順序。`f8d93d1` 改用 `isDeepStrictEqual`，`2c4404d` 設定 smoke 腳本更新時重新執行；run **`39088219655` SUCCESS**。
 - Supabase 查詢確認兩次測試各寫入 6 分塊；已透過 `p4_http_smoke_artifact_cleanup_20261018` 清除隔離測試資料。
 - **仍待完成**：24 個月真實研究成功跑完、round checkpoint 長窗 502 問題最終驗證、診斷回饋形成自主學習閉環；HTTP smoke 成功不等於 24M 成功。
+
+
+## 13AB. 2026-10-18 24M 啟動前網路重試補強與現有手動工作確認
+
+- `92d2e68` 診斷分塊 HTTP 寫入除 429/500/502/503/504 外，亦在 `fetch failed`、timeout、abort、network 暫時性例外時最多嘗試 3 次；`1645842` 新增 fetch 失敗後重試成功測試，GitHub Actions run `39088872839` SUCCESS。
+- 確認已有 `.github/workflows/p4-manual-research.yml` 的 `workflow_dispatch`，具 `HISTORICAL_24M` 範圍與 Supabase secrets；**本輪沒有觸發完整 24M 工作**，不得標記 24M 驗收通過。
+- 建議隔離驗收 job ID `p4_btc_24m_accept_20261018`、BTCUSDT 1h、`from_ms=1727740800000`、`to_ms=1790809200000`、`as_of_ms=1790816400000`、iterations=1。正式跑前仍須檢查研究資料涵蓋與資源預算。

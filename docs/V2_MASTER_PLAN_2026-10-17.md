@@ -396,3 +396,10 @@
 - `4cba5e1`：診斷分塊雜湊改為固定物件鍵順序的 JSON 序列化，避免 Supabase JSONB 讀回鍵順序不同而誤報資料損毀；CI SUCCESS。
 - `320cee8`：新增 JSONB 模擬鍵順序變更與 manifest hash 不一致測試；CI 仍待確認。
 - 正式 Supabase `p4_research_artifact_chunks` 目前 0 筆；舊 `p4_btc_24m_001` lease 已過期。尚未做實際資料庫端到端讀寫／中斷續傳／24M 研究驗收；舊研究 job ID 不可重用。
+
+
+## 13X. 2026-10-18 診斷分塊續傳模擬驗證
+
+- `262d234` 新增中斷上傳測試：第一塊寫入、第二塊 HTTP 503，重新送同一輪分塊並讀回全量證據；該提交 CI SUCCESS。
+- `39e9abf` 新增寫入端租約 token、job、iteration、spec fingerprint 格式檢查，初次 CI 因既有測試 token 過短而 FAIL；`1e98787` 已更新測試 token，CI 待確認。
+- **仍未完成**：正式 Supabase RPC 真實寫入／讀回驗收、長窗 502 重現與修復確認、完整 24M 歷史研究。模擬的 503 續傳通過不等於真實資料庫端到端通過。

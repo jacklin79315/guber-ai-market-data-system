@@ -30,7 +30,12 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
   const first=loaded.candles[0],last=loaded.candles.at(-1);
   const fromCloseTime=Number(first.closeTime),toCloseTime=Number(last.closeTime);
   if(!Number.isSafeInteger(fromCloseTime)||!Number.isSafeInteger(toCloseTime))throw Error('invalid candle close times for feature prefetch');
-  await featureReader.prefetch({symbol,timeframe,fromCloseTime,toCloseTime});
+  await featureReader.prefetch({symbol,timeframe,fromCloseTime,toCloseTime,onPage:async ({loaded,offset})=>{
+   if(shouldStop())throw Error('P4 feature prefetch stopped');
+   if(leaseGuard)await leaseGuard();
+   await onProgress?.({phase:'FEATURE_PREFETCH',loadedFeatures:loaded,featureOffset:offset});
+  }});
+  await onProgress?.({phase:'FEATURE_PREFETCH_COMPLETE'});
  }
  const research=await (partitionOptions===undefined?runP4ResearchCycle:runP4PartitionedResearchCycle)({partitionOptions,championVersion,championParameters,iterations,seed,candles:loaded.candles,featureAtDecision:featureReader,historyAtDecision,brain,costs,accountOptions,otherReplayOptions,shouldStop,resumeRounds,onIteration:async x=>{if(leaseGuard)await leaseGuard();if(roundStore){if(leaseGuard)await roundStore.commitLeased(jobId,ownerToken,specFingerprint,x);else await roundStore.commit(jobId,specFingerprint,x);}if(leaseGuard)await leaseGuard();await saveProgress({phase:'RESEARCH',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:x.iteration});await onProgress?.({phase:'RESEARCH',iteration:x.iteration,totalIterations:iterations,feedback:x.feedback});}});
  await saveProgress({phase:research.status==='RESEARCH_CYCLE_STOPPED'?'STOPPED':'COMPLETED',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:research.completedIterations??0});

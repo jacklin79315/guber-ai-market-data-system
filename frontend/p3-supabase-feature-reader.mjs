@@ -10,8 +10,9 @@ export function createSupabaseFeatureAtDecision({supabaseUrl,apiKey,fetchImpl=fe
   return {asOfMs:candidate.decisionTime,rsi:Number(row.rsi_12),atrPercent:Number(row.atr_percent),volumeRatio:Number(row.volume_ratio),trendStrength:Number(row.adx_14),momentum:Number(row.return_3)};
  };
  const headers={apikey:apiKey,Authorization:'Bearer '+apiKey,Accept:'application/json'};
- const prefetch=async ({symbol,timeframe,fromCloseTime,toCloseTime,pageSize=500}={})=>{
+ const prefetch=async ({symbol,timeframe,fromCloseTime,toCloseTime,pageSize=500,onPage}={})=>{
   if(typeof symbol!=='string'||!/^[A-Z0-9]{3,30}$/.test(symbol)||!['15m','1h','4h','1d'].includes(timeframe)||![fromCloseTime,toCloseTime].every(Number.isSafeInteger)||fromCloseTime>toCloseTime||!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>1000)throw Error('invalid feature prefetch window');
+  if(onPage!==undefined&&typeof onPage!=='function')throw Error('invalid feature prefetch progress callback');
   let loaded=0,previous=null;
   for(let offset=0;;offset+=pageSize){
    const url=new URL('/rest/v1/market_features',supabaseUrl);
@@ -19,8 +20,15 @@ export function createSupabaseFeatureAtDecision({supabaseUrl,apiKey,fetchImpl=fe
    url.searchParams.set('close_time','gte.'+fromCloseTime);
    url.searchParams.set('and','(close_time.lte.'+toCloseTime+')');
    url.searchParams.set('select',fields.join(','));url.searchParams.set('order','close_time.asc');url.searchParams.set('limit',String(pageSize));url.searchParams.set('offset',String(offset));
-   const response=await fetchImpl(url.toString(),{method:'GET',headers});
-   if(!response.ok)throw Error('feature prefetch failed: '+response.status);
+   let response;
+   for(let attempt=0;attempt<4;attempt++){
+    try{
+     response=await fetchImpl(url.toString(),{method:'GET',headers,signal:AbortSignal.timeout(20000)});
+     if(response.ok)break;
+     if(![429,502,503,504,520,521,522,523,524].includes(response.status)||attempt===3)throw Error('feature prefetch failed: '+response.status+' at offset '+offset);
+    }catch(e){if(attempt===3||!(/fetch|timeout|abort|network/i.test(e.message)))throw e}
+    await new Promise(resolve=>setTimeout(resolve,500*(2**attempt)));
+   }
    const rows=await response.json();if(!Array.isArray(rows)||rows.length>pageSize)throw Error('invalid feature prefetch response');
    for(const row of rows){
     const close=Number(row.close_time),candidate={symbol,timeframe,decisionTime:close};
@@ -29,6 +37,7 @@ export function createSupabaseFeatureAtDecision({supabaseUrl,apiKey,fetchImpl=fe
     cache.set(JSON.stringify([source,market,symbol,timeframe,close]),Promise.resolve(value));
     previous=close;loaded++;
    }
+   await onPage?.({loaded,offset,received:rows.length});
    if(rows.length<pageSize)break;
   }
   return {loaded};

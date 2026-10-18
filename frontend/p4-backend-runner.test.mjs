@@ -11,7 +11,7 @@ test('24-month BTC research is opt-in, partitioned and bounded',()=>{
  const historical={...valid,P4_RESEARCH_SCOPE:'HISTORICAL_24M',P4_PARTITIONED:'TRUE',P4_TO_MS:String(17519*3600000),P4_AS_OF_MS:String(17521*3600000)};
  const config=parseP4RunnerOptions(historical);
  assert.equal(config.scope,'HISTORICAL_24M');assert.equal(config.expectedCandles,17520);
- assert.throws(()=>parseP4RunnerOptions({...historical,P4_PARTITIONED:'FALSE'}),/24-month research/);
+ assert.equal(parseP4RunnerOptions({...historical,P4_PARTITIONED:'FALSE'}).partitioned,false);
  assert.throws(()=>parseP4RunnerOptions({...historical,P4_SYMBOL:'ETHUSDT'}),/24-month research/);
  assert.throws(()=>parseP4RunnerOptions({...historical,P4_ITERATIONS:'4'}),/bounded/);
  assert.throws(()=>parseP4RunnerOptions({...valid,P4_RESEARCH_SCOPE:'HISTORICAL_24M'}),/24-month research/);

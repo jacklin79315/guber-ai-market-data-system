@@ -8,6 +8,10 @@ export async function runP4DiagnosticAutonomousCycle({store,taskId,executionJobI
  if(confirm!=='RESEARCH_ONLY')throw Error('research-only confirmation required');
  if(typeof createTaskId!=='function'||typeof recordNextTask!=='function'||typeof runResearch!=='function'||!store||typeof store.load!=='function')throw Error('missing autonomous cycle dependencies');
  let committedSummary=null;
+ // The task may already be COMPLETED after a worker crash; recover its immutable
+ // research summary without replaying the historical experiment.
+ const prior=await store.load(taskId);
+ if(prior?.status==='COMPLETED')return {schemaVersion:'P4_DIAGNOSTIC_AUTONOMOUS_CYCLE_V1',status:'ALREADY_COMPLETED_REQUIRES_RECOVERY',completedJobId:prior.resultJobId,nextTask:null,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
  const execution=await executeP4DiagnosticFollowUp({store,taskId,executionJobId,atMs,confirm,runResearch:async args=>{
   const result=await runResearch(args);
   if(result?.status==='COMMITTED')committedSummary=result.summary;

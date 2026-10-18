@@ -1,0 +1,1 @@
+Explicit RESEARCH_ONLY historical autonomous diagnostic run. No orders, model updates, or champion promotion. Source p4_diag_entry_followup_20261019_01. Historical window 2025-06-01 through 2025-08-23 UTC. One round.

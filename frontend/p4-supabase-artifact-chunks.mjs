@@ -30,7 +30,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
    return records;
   },
   async write({jobId,ownerToken,specFingerprint,iteration,kind,records,maxChunkBytes=256*1024}={}){
-   if(!['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS','TRADE_EVIDENCE'].includes(kind)||!Array.isArray(records)||!Number.isSafeInteger(maxChunkBytes)||maxChunkBytes<1024||maxChunkBytes>1024*1024)throw Error('invalid P4 artifact records');
+   if(typeof jobId!=='string'||!jobId||typeof ownerToken!=='string'||ownerToken.length<16||!Number.isSafeInteger(iteration)||iteration<1||iteration>100||typeof specFingerprint!=='string'||!/^[a-f0-9]{64}$/.test(specFingerprint)||!['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS','TRADE_EVIDENCE'].includes(kind)||!Array.isArray(records)||!Number.isSafeInteger(maxChunkBytes)||maxChunkBytes<1024||maxChunkBytes>1024*1024)throw Error('invalid P4 artifact records');
    const chunks=[];let current=[],bytes=2;
    for(const record of records){
     const encoded=JSON.stringify(record);

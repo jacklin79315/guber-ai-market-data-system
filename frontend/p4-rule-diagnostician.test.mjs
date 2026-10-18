@@ -34,3 +34,18 @@ test('explicit negative expected value is a Reward fault without reading outcome
 test('non-approved WAIT with negative expectancy is not automatically a fault',()=>{
  assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'WAIT',proposalAtDecision:{expectedValue:-0.1}}}),[]);
 });
+
+test('non-positive expected holding time is attributable without hindsight',()=>{
+ const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{expectedHoldingMs:0}}});
+ assert.equal(findings.length,1);
+ assert.equal(findings[0].actor,'Time');
+});
+test('reversed entry range is attributable without hindsight',()=>{
+ const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{entryRange:[120,100]}}});
+ assert.equal(findings.length,1);
+ assert.equal(findings[0].actor,'Entry');
+});
+test('valid and missing entry/time evidence do not invent expert ratings',()=>{
+ assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{entryRange:[100,120],expectedHoldingMs:3600000}}}),[]);
+ assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'WAIT',proposalAtDecision:{entryRange:[120,100],expectedHoldingMs:0}}}),[]);
+});

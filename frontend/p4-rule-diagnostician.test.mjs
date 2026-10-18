@@ -49,3 +49,14 @@ test('valid and missing entry/time evidence do not invent expert ratings',()=>{
  assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{entryRange:[100,120],expectedHoldingMs:3600000}}}),[]);
  assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'WAIT',proposalAtDecision:{entryRange:[120,100],expectedHoldingMs:0}}}),[]);
 });
+
+test('shadow diagnostics preserve original decision-time account context',()=>{
+ const rows=collectP4DiagnosticEvidence({decisions:[{id:'shadow-a',action:'APPROVE',decisionTime:1,allocation:2000,accountAtDecision:{equity:10000,committedCapital:7000},history:[]}],account:{closed:[],shadowOrders:[{proposal:{id:'shadow-a'},reason:'NOT_FILLED'}]}});
+ assert.equal(rows[0].diagnosis.outcome,'SHADOW');
+ assert.equal(rows[0].evidence.accountAtDecision.equity,10000);
+ assert.equal(rows[0].diagnosis.attribution[0].actor,'Risk');
+ assert.equal(rows[0].diagnosis.attribution[0].quality,'FAULT');
+});
+test('duplicate replay decisions cannot silently overwrite diagnostic provenance',()=>{
+ assert.throws(()=>collectP4DiagnosticEvidence({decisions:[{id:'dup'},{id:'dup'}],account:{closed:[],shadowOrders:[]}}),/duplicate/);
+});

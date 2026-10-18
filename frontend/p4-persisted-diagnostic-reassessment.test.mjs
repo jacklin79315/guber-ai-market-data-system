@@ -7,6 +7,8 @@ test('reassesses immutable WAIT evidence without claiming full review',()=>{
  const result=reassessP4PersistedDiagnostics({records:[original]});
  assert.deepEqual(original,snapshot);
  assert.equal(result.addedByActor.Risk,1);
+ assert.equal(result.attributionAfter.Risk.sound,1);
+ assert.equal(result.attributionAfter.Risk.fault,0);
  assert.equal(result.after.unresolved,1);
  assert.equal(result.reassessments[0].diagnosis.attribution[0].quality,'SOUND');
  assert.equal(result.reassessments[0].feedback.appliedToModels,false);

@@ -6,7 +6,7 @@ const OWNERS=Object.freeze({Entry:['entryLookback','entryThreshold'],Reward:['re
 export function proposeP4DiagnosticExperimentArms({task,parentParameters,maxArms=6}={}){
  const parent=validateTrainingParameters(parentParameters);
  if(!task||typeof task.id!=='string'||!Number.isSafeInteger(task.sampleCount)||task.sampleCount<0||!Number.isSafeInteger(maxArms)||maxArms<1||maxArms>10)throw Error('invalid diagnostic experiment task');
- const actor=task.id.startsWith('COLLECT_')&&task.id.endsWith('_CAUSAL_EVIDENCE')?task.actor:null;
+ const actor=task.id==='COLLECT_'+String(task.actor).toUpperCase()+'_CAUSAL_EVIDENCE'&&task.priority==='MEDIUM'?task.actor:null;
  const keys=OWNERS[actor]??[];
  const arms=[];
  for(const key of keys){

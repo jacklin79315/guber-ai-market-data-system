@@ -7,6 +7,8 @@ export async function runP4PersistedDiagnosticResearch({confirm,researchJobId,su
  const store=summaryStore??createP4DiagnosticSummaryStore({supabaseUrl,serviceRoleKey,fetchImpl});
  if(typeof store.load!=='function'||typeof store.commit!=='function')throw Error('invalid diagnostic summary store');
  const existing=await store.load(researchJobId);
+ // The caller must not reuse a job id to silently change the research specification.
+ // A completed job is returned read-only; this is not a fresh validation run.
  if(existing)return {status:'ALREADY_COMMITTED',summary:existing,mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
  const result=await runP4DiagnosticBackendResearch({confirm,researchJobId,supabaseUrl,apiKey:serviceRoleKey,fetchImpl,...options,onResearchSummary:summary=>store.commit(summary)});
  const persisted=await store.load(researchJobId);

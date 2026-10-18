@@ -38,7 +38,8 @@ export async function inspectPersistedP4ResearchRound({store,jobId,iteration,man
  if(!store||typeof store.read!=='function'||typeof jobId!=='string'||!jobId||!Number.isSafeInteger(iteration)||iteration<1||!manifests||typeof manifests!=='object')throw Error('invalid P4 research round reference');
  const results={};
  for(const [label,kind] of [['champion','CHAMPION_DIAGNOSTICS'],['challenger','CHALLENGER_DIAGNOSTICS']]){
-  const manifest=manifests[kind];
+  // Persisted rounds store manifests under champion/challenger; accept legacy kind keys for compatibility.
+  const manifest=manifests[label]??manifests[kind];
   if(!manifest)throw Error('missing immutable diagnostic manifest: '+kind);
   const records=await store.read({jobId,iteration,kind,manifest});
   results[label]={...inspectPersistedP4DiagnosticReadiness({records,minEvents}),evidenceGaps:prioritizeP4DiagnosticEvidenceGaps({records}),decisionInputs:inspectP4DecisionInputCoverage({records}),calibrationEligibility:checkP4CalibrationEligibility(records,minEvents),calibrationResearch:calibrationContract?evaluateP4PersistedWinCalibration({records,contract:calibrationContract}):null,researchTasks:planP4EvidenceResearchTasks({records,minEvents})};

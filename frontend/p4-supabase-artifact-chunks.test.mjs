@@ -63,3 +63,15 @@ test('P4 artifact retries one transient 502 and finishes upload',async()=>{
  assert.equal(result.chunkCount,1);
  assert.equal(attempts,2);
 });
+
+test('P4 chunk upload retries a transient fetch failure',async()=>{
+ let attempts=0;
+ const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async()=>{
+  attempts++;
+  if(attempts===1)throw new TypeError('fetch failed');
+  return {ok:true,json:async()=>true};
+ }});
+ const manifest=await store.write({jobId:'job',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records:[{id:1}]});
+ assert.equal(manifest.chunkCount,1);
+ assert.equal(attempts,2);
+});

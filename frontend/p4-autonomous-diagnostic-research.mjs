@@ -39,7 +39,7 @@ export async function inspectPersistedP4ResearchRound({store,jobId,iteration,man
   const manifest=manifests[kind];
   if(!manifest)throw Error('missing immutable diagnostic manifest: '+kind);
   const records=await store.read({jobId,iteration,kind,manifest});
-  results[label]=inspectPersistedP4DiagnosticReadiness({records,minEvents});
+  results[label]={...inspectPersistedP4DiagnosticReadiness({records,minEvents}),evidenceGaps:prioritizeP4DiagnosticEvidenceGaps({records})};
  }
  return {schemaVersion:'P4_PERSISTED_RESEARCH_READINESS_V1',mode:'RESEARCH_ONLY',liveTrading:false,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,jobId,iteration,results};
 }

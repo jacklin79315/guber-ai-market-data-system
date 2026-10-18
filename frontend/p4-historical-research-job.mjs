@@ -1,5 +1,6 @@
 function deepEqualArtifact(a,b){if(a===b)return true;if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;const ak=Object.keys(a).sort(),bk=Object.keys(b).sort();return ak.length===bk.length&&ak.every((key,i)=>key===bk[i]&&deepEqualArtifact(a[key],b[key]));}
 import {reconcileP4ResearchProgress} from './p4-progress-reconcile.mjs';
+import {auditP4ClosedEvidence} from './p4-closed-evidence-audit.mjs';
 import {runP4WithLease} from './p4-lease-runner.mjs';
 import {fingerprintP4JobSpec,assertP4CheckpointCompatible} from './p4-job-spec.mjs';
 import {createP4Checkpoint} from './p4-checkpoints.mjs';
@@ -45,6 +46,7 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
    const evidence=latest?.result?.comparison?.diagnosticEvidence;
    if(!evidence||!Array.isArray(evidence.champion)||!Array.isArray(evidence.challenger))throw Error('P4 diagnostic evidence missing before durable artifact commit');
    const manifest={};
+   const closedEvidenceAudit={champion:auditP4ClosedEvidence(evidence.champion),challenger:auditP4ClosedEvidence(evidence.challenger)};
    for(const [side,kind] of [['champion','CHAMPION_DIAGNOSTICS'],['challenger','CHALLENGER_DIAGNOSTICS']]){
     manifest[side]=await artifactStore.write({jobId,ownerToken,specFingerprint,iteration:x.iteration,kind,records:evidence[side]});
     const restored=await artifactStore.read({jobId,iteration:x.iteration,kind,manifest:manifest[side]});
@@ -54,6 +56,7 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
    // Earlier rounds retain their own manifests; full detail is in immutable artifact chunks.
    delete latest.result.comparison.diagnosticEvidence;
    latest.result.comparison.diagnosticArtifactManifest={schemaVersion:1,...manifest};
+   latest.result.comparison.closedEvidenceAudit=closedEvidenceAudit;
   }
   if(leaseGuard)await roundStore.commitLeased(jobId,ownerToken,specFingerprint,x);else await roundStore.commit(jobId,specFingerprint,x);}if(leaseGuard)await leaseGuard();await saveProgress({phase:'RESEARCH',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:x.iteration});await onProgress?.({phase:'RESEARCH',iteration:x.iteration,totalIterations:iterations,feedback:x.feedback});}});
  await saveProgress({phase:research.status==='RESEARCH_CYCLE_STOPPED'?'STOPPED':'COMPLETED',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:research.completedIterations??0});

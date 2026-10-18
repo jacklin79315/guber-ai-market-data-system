@@ -13,6 +13,7 @@ test('completed persisted research proposes next hypothesis without executing it
  assert.equal(record.status,'COMPLETED');
  assert.equal(next.status,'PROPOSED');
  assert.equal(next.plan.sourceJobId,'job_1');
+ assert.equal(next.plan.actor,'COLLECT_ENTRY_CAUSAL_EVIDENCE');
  assert.equal(next.plan.autoExecutionAuthorized,false);
  assert.equal(result.modelUpdateApplied,false);
 });

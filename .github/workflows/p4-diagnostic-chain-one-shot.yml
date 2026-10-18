@@ -1,0 +1,37 @@
+name: P4 first persisted autonomous research chain
+on:
+  push:
+    paths:
+      - 'research-triggers/p4-autonomous-chain-20261019.txt'
+permissions:
+  contents: read
+concurrency:
+  group: p4-diagnostic-research
+  cancel-in-progress: false
+jobs:
+  research-only:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P4_RESEARCH_CONFIRM: RESEARCH_ONLY
+      P4_ORDERS_ENABLED: 'false'
+      P4_MODEL_UPDATE_ALLOWED: 'false'
+      P4_CHAMPION_PROMOTION_ALLOWED: 'false'
+      P4_INITIAL_TASK_ID: p4_autonomous_20261019_initial
+      P4_SOURCE_SUMMARY_JOB_ID: p4_diag_entry_followup_20261019_01
+      P4_CHAIN_ID: p4_auto_20261019_a
+      P4_WINDOWS_JSON: '[{"fromOpenTime":1748736000000,"toOpenTime":1755932400000,"asOfMs":1755936000000}]'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute persisted research-only diagnostic chain
+        run: node p4-diagnostic-chain-runner.mjs

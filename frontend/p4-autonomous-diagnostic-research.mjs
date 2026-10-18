@@ -61,5 +61,5 @@ export function prioritizeP4DiagnosticEvidenceGaps({records}={}){
   if(d.requiresReview===false)complete++;
  }
  const priorities=Object.entries(gaps).map(([actor,missing])=>({actor,missing,coverage:records.length?Number(((records.length-missing)/records.length).toFixed(4)):null})).sort((a,b)=>b.missing-a.missing||a.actor.localeCompare(b.actor));
- return {schemaVersion:'P4_DIAGNOSTIC_EVIDENCE_GAPS_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,totalEvents:records.length,fullyReviewed:complete,priorities,nextAction:priorities[0]?.missing>0?'IMPROVE_CAUSAL_EVIDENCE_COVERAGE':'REVIEW_VALIDATED_CAUSAL_HYPOTHESES'};
+ return {schemaVersion:'P4_DIAGNOSTIC_EVIDENCE_GAPS_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,totalEvents:records.length,fullyReviewed:complete,priorities,nextAction:records.length===0?'COLLECT_DIAGNOSTIC_EVIDENCE':priorities[0]?.missing>0?'IMPROVE_CAUSAL_EVIDENCE_COVERAGE':'REVIEW_VALIDATED_CAUSAL_HYPOTHESES'};
 }

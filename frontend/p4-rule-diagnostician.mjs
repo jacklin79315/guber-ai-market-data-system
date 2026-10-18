@@ -27,6 +27,16 @@ export function assessP4ExpertHistory({evidence}={}){
   if(!actor||seen.has(actor))continue;
   if(actor==='Brain'&&step!==history.filter(h=>h?.expert==='brain').at(-1))continue;
   seen.add(actor);
+  // A Risk WAIT for non-positive expectancy is a narrow, auditable guardrail
+  // verdict only when the proposal explicitly records non-positive EV.
+  // It does not establish predictive skill or certify the whole WAIT decision.
+  if(actor==='Risk'&&step.action==='WAIT'&&step.reason==='NON_POSITIVE_EXPECTANCY'&&evidence.action==='WAIT'){
+   const ev=evidence.proposalAtDecision?.expectedValue;
+   if(typeof ev==='number'&&Number.isFinite(ev)){
+    results.push({actor,quality:ev<=0?'SOUND':'FAULT',responsibility:ev<=0?'NONE':'PRIMARY',reason:ev<=0?'Risk correctly waited on recorded non-positive expectancy':'Risk claimed non-positive expectancy despite positive recorded value',evidenceKeys:['expertHistory','proposalAtDecision','action']});
+   }
+   continue;
+  }
   // A recorded Brain approval must match the final replay action. A mismatch is
   // an auditable decision-chain fault, independent of subsequent PnL.
   // Brain safety veto is a distinct final gate, not a contradictory Brain verdict.

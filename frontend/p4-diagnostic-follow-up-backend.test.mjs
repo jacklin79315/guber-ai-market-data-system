@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {runP4DiagnosticFollowUpBackend} from './p4-diagnostic-follow-up-backend.mjs';
 import {createP4DiagnosticTaskRecord,transitionP4DiagnosticTask} from './p4-diagnostic-task-lifecycle.mjs';
-const plan={schemaVersion:'P4_DIAGNOSTIC_FOLLOW_UP_PLAN_V1',sourceJobId:'original',action:'REVISE_HYPOTHESIS',reason:'OOS_NOT_IMPROVED',status:'PROPOSED_NOT_EXECUTED',researchOnly:true,autoExecutionAuthorized:false,ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false};
+const plan={schemaVersion:'P4_DIAGNOSTIC_FOLLOW_UP_PLAN_V1',sourceJobId:'original',actor:'COLLECT_ENTRY_CAUSAL_EVIDENCE',action:'REVISE_HYPOTHESIS',reason:'OOS_NOT_IMPROVED',status:'PROPOSED_NOT_EXECUTED',researchOnly:true,autoExecutionAuthorized:false,ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false};
 test('historical backend passes diagnostic hypothesis into persisted research and completes only after commit',async()=>{
  let record=transitionP4DiagnosticTask(createP4DiagnosticTaskRecord(plan,{taskId:'follow_1',createdAtMs:1}),{to:'READY',atMs:2});
  const store={load:async()=>record,transition:async(before,after)=>{assert.equal(record,before);record=after}};

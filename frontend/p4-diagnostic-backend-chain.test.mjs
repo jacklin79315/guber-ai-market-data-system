@@ -14,7 +14,7 @@ test('disjoint but invalid candle evidence rejected before any writes',async()=>
 
 import {createP4DiagnosticTaskRecord} from './p4-diagnostic-task-lifecycle.mjs';
 test('backend chain runs two distinct historical windows and passes prior diagnosis into next experiment',async()=>{
- const plan={schemaVersion:'P4_DIAGNOSTIC_FOLLOW_UP_PLAN_V1',sourceJobId:'seed',actor:'COLLECT_ENTRY_CAUSAL_EVIDENCE',action:'COLLECT_MORE_TRAIN_EVIDENCE',reason:'NO_ELIGIBLE_TRAIN_CHALLENGER',hypothesis:null,status:'PROPOSED_NOT_EXECUTED',researchOnly:true,autoExecutionAuthorized:false,ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false};
+ const plan={schemaVersion:'P4_DIAGNOSTIC_FOLLOW_UP_PLAN_V1',sourceJobId:'seed',actor:'COLLECT_ENTRY_CAUSAL_EVIDENCE',action:'COLLECT_MORE_TRAIN_EVIDENCE',reason:'NO_ELIGIBLE_TRAIN_CHALLENGER',hypothesis:null,requiresFreshNonOverlappingEvidence:false,status:'PROPOSED_NOT_EXECUTED',researchOnly:true,autoExecutionAuthorized:false,ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false};
  const records=new Map([['t0',createP4DiagnosticTaskRecord(plan,{taskId:'t0',createdAtMs:1})]]);
  const taskStore={load:async id=>records.get(id),transition:async(old,next)=>{assert.equal(records.get(old.taskId),old);records.set(old.taskId,next)},create:async record=>{records.set(record.taskId,record)}};
  const summaries=new Map(),requests=[];

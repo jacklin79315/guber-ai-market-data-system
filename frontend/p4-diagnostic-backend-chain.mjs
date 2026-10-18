@@ -31,7 +31,7 @@ export async function runP4DiagnosticBackendChain({supabaseUrl,serviceRoleKey,fe
  return runP4AuthorizedDiagnosticChain({store,initialTaskId,grant,confirm,atMs,createExecutionJobId,createTaskId,recordNextTask:r=>store.create(r),loadCommittedSummary:id=>summaries.load(id),runResearch:async({task,executionJobId,confirm:researchConfirm})=>{
   const window=windows[round++];
   if(!window)throw Error('missing authorized research window');
-  const mapped=mapP4FollowUpToExperimentTask(task.plan);
+  const mapped=mapP4FollowUpToExperimentTask(task.plan??task);
   if(mapped.status!=='EXPERIMENT_READY')throw Error('follow-up does not permit an experiment');
   const prior=[...priorSummaries];
   const seen=new Set();

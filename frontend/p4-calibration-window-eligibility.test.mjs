@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {defineP4CausalExperiment} from './p4-causal-experiment.mjs';
 import {inspectP4CalibrationWindows} from './p4-calibration-window-eligibility.mjs';
@@ -21,4 +22,10 @@ test('missing validation samples never passes',()=>{
 test('tampered calibration contract is rejected before evidence check',()=>{
  const modified={...contract,minimumSamples:31};
  assert.throws(()=>inspectP4CalibrationWindows({records:[],contract:modified}),/modified calibration contract/);
+});
+
+test('rehashed invalid windows and unsafe controls are still rejected',()=>{
+ const rehash=change=>{const {fingerprint,...definition}={...contract,...change};return {...definition,fingerprint:createHash('sha256').update(JSON.stringify(definition)).digest('hex')}};
+ assert.throws(()=>inspectP4CalibrationWindows({records:[],contract:rehash({train:{from:100,to:500,asOf:400}})}),/invalid chronological windows/);
+ assert.throws(()=>inspectP4CalibrationWindows({records:[],contract:rehash({ordersEnabled:true})}),/research-only controls/);
 });

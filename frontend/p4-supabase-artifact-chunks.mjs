@@ -28,7 +28,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
      if(attempt===2||![429,500,502,503,504].includes(response.status))throw Error('P4 artifact read failed: '+response.status+' offset='+offset);
     }
     const batch=await response.json();
-    if(!Array.isArray(batch)||batch.length!==Math.min(500,manifest.chunkCount-offset))throw Error('P4 artifact chunk count mismatch');
+    if(!Array.isArray(batch)||batch.length!==Math.min(25,manifest.chunkCount-offset))throw Error('P4 artifact chunk count mismatch');
     rows.push(...batch);
    }
    if(rows.length!==manifest.chunkCount)throw Error('P4 artifact chunk count mismatch');

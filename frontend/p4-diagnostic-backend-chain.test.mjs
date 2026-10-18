@@ -52,3 +52,14 @@ test('historical failed arms change the actual persisted replay candidates',asyn
  assert.equal(result.status,'STOPPED_MAX_ROUNDS');
  assert.deepEqual(observed.excludedDirections,[{parameter:'entryLookback',direction:-1},{parameter:'entryLookback',direction:1}]);
 });
+
+test('historical OOS failure is excluded even when training improved',async()=>{
+ const plan={schemaVersion:'P4_DIAGNOSTIC_FOLLOW_UP_PLAN_V1',sourceJobId:'seed',actor:'COLLECT_ENTRY_CAUSAL_EVIDENCE',action:'COLLECT_MORE_TRAIN_EVIDENCE',reason:'NO_ELIGIBLE_TRAIN_CHALLENGER',hypothesis:null,requiresFreshNonOverlappingEvidence:false,status:'PROPOSED_NOT_EXECUTED',researchOnly:true,autoExecutionAuthorized:false,ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false};
+ const records=new Map([['t0',createP4DiagnosticTaskRecord(plan,{taskId:'t0',createdAtMs:1})]]);
+ const store={load:async id=>records.get(id),transition:async(a,b)=>records.set(a.taskId,b),create:async r=>records.set(r.taskId,r)};
+ const prior={schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId:'prior_oos',taskId:'COLLECT_ENTRY_CAUSAL_EVIDENCE',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,trainingResults:[{arm:{parameter:'entryThreshold',from:0.001,to:0.0011,direction:1},feedback:{improvedInSameWindow:true}}],learningEvidence:{assessment:'NO_OOS_IMPROVEMENT',oosSufficient:true,oosImproved:false,selectedParameter:'entryThreshold',from:0.001,to:0.0011}};
+ let observed;
+ await runP4DiagnosticBackendChain({taskStore:store,summaryStore:{load:async()=>prior},initialTaskId:'t0',confirm:'RESEARCH_ONLY',atMs:Date.now()+1000,grant:{mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false,maxRounds:1,autoContinueProposals:true,expiresAtMs:9999999999999,allowedTaskIds:['t0']},windows:[w(1000)],priorResearchJobIds:['prior_oos'],createExecutionJobId:async()=> 'job_1',createTaskId:async()=> 'next_1',runPersisted:async args=>{observed=args;return {status:'COMMITTED',summary:{schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId:'job_1',taskId:args.task.id,status:'NO_TRAIN_SELECTED_ARM',loadedCandles:200,trainingResults:[],selectedArm:null,oosEvidenceStatus:'NOT_EVALUATED',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false}};}});
+ assert.ok(observed.excludedDirections.some(x=>x.parameter==='entryThreshold'&&x.direction===1));
+ assert.ok(!observed.excludedDirections.some(x=>x.parameter==='entryThreshold'&&x.direction===-1));
+});

@@ -26,3 +26,20 @@ export function inspectPersistedP4DiagnosticReadiness({records,minEvents=30}={})
  const report=discoverAutonomousP4ResearchHypotheses({rows:records,minEvents});
  return {schemaVersion:'P4_DIAGNOSTIC_READINESS_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,totalEvents:records.length,requiresReview:reviewCount,readyForCausalLearning:reviewCount===0&&report.hypotheses.length>0,reason:reviewCount>0?'UNRESOLVED_DIAGNOSIS':report.hypotheses.length===0?'NO_SUPPORTED_FAULT_PATTERN':'HYPOTHESES_REQUIRE_CAUSAL_VALIDATION',report};
 }
+
+/**
+ * Read immutable P4 diagnostic artifacts using the existing SHA256/manifest
+ * verified store, then produce research-only readiness reports.
+ * The store must be constructed by createP4ArtifactChunkStore.
+ */
+export async function inspectPersistedP4ResearchRound({store,jobId,iteration,manifests,minEvents=30}={}){
+ if(!store||typeof store.read!=='function'||typeof jobId!=='string'||!jobId||!Number.isSafeInteger(iteration)||iteration<1||!manifests||typeof manifests!=='object')throw Error('invalid P4 research round reference');
+ const results={};
+ for(const [label,kind] of [['champion','CHAMPION_DIAGNOSTICS'],['challenger','CHALLENGER_DIAGNOSTICS']]){
+  const manifest=manifests[kind];
+  if(!manifest)throw Error('missing immutable diagnostic manifest: '+kind);
+  const records=await store.read({jobId,iteration,kind,manifest});
+  results[label]=inspectPersistedP4DiagnosticReadiness({records,minEvents});
+ }
+ return {schemaVersion:'P4_PERSISTED_RESEARCH_READINESS_V1',mode:'RESEARCH_ONLY',liveTrading:false,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,jobId,iteration,results};
+}

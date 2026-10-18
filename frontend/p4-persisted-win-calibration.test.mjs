@@ -25,3 +25,7 @@ test('late training label blocks experiment',()=>{
  const result=evaluateP4PersistedWinCalibration({records,contract});
  assert.equal(result.status,'BLOCKED_INSUFFICIENT_EVIDENCE');
 });
+
+test('malformed persisted diagnostic record fails closed',()=>{
+ assert.throws(()=>evaluateP4PersistedWinCalibration({records:[{diagnosis:{schemaVersion:'INVALID'},feedback:{schemaVersion:'P4_FEEDBACK_V1'}}],contract}),/unverified calibration diagnostic evidence/);
+});

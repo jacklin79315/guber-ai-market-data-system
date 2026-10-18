@@ -4,14 +4,20 @@ import {executeP4DiagnosticFollowUp} from './p4-diagnostic-follow-up-execution.m
 import {planP4DiagnosticResearchFollowUp} from './p4-diagnostic-research-task-plan.mjs';
 import {createP4DiagnosticTaskRecord} from './p4-diagnostic-task-lifecycle.mjs';
 
-export async function runP4DiagnosticAutonomousCycle({store,taskId,executionJobId,atMs,confirm,runResearch,createTaskId,recordNextTask}={}){
+export async function runP4DiagnosticAutonomousCycle({store,taskId,executionJobId,atMs,confirm,runResearch,createTaskId,recordNextTask,loadCommittedSummary}={}){
  if(confirm!=='RESEARCH_ONLY')throw Error('research-only confirmation required');
  if(typeof createTaskId!=='function'||typeof recordNextTask!=='function'||typeof runResearch!=='function'||!store||typeof store.load!=='function')throw Error('missing autonomous cycle dependencies');
  let committedSummary=null;
  // The task may already be COMPLETED after a worker crash; recover its immutable
  // research summary without replaying the historical experiment.
  const prior=await store.load(taskId);
- if(prior?.status==='COMPLETED')return {schemaVersion:'P4_DIAGNOSTIC_AUTONOMOUS_CYCLE_V1',status:'ALREADY_COMPLETED_REQUIRES_RECOVERY',completedJobId:prior.resultJobId,nextTask:null,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
+ if(prior?.status==='COMPLETED'){
+  if(typeof loadCommittedSummary!=='function')return {schemaVersion:'P4_DIAGNOSTIC_AUTONOMOUS_CYCLE_V1',status:'ALREADY_COMPLETED_REQUIRES_RECOVERY',completedJobId:prior.resultJobId,nextTask:null,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
+  const recovered=await loadCommittedSummary(prior.resultJobId);
+  if(recovered?.jobId!==prior.resultJobId||recovered.schemaVersion!=='P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1'||recovered.ordersEnabled!==false||recovered.modelUpdateApplied!==false||recovered.championPromotionAllowed!==false)throw Error('unsafe or missing committed recovery summary');
+  const nextPlan=planP4DiagnosticResearchFollowUp(recovered);
+  return {schemaVersion:'P4_DIAGNOSTIC_AUTONOMOUS_CYCLE_V1',status:'COMPLETED_RECOVERED_NEXT_ACTION',completedJobId:prior.resultJobId,nextAction:nextPlan.action,nextPlan,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
+ }
  const execution=await executeP4DiagnosticFollowUp({store,taskId,executionJobId,atMs,confirm,runResearch:async args=>{
   const result=await runResearch(args);
   if(result?.status==='COMMITTED')committedSummary=result.summary;

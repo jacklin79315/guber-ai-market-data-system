@@ -43,3 +43,23 @@ export async function inspectPersistedP4ResearchRound({store,jobId,iteration,man
  }
  return {schemaVersion:'P4_PERSISTED_RESEARCH_READINESS_V1',mode:'RESEARCH_ONLY',liveTrading:false,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,jobId,iteration,results};
 }
+
+/**
+ * Autonomous diagnostic coverage triage, independent of realized PnL.
+ * Prioritizes missing evidence collection rather than guessing a parameter.
+ */
+export function prioritizeP4DiagnosticEvidenceGaps({records}={}){
+ if(!Array.isArray(records))throw Error('invalid diagnostic records');
+ const actors=['Entry','Reward','Win','Risk','Time','Brain'];
+ const gaps=Object.fromEntries(actors.map(actor=>[actor,0]));
+ let complete=0;
+ for(const row of records){
+  const d=row?.diagnosis;
+  if(d?.schemaVersion!=='P4_DIAGNOSIS_V1'||!Array.isArray(d.unassessedActors)||!Array.isArray(d.attribution))throw Error('invalid diagnostic record');
+  if(d.unassessedActors.some(actor=>!actors.includes(actor)))throw Error('unknown diagnostic actor');
+  for(const actor of new Set(d.unassessedActors))gaps[actor]++;
+  if(d.requiresReview===false)complete++;
+ }
+ const priorities=Object.entries(gaps).map(([actor,missing])=>({actor,missing,coverage:records.length?Number(((records.length-missing)/records.length).toFixed(4)):null})).sort((a,b)=>b.missing-a.missing||a.actor.localeCompare(b.actor));
+ return {schemaVersion:'P4_DIAGNOSTIC_EVIDENCE_GAPS_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,totalEvents:records.length,fullyReviewed:complete,priorities,nextAction:priorities[0]?.missing>0?'IMPROVE_CAUSAL_EVIDENCE_COVERAGE':'REVIEW_VALIDATED_CAUSAL_HYPOTHESES'};
+}

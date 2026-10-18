@@ -1,0 +1,1 @@
+Research-only fourth historical experiment. Prior A/B/C immutable evidence must exclude both entryLookback directions; verify actual replay selects entryThreshold. No real orders, model changes, or promotion.

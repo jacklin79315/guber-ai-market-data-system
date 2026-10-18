@@ -1,0 +1,1 @@
+Research-only. Continue fourth round's persisted REVISE_HYPOTHESIS task. Exclude both previously failed entryLookback directions and OOS-failed entryThreshold +1 direction. Disjoint historical BTCUSDT 1h window. No live orders or model promotion.

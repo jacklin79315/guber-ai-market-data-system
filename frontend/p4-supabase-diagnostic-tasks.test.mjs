@@ -13,7 +13,7 @@ test('optimistic task transition rejects concurrent stale updates',async()=>{
  const ready=transitionP4DiagnosticTask(record,{to:'READY',atMs:2});
  await assert.rejects(()=>store.transition(record,ready),/concurrent transition conflict/);
  assert.equal(calls[0].method,'PATCH');
- assert.match(calls[0].url,/record_sha256=eq\\./);
+ assert.ok(new URL(calls[0].url).searchParams.get('record_sha256')?.startsWith('eq.'));
 });
 
 test('task store refuses forged lifecycle transitions before fetch',async()=>{

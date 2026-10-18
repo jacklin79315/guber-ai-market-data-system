@@ -2,7 +2,7 @@
 // the selected arm once on later untouched candles. Research-only, no promotion.
 import {runP4DiagnosticExperiments} from './p4-diagnostic-experiment-runner.mjs';
 import {replayP4DiagnosticArm} from './p4-diagnostic-arm-replay.mjs';
-export async function runP4DiagnosticOosExperiment({task,parentParameters,trainCandles,validationCandles,maxArms=6,shouldStop=()=>false,...replayInputs}={}){
+export async function runP4DiagnosticOosExperiment({task,parentParameters,trainCandles,validationCandles,maxArms=6,explorationSteps=[1],shouldStop=()=>false,...replayInputs}={}){
  if(Object.hasOwn(replayInputs,'candles')||Object.hasOwn(replayInputs,'validationCandles')||Object.hasOwn(replayInputs,'onExperiment')||Object.hasOwn(replayInputs,'onIteration'))throw Error('P4 OOS replay input override forbidden');
  if(!Array.isArray(trainCandles)||trainCandles.length<2||!Array.isArray(validationCandles)||validationCandles.length<2||typeof shouldStop!=='function')throw Error('invalid P4 diagnostic OOS windows');
  const interval=rows=>{
@@ -12,7 +12,7 @@ export async function runP4DiagnosticOosExperiment({task,parentParameters,trainC
  };
  const train=interval(trainCandles),validation=interval(validationCandles);
  if(train.to>=validation.from)throw Error('P4 diagnostic OOS windows overlap or are noncausal');
- const batch=await runP4DiagnosticExperiments({task,parentParameters,maxArms,shouldStop,...replayInputs,candles:trainCandles});
+ const batch=await runP4DiagnosticExperiments({task,parentParameters,maxArms,explorationSteps,shouldStop,...replayInputs,candles:trainCandles});
  const eligible=batch.status==='EXPLORATORY_BATCH_COMPLETED'?batch.results.filter(r=>r.feedback?.status==='RESEARCH_EVIDENCE_ONLY'&&r.feedback.improvedInSameWindow===true):[];
  eligible.sort((a,b)=>(b.feedback.challenger.netRealizedPnl-b.feedback.champion.netRealizedPnl)-(a.feedback.challenger.netRealizedPnl-a.feedback.champion.netRealizedPnl)||a.arm.parameter.localeCompare(b.arm.parameter)||a.arm.direction-b.arm.direction);
  const selected=eligible[0]??null;

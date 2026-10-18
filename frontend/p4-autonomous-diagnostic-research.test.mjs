@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {planAutonomousP4DiagnosticResearch,discoverAutonomousP4ResearchHypotheses,inspectPersistedP4DiagnosticReadiness,inspectPersistedP4ResearchRound,prioritizeP4DiagnosticEvidenceGaps,inspectP4DecisionInputCoverage} from './p4-autonomous-diagnostic-research.mjs';
+import {planAutonomousP4DiagnosticResearch,discoverAutonomousP4ResearchHypotheses,inspectPersistedP4DiagnosticReadiness,inspectPersistedP4ResearchRound,prioritizeP4DiagnosticEvidenceGaps,inspectP4DecisionInputCoverage,planP4EvidenceResearchTasks} from './p4-autonomous-diagnostic-research.mjs';
 const parentParameters={entryLookback:20,entryThreshold:0.001,rewardAtrPeriod:14,rewardStopAtr:1.5,rewardTakeAtr:3};
 test('autonomous research remains disabled for orders and promotion with no causal evidence',()=>{
  const audit={schemaVersion:'P4_DIAGNOSTIC_AUDIT_V1',eventCount:0,actors:{},appliedToModels:false,fingerprint:'a'.repeat(64),requiresReview:0};
@@ -41,6 +41,7 @@ test('reads both diagnostic manifests without authorizing orders or model update
  assert.equal(result.results.champion.totalEvents,0);
  assert.equal(result.results.champion.evidenceGaps.totalEvents,0);
  assert.equal(result.results.champion.decisionInputs.totalEvents,0);
+ assert.equal(result.results.champion.researchTasks.tasks[0].id,'COLLECT_DIAGNOSTIC_RECORDS');
  assert.equal(result.results.champion.evidenceGaps.nextAction,'COLLECT_DIAGNOSTIC_EVIDENCE');
  assert.equal(result.results.challenger.totalEvents,0);
  assert.equal(result.ordersEnabled,false);
@@ -69,4 +70,15 @@ test('unknown exploratory probability is an evidence gap, never automatic fault'
  assert.equal(result.approvedWithUnknownProbability,1);
  assert.equal(result.ordersEnabled,false);
  assert.equal(result.modelUpdateApplied,false);
+});
+
+test('research tasks target unknown probability without turning it into blame or orders',()=>{
+ const records=[{diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1',requiresReview:true,unassessedActors:['Win'],attribution:[]},evidence:{action:'APPROVE',proposalAtDecision:{winProbability:null,expectedValue:null},expertHistory:[]}}];
+ const result=planP4EvidenceResearchTasks({records});
+ assert.equal(result.tasks[0].id,'CALIBRATE_UNKNOWN_WIN_PROBABILITY');
+ assert.equal(result.tasks[1].id,'AUDIT_UNKNOWN_EXPECTED_VALUE');
+ assert.equal(result.tasks.some(t=>t.id==='COLLECT_WIN_CAUSAL_EVIDENCE'),true);
+ assert.equal(result.ordersEnabled,false);
+ assert.equal(result.modelUpdateApplied,false);
+ assert.equal(result.championPromotionAllowed,false);
 });

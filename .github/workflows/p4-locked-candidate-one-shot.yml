@@ -1,0 +1,34 @@
+name: P4 locked candidate retrospective check
+on:
+  push:
+    paths:
+      - 'research-triggers/p4-locked-entry-20261019.txt'
+permissions:
+  contents: read
+concurrency:
+  group: p4-diagnostic-research
+  cancel-in-progress: false
+jobs:
+  research-only:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P4_RESEARCH_CONFIRM: RESEARCH_ONLY
+      P4_LOCKED_JOB_ID: p4_locked_entry_17_retro_20261019_01
+      P4_FROM_MS: '1785103200000'
+      P4_TO_MS: '1792299600000'
+      P4_AS_OF_MS: '1792306800000'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Evaluate locked candidate without parameter selection
+        run: node p4-diagnostic-locked-one-shot.mjs

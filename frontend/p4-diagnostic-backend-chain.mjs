@@ -3,6 +3,7 @@
 import {runP4AuthorizedDiagnosticChain} from './p4-diagnostic-authorized-chain.mjs';
 import {runP4PersistedDiagnosticResearch} from './p4-diagnostic-persisted-run.mjs';
 import {proposeP4DiagnosticExperimentArms} from './p4-diagnostic-experiment-candidates.mjs';
+import {mapP4FollowUpToExperimentTask} from './p4-diagnostic-follow-up-experiment.mjs';
 import {createP4DiagnosticTaskStore} from './p4-supabase-diagnostic-tasks.mjs';
 import {createP4DiagnosticSummaryStore} from './p4-supabase-diagnostic-summaries.mjs';
 import {DEFAULT_TRAINING_PARAMETERS} from './p4-challenger-parameters.mjs';
@@ -27,8 +28,10 @@ export async function runP4DiagnosticBackendChain({supabaseUrl,serviceRoleKey,fe
  return runP4AuthorizedDiagnosticChain({store,initialTaskId,grant,confirm,atMs,createExecutionJobId,createTaskId,recordNextTask:r=>store.create(r),loadCommittedSummary:id=>summaries.load(id),runResearch:async({task,executionJobId,confirm:researchConfirm})=>{
   const window=windows[round++];
   if(!window)throw Error('missing authorized research window');
-  const proposed=proposeP4DiagnosticExperimentArms({task,parentParameters,maxArms,explorationSteps});
-  if(task.avoidPriorFailedDirection&&proposed.arms.some(arm=>arm.parameter===task.avoidPriorFailedDirection.parameter&&arm.direction===task.avoidPriorFailedDirection.avoidDirection))throw Error('previous failed hypothesis must not be repeated');
-  return runPersisted({confirm:researchConfirm,researchJobId:executionJobId,supabaseUrl,serviceRoleKey,fetchImpl,summaryStore:summaries,...window,task,parentParameters,brain,costs,maxArms,explorationSteps,validationFraction});
+  const mapped=mapP4FollowUpToExperimentTask(task.plan);
+  if(mapped.status!=='EXPERIMENT_READY')throw Error('follow-up does not permit an experiment');
+  const proposed=proposeP4DiagnosticExperimentArms({task:mapped.task,parentParameters,maxArms,explorationSteps});
+  if(mapped.task.avoidPriorFailedDirection&&proposed.arms.some(arm=>arm.parameter===mapped.task.avoidPriorFailedDirection.parameter&&arm.direction===mapped.task.avoidPriorFailedDirection.avoidDirection))throw Error('previous failed hypothesis must not be repeated');
+  return runPersisted({confirm:researchConfirm,researchJobId:executionJobId,supabaseUrl,serviceRoleKey,fetchImpl,summaryStore:summaries,...window,task:mapped.task,parentParameters,brain,costs,maxArms,explorationSteps,validationFraction});
  }});
 }

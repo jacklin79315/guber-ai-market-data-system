@@ -403,3 +403,10 @@
 - `262d234` 新增中斷上傳測試：第一塊寫入、第二塊 HTTP 503，重新送同一輪分塊並讀回全量證據；該提交 CI SUCCESS。
 - `39e9abf` 新增寫入端租約 token、job、iteration、spec fingerprint 格式檢查，初次 CI 因既有測試 token 過短而 FAIL；`1e98787` 已更新測試 token，CI 待確認。
 - **仍未完成**：正式 Supabase RPC 真實寫入／讀回驗收、長窗 502 重現與修復確認、完整 24M 歷史研究。模擬的 503 續傳通過不等於真實資料庫端到端通過。
+
+
+## 13Y. 2026-10-18 正式 Supabase 分塊 RPC 寫入煙霧測試
+
+- `p4_artifact_smoke_commit_cleanup_20261018` migration 成功在正式 Supabase 執行隔離測試：建立暫時有效租約、呼叫 `p4_commit_research_artifact_chunk`、相同內容再次提交、確認僅 1 筆，隨後清除測試分塊與租約。再次查詢兩表測試 job 均為 0 筆。
+- `4f5d443` 將研究端的 JSONB 讀回驗證改成遞迴結構比對，不依賴物件鍵順序；CI SUCCESS。先前 `1e98787` CI 亦 SUCCESS。
+- 此驗收僅為資料庫層級 RPC，**不是** HTTP PostgREST/Service Role 端到端，也未驗證 24M 大量分塊、完整研究輪次 checkpoint 與 502 修復。

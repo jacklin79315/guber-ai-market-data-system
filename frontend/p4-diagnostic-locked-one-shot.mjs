@@ -1,4 +1,5 @@
 // One-shot fixed-candidate research; immutable diagnostic summary store used as a write-once envelope.
+import {auditP4RegimeAttribution} from './p4-regime-attribution-audit.mjs';
 import {runP4LockedBackend} from './p4-diagnostic-locked-backend.mjs';
 import {createP4DiagnosticSummaryStore} from './p4-supabase-diagnostic-summaries.mjs';
 export async function runP4LockedOneShot({env=process.env,fetchImpl=fetch,runBackend=runP4LockedBackend}={}){
@@ -13,7 +14,8 @@ export async function runP4LockedOneShot({env=process.env,fetchImpl=fetch,runBac
  const existing=await store.load(jobId);
  if(existing)return {status:'ALREADY_COMMITTED',summary:existing};
  const result=await runBackend({confirm:'RESEARCH_ONLY',supabaseUrl:env.SUPABASE_URL,serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl,fromOpenTime,toOpenTime,asOfMs});
- const summary={schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId,createdAtMs:Date.now(),status:'LOCKED_CANDIDATE_RETROSPECTIVE_EVALUATED',source:result.source,sourceJobId:result.sourceJobId,lockedCandidate:result.lockedCandidate,window:result.window,loadedCandles:result.loadedCandles,feedback:result.feedback,regimeAttribution:result.comparison?.regimeAttribution??null,independentValidation:false,modelUpdateApplied:false,championPromotionAllowed:false,ordersEnabled:false};
+ const regimeAudit=result.comparison?.regimeAttribution?auditP4RegimeAttribution({regimeAttribution:result.comparison.regimeAttribution,feedback:result.feedback}):null;
+ const summary={schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId,createdAtMs:Date.now(),status:'LOCKED_CANDIDATE_RETROSPECTIVE_EVALUATED',source:result.source,sourceJobId:result.sourceJobId,lockedCandidate:result.lockedCandidate,window:result.window,loadedCandles:result.loadedCandles,feedback:result.feedback,regimeAttribution:result.comparison?.regimeAttribution??null,regimeAudit,independentValidation:false,modelUpdateApplied:false,championPromotionAllowed:false,ordersEnabled:false};
  await store.commit(summary);
  return {status:'COMMITTED',summary:await store.load(jobId)};
 }

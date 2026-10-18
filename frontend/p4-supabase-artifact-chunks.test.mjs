@@ -13,7 +13,7 @@ test('P4 artifact chunks are written, read back and verified',async()=>{
  };
  const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});
  const records=[{id:1,value:'x'.repeat(700)},{id:2,value:'y'.repeat(700)},{id:3,value:'z'.repeat(700)}];
- const manifest=await store.write({jobId:'job',ownerToken:'token',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records,maxChunkBytes:1024});
+ const manifest=await store.write({jobId:'job',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records,maxChunkBytes:1024});
  assert.equal(manifest.chunkCount,3);
  assert.deepEqual(await store.read({jobId:'job',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest}),records);
  rows[0].payload=[{id:99}];
@@ -21,7 +21,7 @@ test('P4 artifact chunks are written, read back and verified',async()=>{
 });
 test('P4 archive rejects oversized indivisible records',async()=>{
  const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async()=>{throw Error('must not send')}});
- await assert.rejects(store.write({jobId:'job',ownerToken:'token',specFingerprint:hash,iteration:1,kind:'CHALLENGER_DIAGNOSTICS',records:[{value:'z'.repeat(2048)}],maxChunkBytes:1024}),/exceeds chunk size/);
+ await assert.rejects(store.write({jobId:'job',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHALLENGER_DIAGNOSTICS',records:[{value:'z'.repeat(2048)}],maxChunkBytes:1024}),/exceeds chunk size/);
 });
 
 test('P4 readback rejects manifest hash mismatch',async()=>{
@@ -44,7 +44,7 @@ test('P4 chunk upload resumes after partial failure without changing prior chunk
  };
  const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});
  const records=[{id:1,reason:'a'.repeat(700)},{id:2,reason:'b'.repeat(700)}];
- const args={jobId:'job',ownerToken:'lease-token',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records,maxChunkBytes:1024};
+ const args={jobId:'job',ownerToken:'test-lease-token-12345',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records,maxChunkBytes:1024};
  await assert.rejects(store.write(args),/503/);
  assert.equal(chunks.size,1);
  const manifest=await store.write(args);

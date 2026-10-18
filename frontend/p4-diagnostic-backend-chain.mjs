@@ -46,7 +46,11 @@ export async function runP4DiagnosticBackendChain({supabaseUrl,serviceRoleKey,fe
    if(Math.abs(parentParameters[failed.parameter]-failed.failedFrom)<1e-9&&!excludedDirections.some(x=>x.parameter===failed.parameter&&x.direction===failed.avoidDirection))excludedDirections.push({parameter:failed.parameter,direction:failed.avoidDirection});
   }
   const proposed=proposeP4DiagnosticExperimentArms({task:mapped.task,parentParameters,maxArms,explorationSteps,excludedDirections});
-  if(proposed.arms.length===0)throw Error('NO_UNTESTED_DIAGNOSTIC_ARMS: prior research exhausted available hypotheses');
+  if(proposed.arms.length===0){
+   // A completed hypothesis search is a valid research outcome, not a runner crash.
+   // Do not create a fake experiment or mutate the model merely to continue.
+   return {status:'NO_UNTESTED_DIAGNOSTIC_ARMS',researchOnly:true,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,taskId:mapped.task.id,excludedDirections};
+  }
   if(mapped.task.avoidPriorFailedDirection&&proposed.arms.some(arm=>arm.parameter===mapped.task.avoidPriorFailedDirection.parameter&&arm.direction===mapped.task.avoidPriorFailedDirection.avoidDirection))throw Error('previous failed hypothesis must not be repeated');
   const effectiveExplorationSteps=explorationSteps;
   return runPersisted({confirm:researchConfirm,researchJobId:executionJobId,supabaseUrl,serviceRoleKey,fetchImpl,summaryStore:summaries,...window,task:mapped.task,parentParameters,brain,costs,maxArms,explorationSteps:effectiveExplorationSteps,excludedDirections,validationFraction});

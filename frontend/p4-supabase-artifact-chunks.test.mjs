@@ -19,11 +19,25 @@ test('P4 artifact chunks are written, read back and verified',async()=>{
  rows[0].payload=[{id:99}];
  await assert.rejects(store.read({jobId:'job',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest}),/integrity mismatch/);
 });
-test('P4 archive rejects oversized indivisible records',async()=>{
- const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async()=>{throw Error('must not send')}});
- await assert.rejects(store.write({jobId:'job',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHALLENGER_DIAGNOSTICS',records:[{value:'z'.repeat(2048)}],maxChunkBytes:1024}),/exceeds chunk size/);
+test('P4 archive losslessly splits and restores oversized records',async()=>{
+ const rows=[];
+ const fetchImpl=async(_url,opts)=>{
+  if(opts.method==='POST'){
+   const payload=JSON.parse(opts.body);
+   rows.push({chunk_index:payload.p_chunk_index,payload:payload.p_payload,payload_sha256:payload.p_payload_sha256});
+   return {ok:true,json:async()=>true};
+  }
+  return {ok:true,json:async()=>rows};
+ };
+ const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});
+ const records=[{id:1},{value:'z'.repeat(5000),nested:{reason:'long record',valid:true}},{id:3}];
+ const manifest=await store.write({jobId:'job',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHALLENGER_DIAGNOSTICS',records,maxChunkBytes:1024});
+ assert.equal(manifest.fragmented,true);
+ assert.ok(manifest.chunkCount>3);
+ assert.deepEqual(await store.read({jobId:'job',iteration:1,kind:'CHALLENGER_DIAGNOSTICS',manifest}),records);
+ rows[2].payload[0].data='corrupt';
+ await assert.rejects(store.read({jobId:'job',iteration:1,kind:'CHALLENGER_DIAGNOSTICS',manifest}),/integrity mismatch/);
 });
-
 test('P4 readback rejects manifest hash mismatch',async()=>{
  const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async()=>({ok:true,json:async()=>[{chunk_index:0,payload:[{a:1}],payload_sha256:'0'.repeat(64)}]})});
  await assert.rejects(store.read({jobId:'j',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest:{chunkCount:1,recordCount:1,chunkHashes:['f'.repeat(64)]}}),/integrity mismatch/);

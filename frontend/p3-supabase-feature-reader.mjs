@@ -11,7 +11,7 @@ export function createSupabaseFeatureAtDecision({supabaseUrl,apiKey,fetchImpl=fe
  };
  const headers={apikey:apiKey,Authorization:'Bearer '+apiKey,Accept:'application/json'};
  const prefetch=async ({symbol,timeframe,fromCloseTime,toCloseTime,pageSize=500,onPage}={})=>{
-  if(typeof symbol!=='string'||!/^[A-Z0-9]{3,30}$/.test(symbol)||!['15m','1h','4h','1d'].includes(timeframe)||![fromCloseTime,toCloseTime].every(Number.isSafeInteger)||fromCloseTime>toCloseTime||!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>1000||onProgress!==undefined&&typeof onProgress!=='function')throw Error('invalid feature prefetch window');
+  if(typeof symbol!=='string'||!/^[A-Z0-9]{3,30}$/.test(symbol)||!['15m','1h','4h','1d'].includes(timeframe)||![fromCloseTime,toCloseTime].every(Number.isSafeInteger)||fromCloseTime>toCloseTime||!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>1000)throw Error('invalid feature prefetch window');
   if(onPage!==undefined&&typeof onPage!=='function')throw Error('invalid feature prefetch progress callback');
   let loaded=0,previous=null;
   for(let offset=0;;offset+=pageSize){

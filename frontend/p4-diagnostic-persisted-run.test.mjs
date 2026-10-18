@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {runP4PersistedDiagnosticResearch} from './p4-diagnostic-persisted-run.mjs';
 test('resumes immutable diagnostic research summary without touching market data',async()=>{
- const requestIdentity={symbol:'BTCUSDT',timeframe:'1h',fromOpenTime:100,toOpenTime:200,asOfMs:300,task:null,parentParameters:null,maxArms:null,explorationSteps:null,validationFraction:null,costs:null};
+ const requestIdentity={symbol:'BTCUSDT',timeframe:'1h',fromOpenTime:100,toOpenTime:200,asOfMs:300,task:null,parentParameters:null,maxArms:null,explorationSteps:null,excludedDirections:[],validationFraction:null,costs:null};
  const summary={jobId:'research_1',status:'NO_TRAIN_SELECTED_ARM',requestFingerprint:createHash('sha256').update(JSON.stringify(requestIdentity)).digest('hex')};
  const result=await runP4PersistedDiagnosticResearch({confirm:'RESEARCH_ONLY',researchJobId:'research_1',summaryStore:{load:async()=>summary,commit:async()=>{throw Error('must not overwrite');}},fetchImpl:async()=>{throw Error('must not fetch');},symbol:'BTCUSDT',timeframe:'1h',fromOpenTime:100,toOpenTime:200,asOfMs:300});
  assert.equal(result.status,'ALREADY_COMMITTED');

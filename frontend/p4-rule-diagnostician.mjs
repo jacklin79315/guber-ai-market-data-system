@@ -56,6 +56,13 @@ export function assessP4ProposalInvariants({evidence}={}){
  const p=evidence.proposalAtDecision;
  if(!p||typeof p!=='object'||evidence.action!=='APPROVE')return [];
  const results=[];
+ // Check only explicit proposal invariants. No look-ahead and no PnL blame.
+ if(typeof p.expectedHoldingMs==='number'&&Number.isFinite(p.expectedHoldingMs)&&p.expectedHoldingMs<=0){
+  results.push({actor:'Time',quality:'FAULT',responsibility:'PRIMARY',reason:'Approved proposal has a non-positive expected holding duration',evidenceKeys:['proposalAtDecision']});
+ }
+ if(Array.isArray(p.entryRange)&&p.entryRange.length===2&&p.entryRange.every(Number.isFinite)&&p.entryRange[0]>p.entryRange[1]){
+  results.push({actor:'Entry',quality:'FAULT',responsibility:'PRIMARY',reason:'Approved proposal entry range has reversed bounds',evidenceKeys:['proposalAtDecision']});
+ }
  const rr=p.riskReward, gain=p.expectedGain,loss=p.expectedLoss;
  if([rr,gain,loss].every(v=>typeof v==='number'&&Number.isFinite(v))&&loss>0&&gain>=0){
   if(Math.abs(rr-gain/loss)>1e-6*Math.max(1,Math.abs(rr)))results.push({actor:'Reward',quality:'FAULT',responsibility:'PRIMARY',reason:'Recorded risk/reward contradicts expected gain divided by expected loss',evidenceKeys:['proposalAtDecision']});

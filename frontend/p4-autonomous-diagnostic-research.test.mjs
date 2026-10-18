@@ -43,6 +43,7 @@ test('reads both diagnostic manifests without authorizing orders or model update
  assert.equal(result.results.champion.decisionInputs.totalEvents,0);
  assert.equal(result.results.champion.calibrationEligibility.eligible,0);
  assert.equal(result.results.champion.calibrationEligibility.ready,false);
+ assert.equal(result.results.champion.calibrationResearch,null);
  assert.equal(result.results.champion.researchTasks.tasks[0].id,'COLLECT_DIAGNOSTIC_RECORDS');
  assert.equal(result.results.champion.evidenceGaps.nextAction,'COLLECT_DIAGNOSTIC_EVIDENCE');
  assert.equal(result.results.challenger.totalEvents,0);
@@ -83,4 +84,14 @@ test('research tasks target unknown probability without turning it into blame or
  assert.equal(result.ordersEnabled,false);
  assert.equal(result.modelUpdateApplied,false);
  assert.equal(result.championPromotionAllowed,false);
+});
+
+test('optional calibration contract reports blocked research for empty persisted artifacts',async()=>{
+ const {defineP4CausalExperiment}=await import('./p4-causal-experiment.mjs');
+ const contract=defineP4CausalExperiment({jobId:'persisted-round',kind:'WIN_PROBABILITY_CALIBRATION',hypothesis:'Evaluate later untouched validation decisions',train:{from:100,to:500,asOf:600},validation:{from:700,to:1100,asOf:1200},minimumSamples:30});
+ const store={read:async()=>[]};
+ const result=await inspectPersistedP4ResearchRound({store,jobId:'persisted-round',iteration:1,manifests:{CHAMPION_DIAGNOSTICS:{chunkCount:1},CHALLENGER_DIAGNOSTICS:{chunkCount:1}},calibrationContract:contract});
+ assert.equal(result.results.champion.calibrationResearch.status,'BLOCKED_INSUFFICIENT_EVIDENCE');
+ assert.equal(result.results.challenger.calibrationResearch.experiment,null);
+ assert.equal(result.ordersEnabled,false);
 });

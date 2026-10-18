@@ -8,10 +8,13 @@ export function proposeP4DiagnosticExperimentArms({task,parentParameters,maxArms
  if(!task||typeof task.id!=='string'||!Number.isSafeInteger(task.sampleCount)||task.sampleCount<0||!Number.isSafeInteger(maxArms)||maxArms<1||maxArms>10)throw Error('invalid diagnostic experiment task');
  const actor=task.id==='COLLECT_'+String(task.actor).toUpperCase()+'_CAUSAL_EVIDENCE'&&task.priority==='MEDIUM'?task.actor:null;
  const keys=OWNERS[actor]??[];
+ const avoid=task.avoidPriorFailedDirection;
+ if(avoid&&(!keys.includes(avoid.parameter)||![-1,1].includes(avoid.avoidDirection)||avoid.evidence!=='PRIOR_OOS_NOT_IMPROVED'))throw Error('invalid prior failed experiment');
  const arms=[];
  for(const key of keys){
   const [min,max,step]=SPECS[key];
   for(const direction of [-1,1]){
+   if(avoid?.parameter===key&&avoid.avoidDirection===direction&&Math.abs(parent[key]-avoid.failedFrom)<1e-9)continue;
    const to=Number((parent[key]+direction*step).toFixed(8));
    if(to<min-1e-9||to>max+1e-9)continue;
    arms.push({parameter:key,direction,from:parent[key],to,parameters:validateTrainingParameters({...parent,[key]:to})});

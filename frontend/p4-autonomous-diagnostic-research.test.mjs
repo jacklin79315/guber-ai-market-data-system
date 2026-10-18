@@ -41,6 +41,8 @@ test('reads both diagnostic manifests without authorizing orders or model update
  assert.equal(result.results.champion.totalEvents,0);
  assert.equal(result.results.champion.evidenceGaps.totalEvents,0);
  assert.equal(result.results.champion.decisionInputs.totalEvents,0);
+ assert.equal(result.results.champion.calibrationEligibility.eligible,0);
+ assert.equal(result.results.champion.calibrationEligibility.ready,false);
  assert.equal(result.results.champion.researchTasks.tasks[0].id,'COLLECT_DIAGNOSTIC_RECORDS');
  assert.equal(result.results.champion.evidenceGaps.nextAction,'COLLECT_DIAGNOSTIC_EVIDENCE');
  assert.equal(result.results.challenger.totalEvents,0);

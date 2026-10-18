@@ -17,7 +17,7 @@ export async function compareChallengerReplay({candles,featureAtDecision,history
   runSequentialFiveExpertReplay({...shared,trainingParameters:challengerParams,modelVersion:challenger.version})
  ]);
  const summarize=(version,r)=>({version,processedCandles:r.processedCandles,statistics:r.statistics,metrics:r.metrics,initialCapital:r.account.initialCapital,closedTrades:r.account.closed.length});
- const diagnosticEvidence={champion:collectP4DiagnosticEvidence(championResult),challenger:collectP4DiagnosticEvidence(challengerResult)};
+ const diagnosticEvidence={champion:collectP4DiagnosticEvidence({...championResult,candles}),challenger:collectP4DiagnosticEvidence({...challengerResult,candles})};
  const diagnosticAudit={champion:summarizeP4DiagnosticFeedback(diagnosticEvidence.champion),challenger:summarizeP4DiagnosticFeedback(diagnosticEvidence.challenger)};
  const winCalibration={champion:analyzeP4WinCalibration({decisions:championResult.decisions,closedTrades:championResult.account.closed}),challenger:analyzeP4WinCalibration({decisions:challengerResult.decisions,closedTrades:challengerResult.account.closed})};
  const diagnosticUpdatePlan=planP4DiagnosticUpdate({audit:diagnosticAudit.challenger,parentParameters:challengerParams});

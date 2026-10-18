@@ -16,7 +16,11 @@ export async function runP4DiagnosticAutonomousCycle({store,taskId,executionJobI
   const recovered=await loadCommittedSummary(prior.resultJobId);
   if(recovered?.jobId!==prior.resultJobId||recovered.schemaVersion!=='P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1'||recovered.ordersEnabled!==false||recovered.modelUpdateApplied!==false||recovered.championPromotionAllowed!==false)throw Error('unsafe or missing committed recovery summary');
   const nextPlan=planP4DiagnosticResearchFollowUp(recovered);
-  return {schemaVersion:'P4_DIAGNOSTIC_AUTONOMOUS_CYCLE_V1',status:'COMPLETED_RECOVERED_NEXT_ACTION',completedJobId:prior.resultJobId,nextAction:nextPlan.action,nextPlan,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
+  if(nextPlan.requiresFreshNonOverlappingEvidence)return {schemaVersion:'P4_DIAGNOSTIC_AUTONOMOUS_CYCLE_V1',status:'COMPLETED_AWAITING_INDEPENDENT_EVIDENCE',completedJobId:prior.resultJobId,nextAction:nextPlan.action,nextPlan,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
+  const nextId=await createTaskId({sourceJobId:prior.resultJobId,plan:nextPlan});
+  const nextRecord=createP4DiagnosticTaskRecord(nextPlan,{taskId:nextId,createdAtMs:Math.max(Date.now(),atMs??0)});
+  await recordNextTask(nextRecord);
+  return {schemaVersion:'P4_DIAGNOSTIC_AUTONOMOUS_CYCLE_V1',status:'COMPLETED_RECOVERED_NEXT_TASK_PROPOSED',completedJobId:prior.resultJobId,nextAction:nextPlan.action,nextTaskId:nextId,nextTaskStatus:'PROPOSED',requiresResearchAuthorization:true,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
  }
  const execution=await executeP4DiagnosticFollowUp({store,taskId,executionJobId,atMs,confirm,runResearch:async args=>{
   const result=await runResearch(args);

@@ -21,3 +21,12 @@ test('OOS evidence distinguishes missing samples from an actual validated improv
  assert.equal(improved.oosEvidenceStatus,'OOS_IMPROVED_RESEARCH_ONLY');
  assert.equal(improved.independentValidationPassed,false);
 });
+
+test('completed diagnostic summary carries a durable non-executable follow-up plan',()=>{
+ const result=summarizeP4DiagnosticResearch({jobId:'round_2000',createdAtMs:3,result:{status:'OOS_RESEARCH_EVALUATED',loadedCandles:2000,trainingBatch:{taskId:'COLLECT_ENTRY_CAUSAL_EVIDENCE',plannedArms:1,completedArms:1,results:[]},selectedArm:{parameter:'entryLookback',from:20,to:19},oosReplayEvaluated:true,oosImprovedInReplay:false,validationResult:{feedback:{status:'INSUFFICIENT_RESEARCH_SAMPLES'}}}});
+ assert.equal(result.followUpPlan.sourceJobId,'round_2000');
+ assert.equal(result.followUpPlan.action,'COLLECT_MORE_UNTOUCHED_OOS_EVIDENCE');
+ assert.equal(result.followUpPlan.autoExecutionAuthorized,false);
+ assert.equal(result.followUpPlan.ordersEnabled,false);
+ assert.equal(result.championPromotionAllowed,false);
+});

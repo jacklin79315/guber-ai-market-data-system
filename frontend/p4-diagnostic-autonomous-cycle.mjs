@@ -17,6 +17,7 @@ export async function runP4DiagnosticAutonomousCycle({store,taskId,executionJobI
  // Only the exact committed job may inform the next research hypothesis.
  if(!committedSummary||committedSummary.jobId!==executionJobId||committedSummary.schemaVersion!=='P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1'||committedSummary.ordersEnabled!==false||committedSummary.modelUpdateApplied!==false||committedSummary.championPromotionAllowed!==false)throw Error('completed research lacks verified diagnostic learning summary');
  const followUp=planP4DiagnosticResearchFollowUp(committedSummary);
+ if(followUp.action==='REQUEST_INDEPENDENT_VALIDATION'||followUp.action==='COLLECT_MORE_UNTOUCHED_OOS_EVIDENCE')return {schemaVersion:'P4_DIAGNOSTIC_AUTONOMOUS_CYCLE_V1',status:'COMPLETED_AWAITING_INDEPENDENT_EVIDENCE',completedJobId:executionJobId,nextAction:followUp.action,nextTask:null,requiresResearchAuthorization:true,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
  const nextId=await createTaskId({sourceJobId:executionJobId,plan:followUp});
  const nextRecord=createP4DiagnosticTaskRecord(followUp,{taskId:nextId,createdAtMs:Math.max(Date.now(),atMs+1)});
  await recordNextTask(nextRecord);

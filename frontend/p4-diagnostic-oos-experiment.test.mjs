@@ -15,3 +15,9 @@ test('empty hypothesis task does not inspect OOS or promote model',async()=>{
  assert.equal(result.independentValidation,false);
  assert.equal(result.championPromotionAllowed,false);
 });
+
+test('forbids injecting a replay candle window or callback into OOS selection',async()=>{
+ const options={task:{id:'CALIBRATE_UNKNOWN_WIN_PROBABILITY',actor:'Win',sampleCount:30},parentParameters:DEFAULT_TRAINING_PARAMETERS,trainCandles:[candle(1),candle(2)],validationCandles:[candle(3),candle(4)]};
+ await assert.rejects(()=>runP4DiagnosticOosExperiment({...options,candles:[candle(9)]}),/override forbidden/);
+ await assert.rejects(()=>runP4DiagnosticOosExperiment({...options,onExperiment:()=>{}}),/override forbidden/);
+});

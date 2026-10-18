@@ -7,7 +7,7 @@ test('historical backend passes diagnostic hypothesis into persisted research an
  let record=transitionP4DiagnosticTask(createP4DiagnosticTaskRecord(plan,{taskId:'follow_1',createdAtMs:1}),{to:'READY',atMs:2});
  const store={load:async()=>record,transition:async(before,after)=>{assert.equal(record,before);record=after}};
  let calls=0;
- const result=await runP4DiagnosticFollowUpBackend({store,taskId:'follow_1',executionJobId:'next_job',atMs:3,confirm:'RESEARCH_ONLY',fromOpenTime:0,toOpenTime:140*3600000,asOfMs:142*3600000,runPersisted:async options=>{calls++;assert.equal(options.task.actor,'Entry');assert.equal(options.researchJobId,'next_job');assert.equal(options.confirm,'RESEARCH_ONLY');return {status:'COMMITTED',summary:{jobId:'next_job',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false}}}});
+ const result=await runP4DiagnosticFollowUpBackend({store,taskId:'follow_1',executionJobId:'next_job',atMs:3,confirm:'RESEARCH_ONLY',fromOpenTime:0,toOpenTime:140*3600000,asOfMs:142*3600000,runPersisted:async options=>{calls++;assert.equal(options.task.actor,'Entry');assert.equal(options.researchJobId,'next_job');assert.equal(options.confirm,'RESEARCH_ONLY');assert.equal(options.validationFraction,0.35);return {status:'COMMITTED',summary:{jobId:'next_job',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false}}}});
  assert.equal(calls,1);assert.equal(result.status,'COMPLETED');assert.equal(record.resultJobId,'next_job');
 });
 test('backend refuses live confirmation and unsupported symbols',async()=>{
@@ -22,4 +22,8 @@ test('follow-up historical replay rejects oversized, unaligned and future-leakin
  await fail({fromOpenTime:1});
  await fail({toOpenTime:129*3600000-1});
  await fail({asOfMs:1999*3600000+3600000-1});
+});
+
+test('durable follow-up rejects invalid OOS fraction before changing task state',async()=>{
+ await assert.rejects(()=>runP4DiagnosticFollowUpBackend({confirm:'RESEARCH_ONLY',fromOpenTime:0,toOpenTime:140*3600000,asOfMs:142*3600000,validationFraction:0.6}),/invalid bounded/);
 });

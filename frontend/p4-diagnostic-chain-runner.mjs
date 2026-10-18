@@ -10,7 +10,7 @@ export function parseP4ChainOptions(env=process.env,now=Date.now()){
  const sourceJobId=env.P4_SOURCE_SUMMARY_JOB_ID||null;
  const priorResearchJobIds=env.P4_PRIOR_RESEARCH_JOB_IDS?env.P4_PRIOR_RESEARCH_JOB_IDS.split(','):[];
  if(sourceJobId!==null&&!/^[A-Za-z0-9_-]{1,100}$/.test(sourceJobId))throw Error('invalid source research summary');
- if(!/^[A-Za-z0-9_-]{1,50}$/.test(id??'')||!/^[A-Za-z0-9_-]{1,70}$/.test(prefix??''))throw Error('invalid chain or initial task identity');
+ if(!/^[A-Za-z0-9_-]{1,100}$/.test(id??'')||!/^[A-Za-z0-9_-]{1,45}$/.test(prefix??''))throw Error('invalid chain or initial task identity');
  const raw=JSON.parse(env.P4_WINDOWS_JSON??'null');
  if(!Array.isArray(raw)||raw.length<1||raw.length>2)throw Error('chain requires one or two explicitly selected historical windows');
  const windows=raw.map(w=>({symbol:'BTCUSDT',timeframe:'1h',fromOpenTime:w.fromOpenTime,toOpenTime:w.toOpenTime,asOfMs:w.asOfMs}));

@@ -21,5 +21,6 @@ export async function inspectP4CommittedRound({store,jobId,round,minEvents=30,ca
   return records;
  }};
  const inspection=await inspectPersistedP4ResearchRound({store:verifiedStore,jobId,iteration:round.iteration,manifests,minEvents,calibrationContract});
- return {...inspection,source:'IMMUTABLE_P4_ROUND',closedEvidenceAudit:comparison.closedEvidenceAudit??null};
+ const nextResearchTasks=Object.entries(inspection.results).flatMap(([side,result])=>result.researchTasks.tasks.map(task=>({...task,side}))).sort((a,b)=>({BLOCKING:0,HIGH:1,MEDIUM:2}[a.priority]??3)-({BLOCKING:0,HIGH:1,MEDIUM:2}[b.priority]??3)||a.id.localeCompare(b.id)||a.side.localeCompare(b.side));
+ return {...inspection,source:'IMMUTABLE_P4_ROUND',closedEvidenceAudit:comparison.closedEvidenceAudit??null,nextResearchTasks,automaticModelUpdate:false};
 }

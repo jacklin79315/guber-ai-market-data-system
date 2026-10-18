@@ -26,3 +26,11 @@ test('completed task does not replay experiment after worker restart',async()=>{
  assert.equal(result.status,'ALREADY_COMPLETED_REQUIRES_RECOVERY');
  assert.equal(result.completedJobId,'job_1');
 });
+
+test('restart recovers next action from committed summary without replay',async()=>{
+ const summary={schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId:'job_1',loadedCandles:500,status:'NO_TRAIN_SELECTED_ARM',trainingResults:[],selectedArm:null,oosEvidenceStatus:'NOT_EVALUATED',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
+ const result=await runP4DiagnosticAutonomousCycle({confirm:'RESEARCH_ONLY',store:{load:async()=>({status:'COMPLETED',resultJobId:'job_1'})},taskId:'task_1',executionJobId:'job_1',createTaskId:async()=>{throw Error('must not create')},recordNextTask:async()=>{throw Error('must not write')},runResearch:async()=>{throw Error('must not replay')},loadCommittedSummary:async id=>{assert.equal(id,'job_1');return summary}});
+ assert.equal(result.status,'COMPLETED_RECOVERED_NEXT_ACTION');
+ assert.equal(result.nextAction,'COLLECT_MORE_TRAIN_EVIDENCE');
+ assert.equal(result.nextPlan.autoExecutionAuthorized,false);
+});

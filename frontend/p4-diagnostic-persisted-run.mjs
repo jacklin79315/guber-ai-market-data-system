@@ -8,7 +8,7 @@ export async function runP4PersistedDiagnosticResearch({confirm,researchJobId,su
  const store=summaryStore??createP4DiagnosticSummaryStore({supabaseUrl,serviceRoleKey,fetchImpl});
  if(typeof store.load!=='function'||typeof store.commit!=='function')throw Error('invalid diagnostic summary store');
  if(options.symbol!=='BTCUSDT'||options.timeframe!=='1h'||!Number.isSafeInteger(options.fromOpenTime)||!Number.isSafeInteger(options.toOpenTime)||!Number.isSafeInteger(options.asOfMs)||options.fromOpenTime>=options.toOpenTime||options.toOpenTime>=options.asOfMs)throw Error('missing immutable diagnostic research window');
- const requestIdentity={symbol:options.symbol,timeframe:options.timeframe,fromOpenTime:options.fromOpenTime,toOpenTime:options.toOpenTime,asOfMs:options.asOfMs,task:options.task??null,parentParameters:options.parentParameters??null,maxArms:options.maxArms??null,explorationSteps:options.explorationSteps??null,validationFraction:options.validationFraction??null,costs:options.costs??null};
+ const requestIdentity={symbol:options.symbol,timeframe:options.timeframe,fromOpenTime:options.fromOpenTime,toOpenTime:options.toOpenTime,asOfMs:options.asOfMs,task:options.task??null,parentParameters:options.parentParameters??null,maxArms:options.maxArms??null,explorationSteps:options.explorationSteps??null,excludedDirections:options.excludedDirections??[],validationFraction:options.validationFraction??null,costs:options.costs??null};
  const fingerprint=createHash('sha256').update(JSON.stringify(requestIdentity)).digest('hex');
  const existing=await store.load(researchJobId);
  // The caller must not reuse a job id to silently change the research specification.

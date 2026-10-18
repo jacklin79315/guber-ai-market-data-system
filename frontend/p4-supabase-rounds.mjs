@@ -15,9 +15,13 @@ export function createP4SupabaseRoundStore({supabaseUrl,serviceRoleKey,fetchImpl
    if(typeof ownerToken!=='string'||ownerToken.length<16||!round||!Number.isSafeInteger(round.iteration)||round.iteration<1||round.iteration>100)throw Error('invalid P4 fenced round commit');
    const rpc=new URL('/rest/v1/rpc/p4_commit_research_round',supabaseUrl);
    const payload=JSON.stringify({p_job_id:jobId,p_owner_token:ownerToken,p_iteration:round.iteration,p_spec_fingerprint:specFingerprint,p_round_result:round});
+   const payloadBytes=Buffer.byteLength(payload,'utf8');
+   process.stderr.write(JSON.stringify({phase:'P4_ROUND_COMMIT_DIAGNOSTIC',jobId,iteration:round.iteration,payloadBytes,payloadMiB:Number((payloadBytes/1048576).toFixed(2)),ledgerRuns:round.ledgerSnapshot?.runs?.length??null})+'\n');
    for(let attempt=0;attempt<3;attempt++){
     try{
+     const startedAt=Date.now();
      const response=await request(rpc,{method:'POST',headers,body:payload,signal:AbortSignal.timeout(60000)});
+     process.stderr.write(JSON.stringify({phase:'P4_ROUND_COMMIT_RESPONSE',iteration:round.iteration,attempt:attempt+1,elapsedMs:Date.now()-startedAt,payloadBytes})+'\n');
      if(await response.json()!==true)throw Error('P4 fenced round commit denied');
      return;
     }catch(e){

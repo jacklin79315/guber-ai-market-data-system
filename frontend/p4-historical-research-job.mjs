@@ -51,6 +51,7 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
     manifest[side]=await artifactStore.write({jobId,ownerToken,specFingerprint,iteration:x.iteration,kind,records:evidence[side]});
     const restored=await artifactStore.read({jobId,iteration:x.iteration,kind,manifest:manifest[side]});
     if(restored.length!==evidence[side].length||restored.some((record,i)=>!deepEqualArtifact(record,evidence[side][i])))throw Error('P4 diagnostic archive readback mismatch: '+side);
+    if(!deepEqualArtifact(auditP4ClosedEvidence(restored),closedEvidenceAudit[side]))throw Error('P4 closed evidence audit readback mismatch: '+side);
    }
    // Evidence is removed from the round JSON only after all chunks have been durably acknowledged.
    // Earlier rounds retain their own manifests; full detail is in immutable artifact chunks.

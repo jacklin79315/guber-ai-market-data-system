@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {summarizeP4ExpertReliability} from './p4-expert-reliability-research.mjs';
 import {DIAGNOSTIC_ACTORS} from './p4-independent-diagnosis.mjs';
-const record=(fault=false)=>({diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1',requiresReview:false,unassessedActors:[],attribution:DIAGNOSTIC_ACTORS.map(actor=>({actor,quality:fault&&actor==='Brain'?'FAULT':'SOUND',responsibility:fault&&actor==='Brain'?'PRIMARY':'NONE'}))},feedback:{schemaVersion:'P4_FEEDBACK_V1'}});
+const record=(fault=false)=>({diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1',outcome:'WAIT',requiresReview:false,unassessedActors:[],attribution:DIAGNOSTIC_ACTORS.map(actor=>({actor,quality:fault&&actor==='Brain'?'FAULT':'SOUND',responsibility:fault&&actor==='Brain'?'PRIMARY':'NONE'}))},feedback:{schemaVersion:'P4_FEEDBACK_V1'}});
 test('only complete reviews generate observational reliability evidence',()=>{
  const result=summarizeP4ExpertReliability({records:[record(),record(true)],minReviewed:2});
  assert.equal(result.status,'REVIEWED_EVIDENCE_AVAILABLE');
@@ -22,4 +22,13 @@ test('unresolved evidence does not become a punishment or model update',()=>{
 test('reject fabricated complete review with missing expert',()=>{
  const r=record();r.diagnosis.attribution.pop();
  assert.throws(()=>summarizeP4ExpertReliability({records:[r]}),/incomplete diagnosis/);
+});
+
+test('WAIT remains visible without inferring missed-profit fault',()=>{
+ const wait=record();wait.diagnosis.requiresReview=true;
+ const result=summarizeP4ExpertReliability({records:[wait,record()],minReviewed:2});
+ assert.equal(result.outcomes.WAIT.total,2);
+ assert.equal(result.outcomes.WAIT.unresolved,1);
+ assert.equal(result.outcomes.WAIT.reviewed,1);
+ assert.equal(result.experts.find(x=>x.actor==='Brain').observedFaultFraction,null);
 });

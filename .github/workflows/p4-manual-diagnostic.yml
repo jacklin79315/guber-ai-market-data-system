@@ -4,12 +4,12 @@ on:
     inputs:
       job_id:
         description: "Unique immutable diagnostic job ID"
-        default: "p4_diag_entry_500_20261019_01"
+        default: "p4_diag_entry_2000_20261019_01"
         required: true
         type: string
       from_ms:
         description: "BTC 1h UTC first candle open (milliseconds)"
-        default: "1790503200000"
+        default: "1785103200000"
         required: true
         type: string
       to_ms:

@@ -14,8 +14,31 @@ export function createP4SupabaseRoundStore({supabaseUrl,serviceRoleKey,fetchImpl
   async commitLeased(jobId,ownerToken,specFingerprint,round){
    if(typeof ownerToken!=='string'||ownerToken.length<16||!round||!Number.isSafeInteger(round.iteration)||round.iteration<1||round.iteration>100)throw Error('invalid P4 fenced round commit');
    const rpc=new URL('/rest/v1/rpc/p4_commit_research_round',supabaseUrl);
-   const response=await request(rpc,{method:'POST',headers,body:JSON.stringify({p_job_id:jobId,p_owner_token:ownerToken,p_iteration:round.iteration,p_spec_fingerprint:specFingerprint,p_round_result:round})});
-   if(await response.json()!==true)throw Error('P4 fenced round commit denied');
+   const payload=JSON.stringify({p_job_id:jobId,p_owner_token:ownerToken,p_iteration:round.iteration,p_spec_fingerprint:specFingerprint,p_round_result:round});
+   for(let attempt=0;attempt<3;attempt++){
+    try{
+     const response=await request(rpc,{method:'POST',headers,body:payload,signal:AbortSignal.timeout(60000)});
+     if(await response.json()!==true)throw Error('P4 fenced round commit denied');
+     return;
+    }catch(e){
+     // A 502 or lost connection can occur AFTER the transaction commits.
+     // Confirm persistence before attempting the same fenced write again.
+     if(!/failed: (?:429|502|503|504|520|521|522|523|524)|fetch failed|timeout|abort/i.test(e.message))throw e;
+     try{
+      const existing=await this.load(jobId,specFingerprint);
+      const committed=existing.find(x=>x.iteration===round.iteration);
+      if(committed){
+       if(JSON.stringify(committed)!==JSON.stringify(round))throw Error('P4 round commit conflict: persisted content differs');
+       return;
+      }
+     }catch(readError){
+      if(/integrity mismatch|commit conflict/.test(readError.message))throw readError;
+      if(attempt===2)throw Error('P4 round commit unconfirmed after transient failure: '+e.message,{cause:readError});
+     }
+     if(attempt===2)throw e;
+     await new Promise(resolve=>setTimeout(resolve,750*(2**attempt)));
+    }
+   }
   },
   async commit(jobId,specFingerprint,round){
    if(!round||!Number.isSafeInteger(round.iteration)||round.iteration<1||round.iteration>100)throw Error('invalid P4 committed round');

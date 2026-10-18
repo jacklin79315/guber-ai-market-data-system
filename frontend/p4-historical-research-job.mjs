@@ -8,10 +8,10 @@ import {runP4ResearchCycle} from './p4-research-cycle.mjs';
 import {runP4PartitionedResearchCycle} from './p4-partitioned-research-cycle.mjs';
 // Offline P4 orchestration. Data must be fully verified before any research iteration.
 // This is not a trained Brain, independent OOS evaluation, or a live trading endpoint.
-export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=fetch,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,maxCandlesPerWindow=10000,brain,historyAtDecision,featureAtDecision,shouldStop=()=>false,onProgress,checkpointStore,roundStore,leaseStore,ownerToken,leaseGuard,jobId,codeRevision,championVersion,championParameters,iterations,seed,costs,accountOptions={},otherReplayOptions={},partitionOptions}={}){
+export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=fetch,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,maxCandlesPerWindow=10000,brain,historyAtDecision,featureAtDecision,shouldStop=()=>false,onProgress,checkpointStore,roundStore,artifactStore,leaseStore,ownerToken,leaseGuard,jobId,codeRevision,championVersion,championParameters,iterations,seed,costs,accountOptions={},otherReplayOptions={},partitionOptions}={}){
  if(partitionOptions!==undefined&&(!partitionOptions||typeof partitionOptions!=='object'||Array.isArray(partitionOptions)))throw Error('invalid P4 partition options');
  if(typeof brain!=='function'||featureAtDecision!==undefined||typeof shouldStop!=='function'||(onProgress!==undefined&&typeof onProgress!=='function'))throw Error('P4 historical job requires explicit Brain and database features');
- if(leaseStore){if(!checkpointStore||!roundStore||typeof roundStore.commitLeased!=='function'||typeof checkpointStore.saveLeased!=='function')throw Error('P4 leased job requires durable checkpoint and fenced round stores');return runP4WithLease({leaseStore,jobId,ownerToken,run:async ({ensureLease,isLeaseLost})=>runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,maxCandlesPerWindow,brain,historyAtDecision,featureAtDecision,shouldStop:()=>isLeaseLost()||shouldStop(),onProgress,checkpointStore,roundStore,ownerToken,jobId,codeRevision,championVersion,championParameters,iterations,seed,costs,accountOptions,otherReplayOptions,partitionOptions,leaseGuard:ensureLease})});}
+ if(leaseStore){if(!checkpointStore||!roundStore||typeof roundStore.commitLeased!=='function'||typeof checkpointStore.saveLeased!=='function')throw Error('P4 leased job requires durable checkpoint and fenced round stores');return runP4WithLease({leaseStore,jobId,ownerToken,run:async ({ensureLease,isLeaseLost})=>runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,maxCandlesPerWindow,brain,historyAtDecision,featureAtDecision,shouldStop:()=>isLeaseLost()||shouldStop(),onProgress,checkpointStore,roundStore,artifactStore,ownerToken,jobId,codeRevision,championVersion,championParameters,iterations,seed,costs,accountOptions,otherReplayOptions,partitionOptions,leaseGuard:ensureLease})});}
  if(roundStore&&(!checkpointStore||typeof roundStore.load!=='function'||typeof roundStore.commit!=='function'))throw Error('P4 round persistence requires checkpoint and round stores');
  if((checkpointStore&&!jobId)||(!checkpointStore&&jobId)||checkpointStore&&(typeof checkpointStore.save!=='function'||typeof checkpointStore.load!=='function'))throw Error('P4 checkpoint requires store and jobId');
  const specFingerprint=checkpointStore?fingerprintP4JobSpec({symbol,timeframe,fromOpenTime,toOpenTime,maxCandlesPerWindow,codeRevision,championVersion,championParameters,iterations,seed,accountOptions,otherReplayOptions,partitionOptions:partitionOptions??null,...(asOfMs===undefined?{}:{asOfMs}),...(costs===undefined?{}:{costs})}):undefined;
@@ -37,7 +37,21 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
   }});
   await onProgress?.({phase:'FEATURE_PREFETCH_COMPLETE'});
  }
- const research=await (partitionOptions===undefined?runP4ResearchCycle:runP4PartitionedResearchCycle)({partitionOptions,championVersion,championParameters,iterations,seed,candles:loaded.candles,featureAtDecision:featureReader,historyAtDecision,brain,costs,accountOptions,otherReplayOptions,shouldStop,resumeRounds,onIteration:async x=>{if(leaseGuard)await leaseGuard();if(roundStore){if(leaseGuard)await roundStore.commitLeased(jobId,ownerToken,specFingerprint,x);else await roundStore.commit(jobId,specFingerprint,x);}if(leaseGuard)await leaseGuard();await saveProgress({phase:'RESEARCH',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:x.iteration});await onProgress?.({phase:'RESEARCH',iteration:x.iteration,totalIterations:iterations,feedback:x.feedback});}});
+ const research=await (partitionOptions===undefined?runP4ResearchCycle:runP4PartitionedResearchCycle)({partitionOptions,championVersion,championParameters,iterations,seed,candles:loaded.candles,featureAtDecision:featureReader,historyAtDecision,brain,costs,accountOptions,otherReplayOptions,shouldStop,resumeRounds,onIteration:async x=>{if(leaseGuard)await leaseGuard();if(roundStore){if(artifactStore){
+   const runs=x.ledgerSnapshot?.runs;
+   const latest=runs?.at(-1);
+   const evidence=latest?.result?.comparison?.diagnosticEvidence;
+   if(!evidence||!Array.isArray(evidence.champion)||!Array.isArray(evidence.challenger))throw Error('P4 diagnostic evidence missing before durable artifact commit');
+   const manifest={};
+   for(const [side,kind] of [['champion','CHAMPION_DIAGNOSTICS'],['challenger','CHALLENGER_DIAGNOSTICS']]){
+    manifest[side]=await artifactStore.write({jobId,ownerToken,specFingerprint,iteration:x.iteration,kind,records:evidence[side]});
+   }
+   // Evidence is removed from the round JSON only after all chunks have been durably acknowledged.
+   // Earlier rounds retain their own manifests; full detail is in immutable artifact chunks.
+   delete latest.result.comparison.diagnosticEvidence;
+   latest.result.comparison.diagnosticArtifactManifest={schemaVersion:1,...manifest};
+  }
+  if(leaseGuard)await roundStore.commitLeased(jobId,ownerToken,specFingerprint,x);else await roundStore.commit(jobId,specFingerprint,x);}if(leaseGuard)await leaseGuard();await saveProgress({phase:'RESEARCH',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:x.iteration});await onProgress?.({phase:'RESEARCH',iteration:x.iteration,totalIterations:iterations,feedback:x.feedback});}});
  await saveProgress({phase:research.status==='RESEARCH_CYCLE_STOPPED'?'STOPPED':'COMPLETED',loadedCandles:loaded.loadedCandles,completedWindows:loaded.completedWindows,completedIterations:research.completedIterations??0});
  return {...research,source:'SUPABASE_READ_ONLY',dataVerified:true,loadedCandles:loaded.loadedCandles,windowCount:loaded.plan.windowCount};
 }

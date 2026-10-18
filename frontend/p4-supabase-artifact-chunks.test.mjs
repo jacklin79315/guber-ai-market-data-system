@@ -89,3 +89,23 @@ test('P4 chunk upload retries a transient fetch failure',async()=>{
  assert.equal(manifest.chunkCount,1);
  assert.equal(attempts,2);
 });
+
+test('P4 artifact read paginates beyond 25 chunks without false count mismatch',async()=>{
+ const rows=[];let reads=0;
+ const fetchImpl=async(url,opts)=>{
+  if(opts.method==='POST'){
+   const b=JSON.parse(opts.body);
+   rows.push({chunk_index:b.p_chunk_index,payload:b.p_payload,payload_sha256:b.p_payload_sha256});
+   return {ok:true,json:async()=>true};
+  }
+  reads++;
+  const u=new URL(url),offset=Number(u.searchParams.get('offset')),limit=Number(u.searchParams.get('limit'));
+  return {ok:true,json:async()=>rows.slice(offset,offset+limit)};
+ };
+ const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});
+ const records=Array.from({length:31},(_,i)=>({id:i,reason:'x'.repeat(700)}));
+ const manifest=await store.write({jobId:'job',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records,maxChunkBytes:1024});
+ assert.equal(manifest.chunkCount,31);
+ assert.deepEqual(await store.read({jobId:'job',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest}),records);
+ assert.equal(reads,2);
+});

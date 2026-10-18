@@ -375,3 +375,10 @@
 - 正式 Supabase 唯讀查詢：既有兩筆 168 根研究輪次 JSON 各約 5,932 bytes，Postgres JSONB 儲存約 2,536 bytes；24M 任務尚未成功寫入任何輪次，無法據此推算實際 24M payload 大小。
 - 程式碼查核：每輪 `ledgerSnapshot.runs[*].result.comparison` 含研究比較與診斷彙總，Ledger 歷史隨輪次重複保存在 round 中，存在重複儲存風險；但尚無足夠證據認定其造成 502。拆分保存研究摘要、逐筆診斷與交易紀錄的 schema／遷移／原子提交尚未實作，不可標完成。
 - 下一步：在受控執行下取得 24M 實際 payload 與每次 RPC 耗時，再設計可追溯、可恢復且不遺失診斷證據的分表／分批寫入，測試後才重跑完整研究。舊 80/20 checkpoint 不得沿用。
+
+
+## 13U. 2026-10-18 P4 診斷資料拆分儲存（整合中）
+
+- 正式 Supabase 已套用 `p4_research_artifact_chunks_v1`：新增診斷分塊表與租約驗證 RPC，原研究資料未刪除。
+- GitHub `e3949fd` 建立 256 KiB 分塊寫入器；`79104d9` 注入後端 runner；`5f2ecce` 於 round commit 前先寫入 Champion／Challenger 診斷分塊，成功後在 round Ledger 中以 manifest 取代診斷明細；`ad0647c` 避免後續輪次重複攜帶先前完整診斷證據。
+- 目前尚未驗證真實長窗分塊寫入、chunk 內容完整性／讀回重建、失敗恢復、完整原子完成語意；現有 hash 為客戶端提供，尚未由資料庫獨立核對。不可宣稱 502 已修復、24M 已完成或 AI 已自主訓練。

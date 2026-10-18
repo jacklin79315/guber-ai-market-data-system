@@ -8,6 +8,8 @@ test('committed round bridges both immutable diagnostic manifests into research-
  const result=await inspectP4CommittedRound({store,jobId:'round-test',round});
  assert.deepEqual(seen,[['CHAMPION_DIAGNOSTICS',1],['CHALLENGER_DIAGNOSTICS',2]]);
  assert.equal(result.source,'IMMUTABLE_P4_ROUND');
+ assert.deepEqual(result.nextResearchTasks.map(t=>[t.side,t.id]),[['champion','COLLECT_DIAGNOSTIC_RECORDS'],['challenger','COLLECT_DIAGNOSTIC_RECORDS']]);
+ assert.equal(result.automaticModelUpdate,false);
  assert.equal(result.ordersEnabled,false);
  assert.equal(result.modelUpdateApplied,false);
  assert.equal(result.championPromotionAllowed,false);

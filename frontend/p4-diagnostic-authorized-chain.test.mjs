@@ -16,7 +16,7 @@ test('two consecutive research rounds derive next task from prior committed outc
  const summaries=[];
  const result=await runP4AuthorizedDiagnosticChain({store,initialTaskId:'t0',confirm:'RESEARCH_ONLY',atMs:Date.now()+1000,grant:{mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false,maxRounds:2,autoContinueProposals:true,expiresAtMs:9999999999999,allowedTaskIds:['t0']},createExecutionJobId:async({round})=>'job_'+round,createTaskId:async({sourceJobId})=>'next_'+sourceJobId,recordNextTask:async record=>{records.set(record.taskId,record)},runResearch:async({executionJobId,sourceJobId})=>{
   summaries.push({executionJobId,sourceJobId});
-  return {status:'COMMITTED',summary:{schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId:executionJobId,status:'NO_TRAIN_SELECTED_ARM',loadedCandles:500,trainingResults:[],selectedArm:null,oosEvidenceStatus:'NOT_EVALUATED',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false}};
+  return {status:'COMMITTED',summary:{schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId:executionJobId,taskId:'COLLECT_ENTRY_CAUSAL_EVIDENCE',status:'NO_TRAIN_SELECTED_ARM',loadedCandles:500,trainingResults:[],selectedArm:null,oosEvidenceStatus:'NOT_EVALUATED',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false}};
  }});
  assert.equal(result.status,'STOPPED_MAX_ROUNDS');
  assert.equal(result.rounds.length,2);

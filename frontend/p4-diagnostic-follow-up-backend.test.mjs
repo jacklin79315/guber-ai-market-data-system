@@ -27,3 +27,15 @@ test('follow-up historical replay rejects oversized, unaligned and future-leakin
 test('durable follow-up rejects invalid OOS fraction before changing task state',async()=>{
  await assert.rejects(()=>runP4DiagnosticFollowUpBackend({confirm:'RESEARCH_ONLY',fromOpenTime:0,toOpenTime:140*3600000,asOfMs:142*3600000,validationFraction:0.6}),/invalid bounded/);
 });
+
+test('persisted negative OOS hypothesis excludes failed 20-to-21 direction before replay',async()=>{
+ const hypothesis={parameter:'entryLookback',failedFrom:20,failedTo:21,avoidDirection:1,evidence:'PRIOR_OOS_NOT_IMPROVED'};
+ const revised={...plan,hypothesis};
+ let record=transitionP4DiagnosticTask(createP4DiagnosticTaskRecord(revised,{taskId:'avoid_failed',createdAtMs:1}),{to:'READY',atMs:2});
+ const store={load:async()=>record,transition:async(before,after)=>{assert.equal(record,before);record=after}};
+ const result=await runP4DiagnosticFollowUpBackend({store,taskId:'avoid_failed',executionJobId:'avoid_failed_run',atMs:3,confirm:'RESEARCH_ONLY',fromOpenTime:0,toOpenTime:140*3600000,asOfMs:142*3600000,runPersisted:async options=>{
+  assert.deepEqual(options.task.avoidPriorFailedDirection,hypothesis);
+  return {status:'COMMITTED',summary:{jobId:'avoid_failed_run',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false}};
+ }});
+ assert.equal(result.status,'COMPLETED');
+});

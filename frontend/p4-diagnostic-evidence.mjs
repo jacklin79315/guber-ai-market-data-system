@@ -18,7 +18,7 @@ export function collectP4DiagnosticEvidence(replay){
  for(const shadow of replay.account.shadowOrders){
   const decision=decisions.get(shadow.proposal?.id);
   if(!decision)throw Error('shadow order lacks original decision');
-  events.push({decisionId:shadow.proposal.id,outcome:'SHADOW',evidence:{decisionTime:decision.decisionTime,action:decision.action,expertHistory:decision.history,proposalAtDecision:decision.proposalAtDecision,cancelReason:shadow.reason,counterfactualStatus:shadow.counterfactualStatus??'NOT_OBSERVED',observations:shadow.observations},assessments:[]});
+  events.push({decisionId:shadow.proposal.id,outcome:'SHADOW',evidence:{decisionTime:decision.decisionTime,action:decision.action,expertHistory:decision.history,proposalAtDecision:decision.proposalAtDecision,accountAtDecision:decision.accountAtDecision,allocation:decision.allocation,riskDiagnostics:decision.riskDiagnostics,reason:decision.reason,cancelReason:shadow.reason,counterfactualStatus:shadow.counterfactualStatus??'NOT_OBSERVED',observations:shadow.observations},assessments:[]});
  }
  for(const decision of replay.decisions.filter(d=>d.action==='WAIT'||d.action==='RETURN'||d.action==='REJECT')){
   events.push({decisionId:decision.id,outcome:decision.action==='RETURN'?'RETURN':'WAIT',evidence:{decisionTime:decision.decisionTime,action:decision.action,reason:decision.reason,expertHistory:decision.history,accountAtDecision:decision.accountAtDecision,allocation:decision.allocation,proposalAtDecision:decision.proposalAtDecision,riskDiagnostics:decision.riskDiagnostics},assessments:[]});

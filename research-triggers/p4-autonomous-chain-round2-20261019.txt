@@ -1,0 +1,1 @@
+Research-only continuation of persisted PROPOSED task from prior completed job, on a nonoverlapping BTCUSDT historical window. No real orders, model updates or promotion.

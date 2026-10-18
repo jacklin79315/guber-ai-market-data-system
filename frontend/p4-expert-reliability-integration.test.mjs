@@ -10,6 +10,11 @@ test('persisted artifact reader attaches six-actor reliability research without 
  const result=await inspectPersistedP4ResearchRound({store,jobId:'historical_1',iteration:1,manifests:{champion:manifest,challenger:manifest},minEvents:2});
  assert.deepEqual(kinds,['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS']);
  for(const label of ['champion','challenger']){
+  const reassessment=result.results[label].reassessment;
+  assert.equal(reassessment.sourceRecords,2);
+  assert.equal(reassessment.before.reviewed,2);
+  assert.equal(reassessment.after.reviewed,2);
+  assert.equal(reassessment.modelUpdateApplied,false);
   const reliability=result.results[label].expertReliability;
   assert.equal(reliability.reviewedEvents,2);
   assert.equal(reliability.experts.length,6);

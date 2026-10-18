@@ -15,11 +15,18 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
    endpoint.searchParams.set('artifact_kind','eq.'+kind);
    endpoint.searchParams.set('select','chunk_index,payload,payload_sha256');
    endpoint.searchParams.set('order','chunk_index.asc');
-   endpoint.searchParams.set('limit',String(manifest.chunkCount+1));
-   const response=await fetchImpl(endpoint.toString(),{method:'GET',headers,signal:AbortSignal.timeout(60000)});
-   if(!response.ok)throw Error('P4 artifact read failed: '+response.status);
-   const rows=await response.json();
-   if(!Array.isArray(rows)||rows.length!==manifest.chunkCount)throw Error('P4 artifact chunk count mismatch');
+   const rows=[];
+   for(let offset=0;offset<manifest.chunkCount;offset+=500){
+    const page=new URL(endpoint);
+    page.searchParams.set('limit',String(Math.min(500,manifest.chunkCount-offset)));
+    page.searchParams.set('offset',String(offset));
+    const response=await fetchImpl(page.toString(),{method:'GET',headers,signal:AbortSignal.timeout(60000)});
+    if(!response.ok)throw Error('P4 artifact read failed: '+response.status+' offset='+offset);
+    const batch=await response.json();
+    if(!Array.isArray(batch)||batch.length!==Math.min(500,manifest.chunkCount-offset))throw Error('P4 artifact chunk count mismatch');
+    rows.push(...batch);
+   }
+   if(rows.length!==manifest.chunkCount)throw Error('P4 artifact chunk count mismatch');
    const records=[];
    for(let i=0;i<rows.length;i++){
     const row=rows[i];
@@ -44,7 +51,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
    if(reconstructed.length!==manifest.recordCount)throw Error('P4 artifact record count mismatch');
    return reconstructed;
   },
-  async write({jobId,ownerToken,specFingerprint,iteration,kind,records,maxChunkBytes=1024*1024}={}){
+  async write({jobId,ownerToken,specFingerprint,iteration,kind,records,maxChunkBytes=256*1024}={}){
    if(typeof jobId!=='string'||!jobId||typeof ownerToken!=='string'||ownerToken.length<16||!Number.isSafeInteger(iteration)||iteration<1||iteration>100||typeof specFingerprint!=='string'||!/^[a-f0-9]{64}$/.test(specFingerprint)||!['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS','TRADE_EVIDENCE'].includes(kind)||!Array.isArray(records)||!Number.isSafeInteger(maxChunkBytes)||maxChunkBytes<1024||maxChunkBytes>1024*1024)throw Error('invalid P4 artifact records');
    const chunks=[];let current=[],bytes=2,fragmented=false;
    for(const record of records){

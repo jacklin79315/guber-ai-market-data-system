@@ -359,3 +359,11 @@
 - `96c0db2`、`ac17f3c`、`8fe4a5f`：新增分頁 Feature 預載（每頁最多 1,000 筆），長時間窗研究在回放前預載，測試涵蓋分頁、重複時間戳拒絕及快取使用；三次 CI SUCCESS。**尚未量測真實 24M 資料載入時間及記憶體占用**。
 - `635519c`：GitHub Actions 手動研究 workflow 新增 `SMOKE`／`HISTORICAL_24M` 選項；24M 自動設定 `P4_PARTITIONED=TRUE`，執行上限調整至 90 分鐘。workflow 文件內容已核對，但該 workflow-only 修改尚無實際 dispatch 執行結果；不能以先前一般 CI 成功代替此 workflow 的端到端驗收。
 - **未完成／執行限制**：現有 GitHub 連接器不提供 workflow_dispatch 操作，無法由目前工具直接觸發 GitHub 手動研究。24 個月研究尚未執行，無新的已結算交易樣本或模型績效；OOS 目前只是保留資料，尚未完成獨立驗證；診斷器的回饋仍未真正套用到可驗證的自主模型學習。下一步應先啟動 1 輪 24M 研究並查核 Supabase checkpoint／round 與診斷結果，之後補齊 OOS。
+
+
+## 13S. 2026-10-18 P4 24 個月全量研究決策與寫入故障
+
+- 使用者確認取消固定 80% 研究／20% 保留的 24 個月切分；24 個月全部用於逐根模擬交易、診斷及研究。獨立驗證應使用後續未參與參數選擇的新資料；不能把同一歷史窗口的績效當成樣本外成果。
+- `7df868e` 允許 `HISTORICAL_24M` 不分割研究；`0801771` 將 GitHub 手動 workflow 的 24M `P4_PARTITIONED` 改為 `FALSE`；`c473b0b` 更新對應設定測試。**須確認 CI 通過後才視為程式驗收。**
+- 先前 `p4_btc_24m_001` 三次實際 24M 嘗試：K 線讀取及 Feature 預載已成功，但研究輪次 RPC 寫入連續遭 HTTP 502；最後一次 `P4 round commit unconfirmed after transient failure`，另有租約釋放 521。資料庫確認研究輪次仍 0、checkpoint `RESEARCH`。502 根因未確定；需量測寫入 JSON bytes、RPC 耗時及儲存結構，勿僅增加重試或反覆重跑。
+- **不得使用舊 `p4_btc_24m_001` 繼續全量研究**：規格指紋包含 `partitionOptions`，新版研究需新 job ID。待 502 持久化修復、CI 與資料庫檢查後才重新執行。

@@ -7,7 +7,7 @@ test('completed persisted research proposes next hypothesis without executing it
  let record=createP4DiagnosticTaskRecord(plan,{taskId:'task_1',createdAtMs:1});
  record=transitionP4DiagnosticTask(record,{to:'READY',atMs:2});
  let next=null;
- const summary={schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId:'job_1',loadedCandles:500,status:'NO_TRAIN_SELECTED_ARM',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,learningEvidence:{assessment:'NO_TRAIN_SELECTED_ARM'}};
+ const summary={schemaVersion:'P4_DIAGNOSTIC_RESEARCH_SUMMARY_V1',jobId:'job_1',loadedCandles:500,status:'NO_TRAIN_SELECTED_ARM',trainingResults:[],selectedArm:null,oosEvidenceStatus:'NOT_EVALUATED',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,learningEvidence:{assessment:'NO_TRAIN_SELECTED_ARM'}};
  const result=await runP4DiagnosticAutonomousCycle({store:{load:async()=>record,transition:async(prev,value)=>{assert.equal(prev,record);record=value}},taskId:'task_1',executionJobId:'job_1',atMs:3,confirm:'RESEARCH_ONLY',runResearch:async()=>({status:'COMMITTED',summary}),createTaskId:async()=> 'task_2',recordNextTask:async r=>{next=r}});
  assert.equal(result.status,'COMPLETED_NEXT_RESEARCH_PROPOSED');
  assert.equal(record.status,'COMPLETED');

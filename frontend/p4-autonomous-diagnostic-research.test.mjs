@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {planAutonomousP4DiagnosticResearch,discoverAutonomousP4ResearchHypotheses,inspectPersistedP4DiagnosticReadiness,inspectPersistedP4ResearchRound,prioritizeP4DiagnosticEvidenceGaps} from './p4-autonomous-diagnostic-research.mjs';
+import {planAutonomousP4DiagnosticResearch,discoverAutonomousP4ResearchHypotheses,inspectPersistedP4DiagnosticReadiness,inspectPersistedP4ResearchRound,prioritizeP4DiagnosticEvidenceGaps,inspectP4DecisionInputCoverage} from './p4-autonomous-diagnostic-research.mjs';
 const parentParameters={entryLookback:20,entryThreshold:0.001,rewardAtrPeriod:14,rewardStopAtr:1.5,rewardTakeAtr:3};
 test('autonomous research remains disabled for orders and promotion with no causal evidence',()=>{
  const audit={schemaVersion:'P4_DIAGNOSTIC_AUDIT_V1',eventCount:0,actors:{},appliedToModels:false,fingerprint:'a'.repeat(64),requiresReview:0};
@@ -40,6 +40,7 @@ test('reads both diagnostic manifests without authorizing orders or model update
  assert.deepEqual(seen,[['CHAMPION_DIAGNOSTICS',2],['CHALLENGER_DIAGNOSTICS',3]]);
  assert.equal(result.results.champion.totalEvents,0);
  assert.equal(result.results.champion.evidenceGaps.totalEvents,0);
+ assert.equal(result.results.champion.decisionInputs.totalEvents,0);
  assert.equal(result.results.champion.evidenceGaps.nextAction,'COLLECT_DIAGNOSTIC_EVIDENCE');
  assert.equal(result.results.challenger.totalEvents,0);
  assert.equal(result.ordersEnabled,false);
@@ -58,4 +59,14 @@ test('evidence gaps are ranked without inferring faults from losses',()=>{
  assert.equal(report.priorities.find(x=>x.actor==='Entry').missing,2);
  assert.equal(report.nextAction,'IMPROVE_CAUSAL_EVIDENCE_COVERAGE');
  assert.equal(report.ordersEnabled,false);
+});
+
+test('unknown exploratory probability is an evidence gap, never automatic fault',()=>{
+ const records=[{diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1'},evidence:{action:'APPROVE',proposalAtDecision:{winProbability:null,expectedValue:null},expertHistory:[]}}];
+ const result=inspectP4DecisionInputCoverage({records});
+ assert.equal(result.unknownProbability,1);
+ assert.equal(result.unknownExpectedValue,1);
+ assert.equal(result.approvedWithUnknownProbability,1);
+ assert.equal(result.ordersEnabled,false);
+ assert.equal(result.modelUpdateApplied,false);
 });

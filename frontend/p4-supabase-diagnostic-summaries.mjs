@@ -4,7 +4,8 @@ export function createP4DiagnosticSummaryStore({supabaseUrl,serviceRoleKey,fetch
  if(typeof supabaseUrl!=='string'||!/^https:\/\/[^/]+\/?$/.test(supabaseUrl)||typeof serviceRoleKey!=='string'||!serviceRoleKey||typeof fetchImpl!=='function')throw Error('invalid P4 diagnostic summary store');
  const endpoint=new URL('/rest/v1/p4_diagnostic_research_summaries',supabaseUrl);
  const headers={apikey:serviceRoleKey,Authorization:'Bearer '+serviceRoleKey,Accept:'application/json','Content-Type':'application/json'};
- const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
+ const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+ const digest=value=>createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
  return {
   async load(jobId){
    if(typeof jobId!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(jobId))throw Error('invalid diagnostic summary job ID');

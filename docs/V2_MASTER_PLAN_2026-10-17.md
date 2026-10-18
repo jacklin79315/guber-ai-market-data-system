@@ -410,3 +410,10 @@
 - `p4_artifact_smoke_commit_cleanup_20261018` migration 成功在正式 Supabase 執行隔離測試：建立暫時有效租約、呼叫 `p4_commit_research_artifact_chunk`、相同內容再次提交、確認僅 1 筆，隨後清除測試分塊與租約。再次查詢兩表測試 job 均為 0 筆。
 - `4f5d443` 將研究端的 JSONB 讀回驗證改成遞迴結構比對，不依賴物件鍵順序；CI SUCCESS。先前 `1e98787` CI 亦 SUCCESS。
 - 此驗收僅為資料庫層級 RPC，**不是** HTTP PostgREST/Service Role 端到端，也未驗證 24M 大量分塊、完整研究輪次 checkpoint 與 502 修復。
+
+
+## 13Z. 2026-10-18 診斷分塊暫時性 HTTP 失敗重試
+
+- `371032b` 診斷分塊 POST 對 429/500/502/503/504 進行最多三次嘗試；初次 CI FAIL 因舊測試預期單次 503 直接失敗。
+- `16eb306` 更新重試耗盡後續傳模擬，新增單次 502 重試成功測試；GitHub CI SUCCESS。
+- 尚未啟動真實 24M 研究，未驗證正式 PostgREST HTTP 分塊路徑，無法宣稱長窗 502 已解決。正式資料庫 RPC 煙霧測試已完成。

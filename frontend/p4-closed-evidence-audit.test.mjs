@@ -15,3 +15,5 @@ test('audit results are stable across serialized artifact readback',()=>{
  const records=[row({decisionTime:100,closedAt:200,realizedWin:false,proposalAtDecision:{winProbability:0.7}}),row({decisionTime:300,closedAt:400,realizedWin:true,proposalAtDecision:{winProbability:0.5}})];
  assert.deepEqual(auditP4ClosedEvidence(JSON.parse(JSON.stringify(records))),auditP4ClosedEvidence(records));
 });
+
+test('zero closed trades never qualifies as complete calibration evidence',()=>{const a=auditP4ClosedEvidence([{diagnosis:{outcome:'WAIT'}}]);assert.equal(a.closed,0);assert.equal(a.calibrationReady,0);assert.equal(a.complete,false)});

@@ -95,3 +95,11 @@ test('optional calibration contract reports blocked research for empty persisted
  assert.equal(result.results.challenger.calibrationResearch.experiment,null);
  assert.equal(result.ordersEnabled,false);
 });
+
+test('reads actual round manifest champion/challenger keys',async()=>{
+ const seen=[];
+ const store={read:async({kind,manifest})=>{seen.push([kind,manifest.chunkCount]);return []}};
+ const result=await inspectPersistedP4ResearchRound({store,jobId:'persisted-real-shape',iteration:1,manifests:{schemaVersion:1,champion:{chunkCount:4},challenger:{chunkCount:5}}});
+ assert.deepEqual(seen,[['CHAMPION_DIAGNOSTICS',4],['CHALLENGER_DIAGNOSTICS',5]]);
+ assert.equal(result.ordersEnabled,false);
+});

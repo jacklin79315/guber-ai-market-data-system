@@ -367,3 +367,11 @@
 - `7df868e` 允許 `HISTORICAL_24M` 不分割研究；`0801771` 將 GitHub 手動 workflow 的 24M `P4_PARTITIONED` 改為 `FALSE`；`c473b0b` 更新對應設定測試。**須確認 CI 通過後才視為程式驗收。**
 - 先前 `p4_btc_24m_001` 三次實際 24M 嘗試：K 線讀取及 Feature 預載已成功，但研究輪次 RPC 寫入連續遭 HTTP 502；最後一次 `P4 round commit unconfirmed after transient failure`，另有租約釋放 521。資料庫確認研究輪次仍 0、checkpoint `RESEARCH`。502 根因未確定；需量測寫入 JSON bytes、RPC 耗時及儲存結構，勿僅增加重試或反覆重跑。
 - **不得使用舊 `p4_btc_24m_001` 繼續全量研究**：規格指紋包含 `partitionOptions`，新版研究需新 job ID。待 502 持久化修復、CI 與資料庫檢查後才重新執行。
+
+
+## 13T. P4 502 寫入診斷進度（2026-10-18）
+
+- GitHub CI run `39085651027` SUCCESS，`b2547e1` 已在輪次 RPC 寫入前記錄 payload bytes／MiB、輪次、Ledger runs，成功回應記錄耗時；`60c29a0` 另補每次失敗嘗試的耗時、HTTP 錯誤與 payload bytes（CI 待驗證）。不輸出服務金鑰。
+- 正式 Supabase 唯讀查詢：既有兩筆 168 根研究輪次 JSON 各約 5,932 bytes，Postgres JSONB 儲存約 2,536 bytes；24M 任務尚未成功寫入任何輪次，無法據此推算實際 24M payload 大小。
+- 程式碼查核：每輪 `ledgerSnapshot.runs[*].result.comparison` 含研究比較與診斷彙總，Ledger 歷史隨輪次重複保存在 round 中，存在重複儲存風險；但尚無足夠證據認定其造成 502。拆分保存研究摘要、逐筆診斷與交易紀錄的 schema／遷移／原子提交尚未實作，不可標完成。
+- 下一步：在受控執行下取得 24M 實際 payload 與每次 RPC 耗時，再設計可追溯、可恢復且不遺失診斷證據的分表／分批寫入，測試後才重跑完整研究。舊 80/20 checkpoint 不得沿用。

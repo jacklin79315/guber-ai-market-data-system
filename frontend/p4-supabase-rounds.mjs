@@ -18,6 +18,7 @@ export function createP4SupabaseRoundStore({supabaseUrl,serviceRoleKey,fetchImpl
    const payloadBytes=Buffer.byteLength(payload,'utf8');
    process.stderr.write(JSON.stringify({phase:'P4_ROUND_COMMIT_DIAGNOSTIC',jobId,iteration:round.iteration,payloadBytes,payloadMiB:Number((payloadBytes/1048576).toFixed(2)),ledgerRuns:round.ledgerSnapshot?.runs?.length??null})+'\n');
    for(let attempt=0;attempt<3;attempt++){
+    const attemptStartedAt=Date.now();
     try{
      const startedAt=Date.now();
      const response=await request(rpc,{method:'POST',headers,body:payload,signal:AbortSignal.timeout(60000)});
@@ -25,6 +26,7 @@ export function createP4SupabaseRoundStore({supabaseUrl,serviceRoleKey,fetchImpl
      if(await response.json()!==true)throw Error('P4 fenced round commit denied');
      return;
     }catch(e){
+     process.stderr.write(JSON.stringify({phase:'P4_ROUND_COMMIT_FAILURE',iteration:round.iteration,attempt:attempt+1,elapsedMs:Date.now()-attemptStartedAt,payloadBytes,error:e instanceof Error?e.message:String(e)})+'\n');
      // A 502 or lost connection can occur AFTER the transaction commits.
      // Confirm persistence before attempting the same fenced write again.
      if(!/failed: (?:429|502|503|504|520|521|522|523|524)|fetch failed|timeout|abort/i.test(e.message))throw e;

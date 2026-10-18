@@ -40,7 +40,7 @@ test('reads both diagnostic manifests without authorizing orders or model update
  assert.deepEqual(seen,[['CHAMPION_DIAGNOSTICS',2],['CHALLENGER_DIAGNOSTICS',3]]);
  assert.equal(result.results.champion.totalEvents,0);
  assert.equal(result.results.champion.evidenceGaps.totalEvents,0);
- assert.equal(result.results.champion.evidenceGaps.nextAction,'REVIEW_VALIDATED_CAUSAL_HYPOTHESES');
+ assert.equal(result.results.champion.evidenceGaps.nextAction,'COLLECT_DIAGNOSTIC_EVIDENCE');
  assert.equal(result.results.challenger.totalEvents,0);
  assert.equal(result.ordersEnabled,false);
  assert.equal(result.modelUpdateApplied,false);

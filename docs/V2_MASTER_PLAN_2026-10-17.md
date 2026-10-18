@@ -440,3 +440,10 @@
 - 原實作只按完整 record 分塊，無法拆開超大單筆。`ae390b4` 暫提高預設上限至 1MiB，但不足以保證所有記錄可存。
 - `93db911` 實作超大單筆診斷 JSON 的無損分片，保留 SHA256 分塊完整性檢查，讀回按序重組；manifest 新增 `fragmented` 標記並保留原始 `recordCount`。
 - `4f1acf6` 新增大筆資料拆分、還原及損壞偵測測試，CI run `39089412059` SUCCESS。仍須以真實 24M 研究驗證長窗儲存與完整 round commit，單元測試成功不等於正式研究成功。
+
+
+## 13AD. 2026-10-18 正式研究重試前資料庫核對
+
+- 已直接查核 Supabase 任務 `p4_btc_24m_accept_20261018`：checkpoint `phase=RESEARCH`、`completedIterations=0`、`loadedCandles=17520`。
+- `p4_research_rounds` 此任務 0 筆，`p4_research_artifact_chunks` 此任務 0 筆；`p4_research_leases` 無該任務租約紀錄。
+- 無需刪除資料或換 job ID，可使用相同參數從現有 workflow_dispatch 重跑；仍須以實際 Actions SUCCESS 與 DB round/artifact/readback 驗收才算完成。

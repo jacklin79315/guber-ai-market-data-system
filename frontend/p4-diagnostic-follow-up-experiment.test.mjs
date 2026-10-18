@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mapP4FollowUpToExperimentTask,runP4FollowUpExperiment} from './p4-diagnostic-follow-up-experiment.mjs';
-const plan={schemaVersion:'P4_DIAGNOSTIC_FOLLOW_UP_PLAN_V1',sourceJobId:'research_1',action:'REVISE_HYPOTHESIS',reason:'OOS_NOT_IMPROVED',researchOnly:true,autoExecutionAuthorized:false,ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false};
+const plan={schemaVersion:'P4_DIAGNOSTIC_FOLLOW_UP_PLAN_V1',sourceJobId:'research_1',actor:'COLLECT_ENTRY_CAUSAL_EVIDENCE',action:'REVISE_HYPOTHESIS',reason:'OOS_NOT_IMPROVED',researchOnly:true,autoExecutionAuthorized:false,ordersEnabled:false,modelUpdateAllowed:false,championPromotionAllowed:false};
 test('negative OOS evidence maps to a bounded existing Entry experiment task',()=>{
  const result=mapP4FollowUpToExperimentTask(plan);
  assert.equal(result.status,'EXPERIMENT_READY');
@@ -16,4 +16,9 @@ test('independent validation request does not mutate parameters',()=>{
 test('research execution requires explicit consent and forbids unsafe plans',async()=>{
  await assert.rejects(()=>runP4FollowUpExperiment({plan}),/confirmation/);
  assert.throws(()=>mapP4FollowUpToExperimentTask({...plan,ordersEnabled:true}),/unsafe/);
+});
+
+test('unknown or conflicting expert identity is never silently mapped to Entry',()=>{
+ assert.throws(()=>mapP4FollowUpToExperimentTask({...plan,actor:'UNKNOWN'}),/diagnostic actor/);
+ assert.throws(()=>mapP4FollowUpToExperimentTask(plan,{actor:'Reward'}),/diagnostic actor/);
 });

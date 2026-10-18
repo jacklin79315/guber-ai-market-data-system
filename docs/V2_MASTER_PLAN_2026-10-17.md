@@ -513,3 +513,13 @@
 - 新增 `p4-closed-evidence-audit.mjs` 並整合 `p4-historical-research-job.mjs`：新研究輪次將保存兩側已結算交易的時間／勝負／勝率欄位完整性統計；診斷 artifacts 寫入並讀回後再次計算，必須與原始稽核一致。提交 `63bd0bd`、`6a9f93e`、`a8e9a5e`、`260c225`、`7b3763c`，GitHub CI 均已核對 SUCCESS。
 - **尚未完成**：以新版本真正執行一輪研究並核對 Supabase 實際 `closedEvidenceAudit` 與 chunks；驗證實際校準樣本能跨越訓練／驗證窗；研究結果持久化與自主診斷訓練閉環、獨立 OOS、模型品質晉升。GitHub 已有手動 `p4-manual-research.yml`，但目前連線未提供觸發 workflow_dispatch 的工具，故本輪**未觸發新研究**。不可把 CI 測試等同真實歷史資料端到端驗收。
 - 下一優先順序：執行新的受控 SMOKE（獨立 job_id），核對稽核／持久化診斷實際欄位；確認時間因果與樣本充分後才做歷史校準實驗，再進入可恢復研究閉環。任何階段都不允許自主真實交易。
+
+
+## 13AK. P4 手動診斷研究實測：140／500／2000 根 K 線（2026-10-19）
+
+- GitHub Actions 手動研究 workflow 已能執行，且不具備自動真實下單能力；正式驗收執行紀錄：140 根 run 39148630767、500 根 run 39150234352、2000 根 run 39151060176，三次皆成功持久化至 `public.p4_diagnostic_research_summaries`。每次使用獨立 job_id；實際執行 `ordersEnabled=false`。
+- 140 根：兩組 Entry lookback 實驗，訓練已結算 4 筆，樣本不足，未選參數；500 根：原始 lookback 20 訓練已結算 13 筆淨 +2.734919 USDT，候選 19 為 14 筆淨 -0.004631 USDT，候選 21 與原始相同，均未選參數。
+- 2000 根：驗證連續無缺口 BTCUSDT 1h 歷史，時序分割為訓練 1600 根、樣本外 400 根。訓練 Champion (lookback 20) 65 筆淨 -80.675733 USDT；Challenger (19) 60 筆淨 -39.203885 USDT，訓練表現改善；Challenger (21) 與 Champion 相同。依訓練資料選出 19 進入樣本外研究。
+- 2000 根樣本外：Champion 16 筆淨 +5.594916 USDT；Challenger 19 為 17 筆淨 +2.854582 USDT，未優於 Champion，且均未達最低 30 筆結算樣本。摘要 status=`OOS_RESEARCH_EVALUATED`、`oosImprovedInReplay=false`、`independentValidation=false`、`modelUpdateApplied=false`、`championPromotionAllowed=false`。**不得宣稱自主學習成功或模型改善。**
+- 2000 根上限擴充及測試已提交；先前 CI 測試截止時間配置錯誤已修正，GitHub Actions 前端安全測試 run 39150700607 = SUCCESS。第三輪診斷 run 39151060176 = SUCCESS。
+- 下一步：檢查樣本外證據不足的處理策略，優先擴大有完整資料的時序窗口、增加獨立驗證，不降低最低樣本門檻；檢查診斷責任歸因與 Win／WAIT 因果研究接線。研究執行成功不代表 AI 已自主訓練或更新參數。仍永不自主真實下單。

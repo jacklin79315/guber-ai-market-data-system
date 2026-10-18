@@ -1,0 +1,34 @@
+name: P4 existing historical diagnostic reassessment
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/p4-existing-diagnostic-reassessment.yml'
+permissions:
+  contents: read
+concurrency:
+  group: p4-existing-diagnostic-reassessment
+  cancel-in-progress: false
+jobs:
+  reassess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate credentials
+        run: |
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+      - name: Verify and reassess existing 24-month historical diagnostic artifacts
+        run: node p4-existing-diagnostic-reassessment-runner.mjs

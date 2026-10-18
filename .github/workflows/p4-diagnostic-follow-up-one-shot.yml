@@ -1,0 +1,37 @@
+name: P4 one-shot diagnostic follow-up
+on:
+  push:
+    paths:
+      - 'research-triggers/p4-entry-follow-up-20261019.txt'
+permissions:
+  contents: read
+concurrency:
+  group: p4-diagnostic-research
+  cancel-in-progress: false
+jobs:
+  research-only:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: p4-research
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      P4_RESEARCH_CONFIRM: RESEARCH_ONLY
+      P4_SOURCE_JOB_ID: p4_diag_entry_priorwindow_35pct_20261019_01
+      P4_FOLLOWUP_TASK_ID: p4_followup_entry_20261019_01
+      P4_FOLLOWUP_EXECUTION_ID: p4_diag_entry_followup_20261019_01
+      P4_FROM_MS: '1770703200000'
+      P4_TO_MS: '1777899600000'
+      P4_AS_OF_MS: '1777906800000'
+      P4_SOURCE_WINDOW_END_MS: '1777903200000'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute research-only durable follow-up
+        run: node p4-diagnostic-follow-up-one-shot.mjs

@@ -2,6 +2,7 @@
 import {planP4LearningFromDiagnostics} from './p4-diagnostic-learning-gate.mjs';
 import {discoverP4DiagnosticPatterns} from './p4-diagnostic-patterns.mjs';
 import {checkP4CalibrationEligibility} from './p4-calibration-eligibility.mjs';
+import {evaluateP4PersistedWinCalibration} from './p4-persisted-win-calibration.mjs';
 
 export function planAutonomousP4DiagnosticResearch({audit,parentParameters,causalFindings=[]}={}){
  if(!Array.isArray(causalFindings))throw Error('causalFindings must be an array');
@@ -33,14 +34,14 @@ export function inspectPersistedP4DiagnosticReadiness({records,minEvents=30}={})
  * verified store, then produce research-only readiness reports.
  * The store must be constructed by createP4ArtifactChunkStore.
  */
-export async function inspectPersistedP4ResearchRound({store,jobId,iteration,manifests,minEvents=30}={}){
+export async function inspectPersistedP4ResearchRound({store,jobId,iteration,manifests,minEvents=30,calibrationContract}={}){
  if(!store||typeof store.read!=='function'||typeof jobId!=='string'||!jobId||!Number.isSafeInteger(iteration)||iteration<1||!manifests||typeof manifests!=='object')throw Error('invalid P4 research round reference');
  const results={};
  for(const [label,kind] of [['champion','CHAMPION_DIAGNOSTICS'],['challenger','CHALLENGER_DIAGNOSTICS']]){
   const manifest=manifests[kind];
   if(!manifest)throw Error('missing immutable diagnostic manifest: '+kind);
   const records=await store.read({jobId,iteration,kind,manifest});
-  results[label]={...inspectPersistedP4DiagnosticReadiness({records,minEvents}),evidenceGaps:prioritizeP4DiagnosticEvidenceGaps({records}),decisionInputs:inspectP4DecisionInputCoverage({records}),calibrationEligibility:checkP4CalibrationEligibility(records,minEvents),researchTasks:planP4EvidenceResearchTasks({records,minEvents})};
+  results[label]={...inspectPersistedP4DiagnosticReadiness({records,minEvents}),evidenceGaps:prioritizeP4DiagnosticEvidenceGaps({records}),decisionInputs:inspectP4DecisionInputCoverage({records}),calibrationEligibility:checkP4CalibrationEligibility(records,minEvents),calibrationResearch:calibrationContract?evaluateP4PersistedWinCalibration({records,contract:calibrationContract}):null,researchTasks:planP4EvidenceResearchTasks({records,minEvents})};
  }
  return {schemaVersion:'P4_PERSISTED_RESEARCH_READINESS_V1',mode:'RESEARCH_ONLY',liveTrading:false,ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false,jobId,iteration,results};
 }

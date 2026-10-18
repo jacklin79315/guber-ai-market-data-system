@@ -455,3 +455,12 @@
 - Supabase SQL 實查：`CHAMPION_DIAGNOSTICS` iteration 1 已寫入 254 chunks，JSONB payload 約 8,725,595 bytes；因此並非完全未寫入，且不能刪除這些不可變分塊。
 - `9e0d85f` 將 artifact GET 分頁由 500 縮至 25 筆，對 429/500/502/503/504 與暫時性網路例外增加最多三次重試；GitHub Actions CI `39090100198` SUCCESS。
 - 仍須真實重跑與 SHA256 readback/round commit 驗證；HTTP 500 根因尚未由服務端日誌獨立確認。注意：重跑同一 job 的既存 chunk 必須內容與 hash 相同才能由冪等 RPC 接受，禁止清空或覆蓋原始證據。
+
+
+## 13AF. 2026-10-18 P4 診斷自主研究授權界線
+
+- 使用者再次確認：**本系統永不主動執行真實交易**；自主學習僅限歷史資料分析、模擬交易、診斷、研究候選參數與驗證，不得連接自動下單。
+- P4 24M 第一輪已完成並提交：GitHub Actions `39091624212` SUCCESS；Supabase job `p4_btc_24m_accept_20261018` iteration 1 已持久化，17,520 根 BTCUSDT 1h K 線。另一同時啟動的 `39091624524` 因相同 job 已存在而被安全拒絕，非研究結果失敗。
+- Champion 118 筆、淨 -287.01 U；Challenger 119 筆、淨 -311.27 U，未晉升；尚無獨立 OOS。詳細數據參見 `docs/P4_ROUND1_FINDINGS_20261018.md`。
+- 現有 `p4-diagnostic-learning-gate.mjs` 和 `p4-diagnostic-update-planner.mjs` 僅提出研究候選，不會自動更新模型；診斷自主學習閉環**尚未完成**，不得宣稱已啟動無人介入的完整自我學習。
+- 後續方向：診斷引擎自主提出有證據的因果假設、建立受控研究 Challenger、記錄正負結果、透過未使用於調參的新資料驗證；禁止未經驗證自動晉升或真實下單。

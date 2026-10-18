@@ -28,3 +28,26 @@ test('P4 readback rejects manifest hash mismatch',async()=>{
  const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl:async()=>({ok:true,json:async()=>[{chunk_index:0,payload:[{a:1}],payload_sha256:'0'.repeat(64)}]})});
  await assert.rejects(store.read({jobId:'j',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest:{chunkCount:1,recordCount:1,chunkHashes:['f'.repeat(64)]}}),/integrity mismatch/);
 });
+
+test('P4 chunk upload resumes after partial failure without changing prior chunks',async()=>{
+ const chunks=new Map();let failOnce=true;
+ const fetchImpl=async(_url,opts)=>{
+  if(opts.method==='POST'){
+   const b=JSON.parse(opts.body);
+   if(b.p_chunk_index===1&&failOnce){failOnce=false;return {ok:false,status:503};}
+   const key=b.p_chunk_index;
+   if(chunks.has(key)&&chunks.get(key).payload_sha256!==b.p_payload_sha256)return {ok:false,status:409};
+   chunks.set(key,{chunk_index:key,payload:b.p_payload,payload_sha256:b.p_payload_sha256});
+   return {ok:true,json:async()=>true};
+  }
+  return {ok:true,json:async()=>[...chunks.values()].sort((a,b)=>a.chunk_index-b.chunk_index)};
+ };
+ const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});
+ const records=[{id:1,reason:'a'.repeat(700)},{id:2,reason:'b'.repeat(700)}];
+ const args={jobId:'job',ownerToken:'lease-token',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records,maxChunkBytes:1024};
+ await assert.rejects(store.write(args),/503/);
+ assert.equal(chunks.size,1);
+ const manifest=await store.write(args);
+ assert.equal(chunks.size,2);
+ assert.deepEqual(await store.read({jobId:'job',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest}),records);
+});

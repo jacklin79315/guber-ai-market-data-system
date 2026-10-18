@@ -11,10 +11,11 @@ export async function runP4DiagnosticOosExperiment({task,parentParameters,trainC
  };
  const train=interval(trainCandles),validation=interval(validationCandles);
  if(train.to>=validation.from)throw Error('P4 diagnostic OOS windows overlap or are noncausal');
- const batch=await runP4DiagnosticExperiments({task,parentParameters,maxArms,shouldStop,candles:trainCandles,...replayInputs});
+ const batch=await runP4DiagnosticExperiments({task,parentParameters,maxArms,shouldStop,...replayInputs,candles:trainCandles});
  const eligible=batch.status==='EXPLORATORY_BATCH_COMPLETED'?batch.results.filter(r=>r.feedback?.status==='RESEARCH_EVIDENCE_ONLY'&&r.feedback.improvedInSameWindow===true):[];
  eligible.sort((a,b)=>(b.feedback.challenger.netRealizedPnl-b.feedback.champion.netRealizedPnl)-(a.feedback.challenger.netRealizedPnl-a.feedback.champion.netRealizedPnl)||a.arm.parameter.localeCompare(b.arm.parameter)||a.arm.direction-b.arm.direction);
  const selected=eligible[0]??null;
- const validationResult=selected&&!shouldStop()?await replayP4DiagnosticArm({taskId:batch.taskId,arm:{...selected.arm,parameters:{...parentParameters,[selected.arm.parameter]:selected.arm.to}},candles:validationCandles,...replayInputs}):null;
+ // Selection must not depend on any validation-period outcomes or diagnostics.
+ const validationResult=selected&&!shouldStop()?await replayP4DiagnosticArm({taskId:batch.taskId,arm:{...selected.arm,parameters:{...parentParameters,[selected.arm.parameter]:selected.arm.to}},...replayInputs,candles:validationCandles}):null;
  return {schemaVersion:'P4_DIAGNOSTIC_OOS_EXPERIMENT_V1',status:validationResult?'OOS_RESEARCH_EVALUATED':batch.status==='EXPLORATORY_BATCH_STOPPED'?'STOPPED':'NO_TRAIN_SELECTED_ARM',trainWindow:train,validationWindow:validation,trainingBatch:batch,selectedArm:selected?.arm??null,validationResult,independentValidation:validationResult!==null,independentValidationPassed:validationResult?.feedback?.status==='RESEARCH_EVIDENCE_ONLY'&&validationResult.feedback.improvedInSameWindow===true,mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
 }

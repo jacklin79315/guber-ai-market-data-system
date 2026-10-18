@@ -7,10 +7,12 @@ export function collectP4DiagnosticEvidence(replay){
  if(!replay||!Array.isArray(replay.decisions)||!Array.isArray(replay.account?.closed)||!Array.isArray(replay.account?.shadowOrders))throw Error('invalid P4 replay evidence');
  const decisions=new Map(replay.decisions.map(d=>[d.id,d]));
  const closed=Array.isArray(replay.candles)?attachClosedTimes({closed:replay.account.closed,candles:replay.candles}):replay.account.closed;
+ // A supplied candle series must resolve all exits; never silently fall back to unverified timestamps.
  const events=[];
  for(const trade of closed){
   const decision=decisions.get(trade.id);
   if(!decision)throw Error('closed trade lacks original decision: '+trade.id);
+  if(trade.closedTime!=null&&(!Number.isSafeInteger(trade.closedTime)||trade.closedTime<=decision.decisionTime))throw Error('invalid causal closed timestamp');
   events.push({decisionId:trade.id,outcome:'CLOSED',evidence:{decisionTime:decision.decisionTime,closedAt:trade.closedTime??null,realizedWin:Number.isFinite(trade.pnl)&&trade.pnl!==0?trade.pnl>0:null,action:decision.action,reason:decision.reason,expertHistory:decision.history,allocation:decision.allocation,proposalAtDecision:decision.proposalAtDecision,accountAtDecision:decision.accountAtDecision,riskDiagnostics:decision.riskDiagnostics,entryPrice:trade.entryPrice,exitPrice:trade.exitPrice,exitReason:trade.exitReason,netPnl:trade.pnl,fees:trade.totalFees},assessments:[]});
  }
  for(const shadow of replay.account.shadowOrders){

@@ -7,7 +7,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
  const headers={apikey:serviceRoleKey,Authorization:'Bearer '+serviceRoleKey,Accept:'application/json','Content-Type':'application/json'};
  return {
   async read({jobId,iteration,kind,manifest}={}){
-   if(!jobId||!Number.isSafeInteger(iteration)||!['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS','TRADE_EVIDENCE'].includes(kind)||!manifest||!Number.isSafeInteger(manifest.chunkCount)||!Number.isSafeInteger(manifest.recordCount))throw Error('invalid P4 artifact manifest');
+   if(!jobId||!Number.isSafeInteger(iteration)||!['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS','TRADE_EVIDENCE'].includes(kind)||!manifest||!Number.isSafeInteger(manifest.chunkCount)||!Number.isSafeInteger(manifest.recordCount)||!Array.isArray(manifest.chunkHashes)||manifest.chunkHashes.length!==manifest.chunkCount)throw Error('invalid P4 artifact manifest');
    const endpoint=new URL('/rest/v1/p4_research_artifact_chunks',supabaseUrl);
    endpoint.searchParams.set('job_id','eq.'+jobId);
    endpoint.searchParams.set('iteration','eq.'+iteration);
@@ -22,7 +22,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
    const records=[];
    for(let i=0;i<rows.length;i++){
     const row=rows[i];
-    if(row.chunk_index!==i||!Array.isArray(row.payload)||createHash('sha256').update(JSON.stringify(row.payload)).digest('hex')!==row.payload_sha256)throw Error('P4 artifact integrity mismatch');
+    if(row.chunk_index!==i||!Array.isArray(row.payload)||createHash('sha256').update(JSON.stringify(row.payload)).digest('hex')!==row.payload_sha256||row.payload_sha256!==manifest.chunkHashes[i])throw Error('P4 artifact integrity mismatch');
     records.push(...row.payload);
    }
    if(records.length!==manifest.recordCount)throw Error('P4 artifact record count mismatch');
@@ -48,7 +48,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
     if(!response.ok)throw Error('P4 artifact chunk commit failed: '+response.status+' index='+index);
     if(await response.json()!==true)throw Error('P4 artifact chunk commit denied');
    }
-   return {chunkCount:chunks.length,recordCount:records.length};
+   return {chunkCount:chunks.length,recordCount:records.length,chunkHashes:chunks.map(payload=>createHash('sha256').update(JSON.stringify(payload)).digest('hex'))};
   }
  };
 }

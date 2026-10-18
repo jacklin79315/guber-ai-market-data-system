@@ -1,7 +1,11 @@
 import {extractP4ClosedWinObservations} from './p4-win-evidence-adapter.mjs';
+import {createHash} from 'node:crypto';
 // Verify the actual experiment windows before any calibration replay.
 export function inspectP4CalibrationWindows({records,contract}={}){
- if(contract?.schemaVersion!=='P4_CAUSAL_EXPERIMENT_V1'||contract.kind!=='WIN_PROBABILITY_CALIBRATION')throw Error('invalid calibration contract');
+ if(contract?.schemaVersion!=='P4_CAUSAL_EXPERIMENT_V1'||contract.kind!=='WIN_PROBABILITY_CALIBRATION'||typeof contract.fingerprint!=='string')throw Error('invalid calibration contract');
+ const {fingerprint,...definition}=contract;
+ const expected=createHash('sha256').update(JSON.stringify(definition)).digest('hex');
+ if(expected!==fingerprint)throw Error('modified calibration contract');
  const {observations,excluded}=extractP4ClosedWinObservations({records});
  const train=contract.train,validation=contract.validation,min=contract.minimumSamples;
  if(!train||!validation||!Number.isSafeInteger(min)||min<30||train.to>=validation.from||train.asOf>validation.from)throw Error('invalid chronological windows');

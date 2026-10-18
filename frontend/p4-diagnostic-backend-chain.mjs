@@ -39,6 +39,12 @@ export async function runP4DiagnosticBackendChain({supabaseUrl,serviceRoleKey,fe
    if(s.taskId===mapped.task.id&&arm&&feedback?.improvedInSameWindow===false&&Number.isFinite(arm.from)&&Math.abs(arm.from-parentParameters[arm.parameter])<1e-9)seen.add(arm.parameter+':'+arm.direction);
   }
   const excludedDirections=[...seen].map(key=>{const [parameter,direction]=key.split(':');return {parameter,direction:Number(direction)}});
+  // The latest OOS failure is a stronger restriction than same-window training evidence.
+  // Include it even when the preceding training result improved.
+  if(mapped.task.avoidPriorFailedDirection){
+   const failed=mapped.task.avoidPriorFailedDirection;
+   if(Math.abs(parentParameters[failed.parameter]-failed.failedFrom)<1e-9&&!excludedDirections.some(x=>x.parameter===failed.parameter&&x.direction===failed.avoidDirection))excludedDirections.push({parameter:failed.parameter,direction:failed.avoidDirection});
+  }
   const proposed=proposeP4DiagnosticExperimentArms({task:mapped.task,parentParameters,maxArms,explorationSteps,excludedDirections});
   if(proposed.arms.length===0)throw Error('NO_UNTESTED_DIAGNOSTIC_ARMS: prior research exhausted available hypotheses');
   if(mapped.task.avoidPriorFailedDirection&&proposed.arms.some(arm=>arm.parameter===mapped.task.avoidPriorFailedDirection.parameter&&arm.direction===mapped.task.avoidPriorFailedDirection.avoidDirection))throw Error('previous failed hypothesis must not be repeated');

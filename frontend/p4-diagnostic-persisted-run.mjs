@@ -1,4 +1,5 @@
 // Explicit research-only backend runner with immutable summary persistence and recovery.
+import {createHash} from 'node:crypto';
 import {runP4DiagnosticBackendResearch} from './p4-diagnostic-backend-research.mjs';
 import {createP4DiagnosticSummaryStore} from './p4-supabase-diagnostic-summaries.mjs';
 export async function runP4PersistedDiagnosticResearch({confirm,researchJobId,supabaseUrl,serviceRoleKey,fetchImpl=fetch,summaryStore,...options}={}){
@@ -7,11 +8,14 @@ export async function runP4PersistedDiagnosticResearch({confirm,researchJobId,su
  const store=summaryStore??createP4DiagnosticSummaryStore({supabaseUrl,serviceRoleKey,fetchImpl});
  if(typeof store.load!=='function'||typeof store.commit!=='function')throw Error('invalid diagnostic summary store');
  if(options.symbol!=='BTCUSDT'||options.timeframe!=='1h'||!Number.isSafeInteger(options.fromOpenTime)||!Number.isSafeInteger(options.toOpenTime)||!Number.isSafeInteger(options.asOfMs)||options.fromOpenTime>=options.toOpenTime||options.toOpenTime>=options.asOfMs)throw Error('missing immutable diagnostic research window');
+ const requestIdentity={symbol:options.symbol,timeframe:options.timeframe,fromOpenTime:options.fromOpenTime,toOpenTime:options.toOpenTime,asOfMs:options.asOfMs,task:options.task??null,parentParameters:options.parentParameters??null,maxArms:options.maxArms??null,explorationSteps:options.explorationSteps??null,validationFraction:options.validationFraction??null,costs:options.costs??null};
+ const fingerprint=createHash('sha256').update(JSON.stringify(requestIdentity)).digest('hex');
  const existing=await store.load(researchJobId);
  // The caller must not reuse a job id to silently change the research specification.
  // A completed job is returned read-only; this is not a fresh validation run.
+ if(existing&&existing.requestFingerprint!==fingerprint)throw Error('diagnostic job ID reused with unverified or different research specification');
  if(existing)return {status:'ALREADY_COMMITTED',summary:existing,mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,championPromotionAllowed:false};
- const result=await runP4DiagnosticBackendResearch({confirm,researchJobId,supabaseUrl,apiKey:serviceRoleKey,fetchImpl,...options,onResearchSummary:summary=>store.commit(summary)});
+ const result=await runP4DiagnosticBackendResearch({confirm,researchJobId,supabaseUrl,apiKey:serviceRoleKey,fetchImpl,...options,onResearchSummary:summary=>store.commit({...summary,requestFingerprint:fingerprint,requestIdentity})});
  const persisted=await store.load(researchJobId);
  if(result.status==='STOPPED_BEFORE_DIAGNOSTIC_RESEARCH')return {...result,persisted:false};
  if(!persisted)throw Error('diagnostic research completed without durable summary');

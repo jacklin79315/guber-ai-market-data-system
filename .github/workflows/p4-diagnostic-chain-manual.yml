@@ -6,6 +6,10 @@ on:
         description: Existing PROPOSED diagnostic task ID
         required: true
         type: string
+      source_summary_job_id:
+        description: 'Optional immutable diagnostic summary to bootstrap a new proposed research task'
+        required: false
+        type: string
       windows_json:
         description: 'JSON array of 1-2 disjoint historical windows: fromOpenTime,toOpenTime,asOfMs (UTC milliseconds)'
         required: true
@@ -31,6 +35,7 @@ jobs:
       P4_MODEL_UPDATE_ALLOWED: 'false'
       P4_CHAMPION_PROMOTION_ALLOWED: 'false'
       P4_INITIAL_TASK_ID: ${{ inputs.initial_task_id }}
+      P4_SOURCE_SUMMARY_JOB_ID: ${{ inputs.source_summary_job_id }}
       P4_WINDOWS_JSON: ${{ inputs.windows_json }}
       P4_CHAIN_ID: chain_${{ github.run_id }}_${{ github.run_attempt }}
     steps:

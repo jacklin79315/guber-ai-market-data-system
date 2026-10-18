@@ -10,6 +10,15 @@ import {researchRuleBrain} from './p3-research-rule-brain.mjs';
 
 export async function runP4DiagnosticBackendChain({supabaseUrl,serviceRoleKey,fetchImpl=fetch,initialTaskId,grant,confirm,atMs,windows,createExecutionJobId,createTaskId,parentParameters=DEFAULT_TRAINING_PARAMETERS,brain=researchRuleBrain,costs={feeRate:0.001,slippageRate:0},maxArms=2,explorationSteps=[1],validationFraction=0.35,runPersisted=runP4PersistedDiagnosticResearch,taskStore,summaryStore}={}){
  if(!Array.isArray(windows)||windows.length!==grant?.maxRounds||windows.some(w=>w?.symbol!=='BTCUSDT'||w?.timeframe!=='1h'||!Number.isSafeInteger(w.fromOpenTime)||!Number.isSafeInteger(w.toOpenTime)||!Number.isSafeInteger(w.asOfMs)))throw Error('each research round requires explicit historical bounds');
+ const hour=3600000;
+ for(let i=0;i<windows.length;i++){
+  const w=windows[i];
+  if(w.fromOpenTime<0||w.fromOpenTime%hour!==0||w.toOpenTime%hour!==0||w.toOpenTime<w.fromOpenTime+129*hour||w.toOpenTime>w.fromOpenTime+1999*hour||w.asOfMs<=w.toOpenTime+hour-1)throw Error('invalid historical evidence bounds');
+  for(let j=0;j<i;j++){
+   const previous=windows[j];
+   if(w.fromOpenTime<=previous.toOpenTime&&previous.fromOpenTime<=w.toOpenTime)throw Error('overlapping historical research windows');
+  }
+ }
  const store=taskStore??createP4DiagnosticTaskStore({supabaseUrl,serviceRoleKey,fetchImpl});
  const summaries=summaryStore??createP4DiagnosticSummaryStore({supabaseUrl,serviceRoleKey,fetchImpl});
  let round=0;

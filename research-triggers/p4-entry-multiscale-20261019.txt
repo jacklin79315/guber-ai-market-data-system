@@ -1,0 +1,1 @@
+Run one bounded BTCUSDT 1h multiscale historical research on earlier disjoint data; no live orders, model update, or champion promotion.

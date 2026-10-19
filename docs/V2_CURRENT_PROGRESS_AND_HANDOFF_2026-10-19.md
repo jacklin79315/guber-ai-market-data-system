@@ -264,3 +264,9 @@ group by artifact_kind;
 - `24f59cf5f2f6e45f42e5d0e84b369cc61e421f8e`：新增 P4 比較結果 → 模擬 artifact chunk write/read（hash 完整性）→ `extractP4ClosedWinObservations` 的端到端測試；兩組 CLOSED 結算欄位完整，且不允許模型更新或 Champion promotion。Railway deployment `be8e5fa6-d391-492c-b6f7-b893fbf5154e` **SUCCESS，609/609 PASS、0 fail**。
 - **驗收界線**：此為 mock Supabase 介面的測試，不是新 24 個月正式 artifact 的寫入/讀回；未啟動新回合、未覆寫舊 immutable round、未調整正式權重或下單。
 - 下一步：確認新研究 job 的持久化執行入口、唯一 job ID、OOS 窗口與完整 CLOSED 因果證據，再決定是否進行真實歷史回放驗收；不得把模擬測試的成功等同真實資料校準合格。
+
+### 2026-10-19 P4 不可變研究資料寫入前因果防護
+- `76543d1ea3ebe92ff22c71029ed831f1dca63079`：`p4-historical-research-job.mjs` 新增寫入 artifact 前的 CLOSED 時間完整性阻擋，任何 CLOSED 缺少 `closedAt > decisionTime` 即 fail-closed；Railway 609/609 PASS、部署 SUCCESS。
+- `09412ee0ba19d3b00e24e24aab03b2d04604ab29`：抽出 `assertP4ClosedArchiveTimes` 供測試與原執行路徑共用，避免測試與正式防護分岔；Railway 部署 SUCCESS。
+- `4827afed9951babebdbe3ce0f47f42f4846b68dc`：新增兩項回歸測試，分別確認 Champion/Challenger 的錯誤或缺失結算時間被阻擋，以及零損益/未知勝負不會被捏造為校準有效。Railway **611/611 PASS，0 fail**；截至紀錄時部署狀態 BUILDING，待確認 SUCCESS。
+- 仍未啟動新的真實 24 個月研究回合；既有 immutable artifacts 不變，研究模式不下單、不更新模型、不升級 Champion。

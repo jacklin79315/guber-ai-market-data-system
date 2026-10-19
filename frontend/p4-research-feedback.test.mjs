@@ -33,3 +33,11 @@ test('unresolved expert evidence does not become a fabricated fault',()=>{
  assert.deepEqual(r.blockingDiagnosticActors,[]);
  assert.equal(r.proposedNextResearchParent,'challenger');
 });
+
+test('equal diagnosed Risk faults do not block research improvement',()=>{
+ const c=comparison(sample('champion',35,1),sample('challenger',35,10));
+ c.diagnosticAudit={champion:{actors:{Risk:{negative:2}}},challenger:{actors:{Risk:{negative:2}}}};
+ const r=assessP4ResearchFeedback({comparison:c});
+ assert.equal(r.blockedByDiagnosticRisk,false);
+ assert.equal(r.proposedNextResearchParent,'challenger');
+});

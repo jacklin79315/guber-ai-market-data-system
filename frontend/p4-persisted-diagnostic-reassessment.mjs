@@ -9,6 +9,7 @@ export function reassessP4PersistedDiagnostics({records}={}){
  const before={reviewed:0,unresolved:0},after={reviewed:0,unresolved:0};
  const addedByActor=Object.fromEntries(['Entry','Reward','Win','Risk','Time','Brain'].map(a=>[a,0]));
  const attributionAfter=Object.fromEntries(['Entry','Reward','Win','Risk','Time','Brain'].map(a=>[a,{sound:0,fault:0,unknown:0}]));
+ const missingAfter=Object.fromEntries(['Entry','Reward','Win','Risk','Time','Brain'].map(a=>[a,0]));
  const reassessments=[];
  for(const record of records){
   const old=record?.diagnosis,evidence=record?.evidence;
@@ -26,8 +27,9 @@ export function reassessP4PersistedDiagnostics({records}={}){
   }
   const diagnosis=diagnoseP4Decision({decisionId:old.decisionId,outcome:old.outcome,evidence,assessments:combined});
   after[diagnosis.requiresReview?'unresolved':'reviewed']++;
+  for(const actor of diagnosis.unassessedActors)missingAfter[actor]++;
   for(const attribution of diagnosis.attribution)attributionAfter[attribution.actor][attribution.quality.toLowerCase()]++;
   reassessments.push({diagnosis,feedback:scoreP4DiagnosticFeedback(diagnosis)});
  }
- return {schemaVersion:'P4_PERSISTED_DIAGNOSTIC_REASSESSMENT_V1',mode:'RESEARCH_ONLY',sourceRecords:records.length,outcomes,before,after,addedByActor,attributionAfter,modelUpdateApplied:false,ordersEnabled:false,championPromotionAllowed:false,reassessments};
+ return {schemaVersion:'P4_PERSISTED_DIAGNOSTIC_REASSESSMENT_V1',mode:'RESEARCH_ONLY',sourceRecords:records.length,outcomes,before,after,addedByActor,attributionAfter,missingAfter,modelUpdateApplied:false,ordersEnabled:false,championPromotionAllowed:false,reassessments};
 }

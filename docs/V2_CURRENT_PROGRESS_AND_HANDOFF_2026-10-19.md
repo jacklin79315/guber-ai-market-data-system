@@ -173,3 +173,8 @@ group by artifact_kind;
 - Commit `94161205c72bb2a5d1a39531e73bdf0267fc07a1` 將 `byOutcome` 加入 GitHub Actions Step Summary（原始 JSON artifact 隨 runner 自動包含此欄位）。
 - Railway control center 部署 `085ad7b5-9467-46ba-9eb6-18ace128ae59` SUCCESS，Node tests 596 pass / 0 fail。
 - 尚未取得 **commit 94161205** 對應的 GitHub Actions 新重評 run/artifact；不可將 Railway 成功誤認為歷史重評完成。原先 run 39233114328 的正式結果仍有效，但其 commit 是 `070d4e52`、沒有 `byOutcome`。
+
+### P4 分類報告傳遞缺口與修復（2026-10-19）
+- Actions run [39265430947](https://github.com/jacklin79315/guber-ai-market-data-system/actions/runs/39265430947) job 118103650013，head `94161205` SUCCESS；artifact 12193076679，SHA256 `20e0a0ee7f0542e831c88f8e936cf5e21d86421f03238d80bf54504003dd8451`，已實際下載解析。
+- 報告 1246/side，PASS，原本診斷完整度仍 0；但 **沒有 `byOutcome`**。根因：`frontend/p4-autonomous-diagnostic-research.mjs` 的 `inspectPersistedP4ResearchRound` 在重新組裝 `reassessment` 摘要時漏傳 `byOutcome`，不是原始資料遺失。
+- 修復 commit `e8b18e7cb7e32a8ad9317840dbec8bba4ef12514` 已補上摘要欄位傳遞。**尚待此 commit 的 CI 24 個月重評 artifact 驗證**；舊 run 不可視為分類報告驗收。

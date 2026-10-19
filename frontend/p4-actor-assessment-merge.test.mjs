@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mergeP4ActorAssessments,assessP4ProposalInvariants} from './p4-rule-diagnostician.mjs';
+import {diagnoseP4Decision} from './p4-independent-diagnosis.mjs';
+
+test('P4 merges same-actor faults without violating unique actor diagnosis',()=>{
+ const evidence={action:'APPROVE',proposalAtDecision:{winProbability:1.2,expectedValue:-1}};
+ const checks=assessP4ProposalInvariants({evidence});
+ const merged=mergeP4ActorAssessments(checks);
+ assert.equal(merged.filter(x=>x.actor==='Win').length,1);
+ assert.equal(merged.find(x=>x.actor==='Win').quality,'FAULT');
+ assert.doesNotThrow(()=>diagnoseP4Decision({decisionId:'p4-test',outcome:'WAIT',evidence,assessments:merged}));
+});
+test('P4 preserves FAULT when a narrower SOUND arrives first or last',()=>{
+ const sound={actor:'Risk',quality:'SOUND',responsibility:'NONE',reason:'Cap respected',evidenceKeys:['accountAtDecision']};
+ const fault={actor:'Risk',quality:'FAULT',responsibility:'PRIMARY',reason:'Contradictory recorded decision',evidenceKeys:['expertHistory']};
+ for(const items of [[sound,fault],[fault,sound]]){
+  const [merged]=mergeP4ActorAssessments(items);
+  assert.equal(merged.quality,'FAULT');
+  assert.equal(merged.responsibility,'PRIMARY');
+  assert.deepEqual(new Set(merged.evidenceKeys),new Set(['accountAtDecision','expertHistory']));
+  assert.match(merged.reason,/Cap respected/);
+  assert.match(merged.reason,/Contradictory recorded decision/);
+ }
+});

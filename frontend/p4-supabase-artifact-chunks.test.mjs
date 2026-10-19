@@ -28,7 +28,8 @@ test('P4 archive losslessly splits and restores oversized records',async()=>{
    rows.push({chunk_index:payload.p_chunk_index,payload:payload.p_payload,payload_sha256:payload.p_payload_sha256});
    return {ok:true,json:async()=>true};
   }
-  return {ok:true,json:async()=>rows};
+  const u=new URL(_url),offset=Number(u.searchParams.get('offset')??0),limit=Number(u.searchParams.get('limit')??rows.length);
+  return {ok:true,json:async()=>rows.slice(offset,offset+limit)};
  };
  const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});
  const records=[{id:1},{value:'z'.repeat(5000),nested:{reason:'long record',valid:true}},{id:3}];

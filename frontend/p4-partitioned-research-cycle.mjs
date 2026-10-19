@@ -15,8 +15,8 @@ export async function runP4PartitionedResearchCycle({candles,partitionOptions={}
  // Freeze the research-selected candidate before evaluating untouched future candles.
  const selected=result.researchParentVersion;
  if(typeof selected!=='string'||!selected)throw Error('P4 OOS selected research version missing');
- const parameters=selected===cycleOptions.championVersion?validateTrainingParameters(cycleOptions.championParameters):validateTrainingParameters(result.iterations.find(x=>x.challengerVersion===selected)?.candidate?.parameters);
  if(selected!==cycleOptions.championVersion&&!result.iterations.some(x=>x.challengerVersion===selected))throw Error('P4 OOS selected version was not produced in research prefix');
+ const parameters=selected===cycleOptions.championVersion?validateTrainingParameters(cycleOptions.championParameters):validateTrainingParameters(result.iterations.find(x=>x.challengerVersion===selected)?.candidate?.parameters);
  const oos=await compareChallengerReplay({candles:partition.validation,featureAtDecision:cycleOptions.featureAtDecision,historyAtDecision:cycleOptions.historyAtDecision,brain:cycleOptions.brain,costs:cycleOptions.costs,accountOptions:cycleOptions.accountOptions,otherReplayOptions:extra,champion:{version:cycleOptions.championVersion,parameters:cycleOptions.championParameters},challenger:{version:selected+'-oos-frozen',parameters}});
  const metrics={champion:oos.champion.metrics,selected:oos.challenger.metrics};
  const minClosedTrades=30;

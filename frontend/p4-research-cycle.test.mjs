@@ -89,3 +89,5 @@ test('guided research does not learn a direction from fewer than 30 settled trad
 });
 
 test('research cycle reports actual unique candidates rather than treating rounds as learning',async()=>{const result=await runP4ResearchCycle({...base,iterations:6});assert.equal(result.explorationSummary.totalRounds,6);assert.equal(result.explorationSummary.uniqueParameterSets,6);assert.equal(result.explorationSummary.duplicateParameterSets,0);assert.equal(result.explorationSummary.diagnosticActorDirectedRounds,0)});
+
+test('research exploration exposes only controlled single-parameter contributions, not invented expert faults',async()=>{const result=await runP4ResearchCycle(base);assert.equal(result.explorationSummary.parameterContributions.length,3);for(const row of result.explorationSummary.parameterContributions){assert.ok(['Entry','Reward'].includes(row.actor));assert.equal(row.causalExpertFaultEstablished,false);assert.equal(row.sameWindow,true);assert.equal(row.sufficient,false)}});

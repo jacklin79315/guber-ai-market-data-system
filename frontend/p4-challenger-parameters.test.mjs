@@ -17,7 +17,7 @@ test('attributed expert focus explores only its owned parameter family',()=>{
 });
 
 test('directed research probe moves the selected parameter exactly one bounded tick',()=>{
- const r=generateChallengerParameters({parent:defaults,seed:7,iteration:2,directedProbe:{parameter:'entryLookback',direction:1}});
+ const r=generate({parent:defaults,seed:7,iteration:2,directedProbe:{parameter:'entryLookback',direction:1}});
  assert.equal(r.mutatedParameter,'entryLookback');
  assert.equal(r.from,20);assert.equal(r.to,21);
  assert.equal(r.probeSource,'PRIOR_SAME_WINDOW_RESULT');

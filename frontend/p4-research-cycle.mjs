@@ -10,6 +10,7 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
  let parentVersion=recovery.parentVersion,parentParameters=recovery.parentParameters;
  const ledger=recovery.completed.at(-1)?.ledgerSnapshot?structuredClone(recovery.completed.at(-1).ledgerSnapshot):createTrainingLedger({championVersion});
  const completed=recovery.completed;
+ const initialVisited=completed.map(round=>round.candidate?.parameters).filter(Boolean);
  const ledgerHistoryComplete=completed.length===0||Boolean(completed.at(-1)?.ledgerSnapshot)&&completed.at(-1)?.ledgerHistoryComplete!==false;
  for(let i=recovery.nextIteration;i<iterations;i++){
   if(shouldStop())break;
@@ -48,5 +49,8 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
    active.diagnosticArtifactManifest=structuredClone(archived.diagnosticArtifactManifest);
   }
  }
- return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,explorationMode,iterations:completed,ledger:structuredClone(ledger),ledgerHistoryComplete,independentValidation:false,promotionAllowed:false};
+ const parameterKeys=completed.map(round=>round.candidate?.parameters).filter(Boolean).map(params=>JSON.stringify(params));
+ const uniqueParameterSets=new Set(parameterKeys).size;
+ const explorationSummary={totalRounds:completed.length,uniqueParameterSets,duplicateParameterSets:parameterKeys.length-uniqueParameterSets,directedRounds:completed.filter(round=>round.directedProbe).length,diagnosticActorDirectedRounds:completed.filter(round=>round.preferredActor).length,probeSources:completed.reduce((counts,round)=>{const key=round.candidate?.probeSource??'SEEDED_MUTATION';counts[key]=(counts[key]??0)+1;return counts;},{})};
+ return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',explorationSummary,championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,explorationMode,iterations:completed,ledger:structuredClone(ledger),ledgerHistoryComplete,independentValidation:false,promotionAllowed:false};
 }

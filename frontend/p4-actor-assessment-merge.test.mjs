@@ -23,3 +23,19 @@ test('P4 preserves FAULT when a narrower SOUND arrives first or last',()=>{
   assert.match(merged.reason,/Contradictory recorded decision/);
  }
 });
+
+test('P4 persisted reassessment retains a newly evidenced fault over prior narrow SOUND',async()=>{
+ const {reassessP4PersistedDiagnostics}=await import('./p4-persisted-diagnostic-reassessment.mjs');
+ const evidence={action:'APPROVE',accountAtDecision:{equity:100,committedCapital:79},allocation:2,proposalAtDecision:{},expertHistory:[]};
+ const prior={actor:'Risk',quality:'SOUND',responsibility:'NONE',reason:'Previously checked allocation alone',evidenceKeys:['allocation']};
+ const records=[{diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1',decisionId:'overcap-1',outcome:'CLOSED',requiresReview:true,attribution:[prior]},evidence}];
+ const output=reassessP4PersistedDiagnostics({records});
+ assert.equal(output.attributionAfter.Risk.fault,1);
+ assert.equal(output.attributionAfter.Risk.sound,0);
+ assert.equal(output.addedByActor.Risk,0);
+ assert.equal(output.missingAfter.Risk,0);
+ assert.equal(output.after.unresolved,1);
+ assert.equal(output.modelUpdateApplied,false);
+ assert.equal(output.ordersEnabled,false);
+ assert.equal(records[0].diagnosis.attribution[0].quality,'SOUND');
+});

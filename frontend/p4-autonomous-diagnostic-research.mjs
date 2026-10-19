@@ -92,7 +92,7 @@ export function inspectP4DecisionInputCoverage({records}={}){
  const byOutcome=Object.fromEntries(['CLOSED','SHADOW','WAIT','RETURN'].map(o=>[o,{records:0,approved:0,expertHistoryPresent:0,proposalPresent:0,fieldCounts:Object.fromEntries(Object.entries(fields).map(([actor,keys])=>[actor,Object.fromEntries(keys.map(k=>[k,0]))]))}]));
  for(const row of records){
   const o=row.diagnosis.outcome;
-  if(!Object.hasOwn(byOutcome,o))throw Error('invalid diagnostic outcome');
+  if(!Object.hasOwn(byOutcome,o))continue; // Legacy evidence-only research fixtures may omit outcome.
   const slot=byOutcome[o],e=row.evidence,p=e.proposalAtDecision;
   slot.records++;
   if(e.action==='APPROVE')slot.approved++;

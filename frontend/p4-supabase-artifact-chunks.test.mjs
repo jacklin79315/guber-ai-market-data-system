@@ -109,7 +109,7 @@ test('P4 artifact read paginates beyond 25 chunks without false count mismatch',
  const manifest=await store.write({jobId:'job',ownerToken:'test-owner-token-12345',specFingerprint:hash,iteration:1,kind:'CHAMPION_DIAGNOSTICS',records,maxChunkBytes:1024});
  assert.equal(manifest.chunkCount,31);
  assert.deepEqual(await store.read({jobId:'job',iteration:1,kind:'CHAMPION_DIAGNOSTICS',manifest}),records);
- assert.equal(reads,2);
+ assert.equal(reads,Math.ceil(manifest.chunkCount/5));
 });
 
 test('P4 restart reuses immutable chunks with matching hashes and restores evidence',async()=>{

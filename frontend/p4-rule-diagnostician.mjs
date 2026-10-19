@@ -20,7 +20,7 @@ export function assessP4ExpertHistory({evidence}={}){
  if(!Array.isArray(history))return [];
  const results=[];
  const seen=new Set();
- const actorFor={entry:'Entry',reward:'Reward',winProbability:'Win',riskPosition:'Risk',time:'Time',brain:'Brain'};
+ const actorFor={entry:'Entry',reward:'Reward',winProbability:'Win',winprobability:'Win',riskPosition:'Risk',riskposition:'Risk',time:'Time',brain:'Brain'};
  for(const step of history){
   if(!step||typeof step!=='object')continue;
   const actor=actorFor[step.expert]??actorFor[String(step.expert??'').replace(/[-_ ]/g,'').toLowerCase()];

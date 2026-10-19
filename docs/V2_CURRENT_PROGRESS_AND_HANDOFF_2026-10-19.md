@@ -204,3 +204,8 @@ group by artifact_kind;
 - `1b87b898093c9b5d651ef942cb8d1595e8370f7d`：`inspectP4DecisionInputCoverage` 新增 CLOSED/SHADOW/WAIT/RETURN 分類、APPROVE、expertHistory/proposal 存在量，及 Entry.entryRange、Reward.expectedGain/expectedLoss/riskReward、Win.winProbability/expectedValue、Time.expectedHoldingMs 的**有效數值欄位覆蓋**。
 - `5533f2dcd386063f198454031fcdf12f03f572de`：歷史重評 runner 在正式 artifact 輸出 `decisionInputCoverage`，方便核對 24 個月兩組樣本實際可用證據。
 - 上述僅統計欄位可用性，不等於專家 SOUND/FAULT 或概率校準；**尚待 CI 與 Actions artifact 驗證**，嚴禁自動下單與模型更新。
+
+### P4 證據覆蓋研究修復與 CI 驗收（2026-10-19）
+- `1b87b898`–`892b2f8b` 的初版 Railway 測試為 597 pass / 2 fail，原因是 legacy research fixture 未提供 outcome；**不可當作通過**。
+- `a6761bf55f1fe91bb0c3c63fe2dfc0f0d519ce1b` 修復缺 outcome 的研究樣本相容性（不虛構分類），Railway deployment `438deb41-59a7-4ffd-ae9f-3b0a16e43c03` **SUCCESS，599 pass / 0 fail**。
+- `5e4bebb7beaefc1ac03ae3f328050650e910c0da` 加強 Actions Step Summary：必須存在 `decisionInputCoverage`、與 1246 records/side 對齊，分類合計一致，並輸出欄位覆蓋詳情；**尚待新 Actions artifact 實際驗證**。

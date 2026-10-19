@@ -194,3 +194,8 @@ group by artifact_kind;
 - `6057c1f28fa3f9e0c30623665c6b396b8b87b933`：核准提案若 `expectedLoss<=0` 或 `riskReward<0` 且欄位為有限數值，新增 Reward FAULT；缺值維持 UNKNOWN，不依 PnL 判定。
 - `11417121caf3dd3253f3880b1e03e2894bd457ed`：新增兩項 Reward 單元測試，Railway deployment `24c21d77-e802-433d-9a46-c22bcad3a949` **SUCCESS**，**599 tests pass / 0 fail**。
 - `.github/workflows/p4-existing-diagnostic-reassessment.yml` 對規則檔 push 有自動觸發；尚未取得上述新規則對應 Actions run 的歷史重評報告，故 **不可宣稱 24m 資料已有 Reward FAULT**。
+
+### P4 Reward 歷史重評實證（2026-10-19）
+- Actions run `39268274819`, job `118113496292`, commit `6057c1f28fa3f9e0c30623665c6b396b8b87b933` **SUCCESS**；artifact `12194500283` SHA256 `1bd95a79a6919a24b937e1074f2c659ce3331c2dc69f1cadadd2626db0943721` 已下載解壓核對，status PASS。
+- Champion/Challenger 各 1246 筆，新增 Reward 歸因各 **0**，Reward FAULT 各 **0**；Risk SOUND 1227/1231；完整診斷 0/1246（兩組皆然）。分類 CLOSED 118/119、SHADOW 19/15、WAIT 1109/1112。
+- 解讀：新加的 Reward 數學不變條件在這批資料沒有觸發，不等於 Reward 預測已被驗證；維持 UNKNOWN，不得用零錯誤宣稱 SOUND、不得更新模型或下單。下一步應評估原始 evidence 欄位覆蓋及可驗證的因果判準。

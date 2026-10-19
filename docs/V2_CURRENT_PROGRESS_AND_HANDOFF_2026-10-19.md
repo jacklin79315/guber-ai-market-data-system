@@ -298,3 +298,10 @@ group by artifact_kind;
 - 前版 `511f454c` Railway 617 tests / 616 pass / 1 fail：同樣 Risk 缺失的 Champion/Challenger 應可比較改善，但現有六角色絕對負面阻擋導致錯誤拒絕。
 - `6e1cc94ba2c7ef31bc67788c7ec4655c37a4d36b` 修正 `p4-research-feedback.mjs`：比較 Entry/Reward/Win/Risk/Time/Brain 各自的已診斷負面數與 Champion 基準，僅 Challenger 較差或缺可信基準時阻擋研究父版本前進。既有相同 Risk 負面測試、Reward 負面測試與 UNKNOWN 不虛構測試應一併驗收。
 - 最新 commit Railway 尚 BUILDING，未宣稱 PASS。此仍是診斷參與**研究候選選擇**，不是診斷驅動參數調整或完整自主學習。
+
+### 2026-10-19 P4 診斷引導參數探索第一版
+- 上輪 `6e1cc94b` Railway 617/617 PASS，部署 SUCCESS。
+- `73981af7`：`generateChallengerParameters` 新增 `preferredActor`，可將變異限制在 Entry 的 `entry*` 或 Reward 的 `reward*` 參數，仍由種子決定方向；不聲稱已有可證實的參數調整方向。
+- `a365d1fe`：研究單輪傳入 `preferredActor`；`54ba6750`：研究循環從上一輪比較的診斷結果讀取 Entry/Reward 負面事件數，較多的一方引導下一輪參數家族；同數或沒有可用歸因時沿用原探索。
+- `36a2de41`：新增 Entry/Reward 參數所有權測試。最新 Railway 尚在建置，未驗收；未進行新 24m 真實回放。
+- 限制：目前僅診斷引導**參數家族**，不代表已學會最佳調整方向或有可靠獲利改善；未自動升級 Champion，也不執行真實下單。

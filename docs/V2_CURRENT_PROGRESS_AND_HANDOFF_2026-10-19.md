@@ -252,3 +252,9 @@ group by artifact_kind;
 - Commit `9c2167ea648d818e10c15100efd83f36a53e5a93` 在唯讀舊歷史重評 runner 加入校準資格 fail-closed 防護：已知 immutable round 的 eligible 必須為 0，且 mode=RESEARCH_ONLY、promotionAllowed=false；Railway 607 tests pass / 0 fail，部署 SUCCESS。
 - **尚未定位完整 24 個月 replay 的呼叫端是否實際傳入 candles 與 exitIndex**，亦未啟動新的 24 個月 replay；舊 round 不得覆寫。此階段只驗證組件及安全門檻，**不可宣稱完整資料鏈已驗收或已具備自主學習能力**。
 - 下一步：找出 replay runner 真實入口及 `collectP4DiagnosticEvidence` 呼叫點，新增整合測試確認 CLOSED 的 `closedAt` / `realizedWin` 隨新 artifact 保存，並以獨立時間窗驗證校準資格；研究專用，不自動下單、不更新正式模型權重。
+
+### 2026-10-19 P4 真實回放呼叫鏈定位
+- 已從 GitHub 原始碼確認：`p4-diagnostic-manual-runner.mjs` → `p4-diagnostic-persisted-run.mjs` → `p4-diagnostic-backend-research.mjs` → `p4-diagnostic-chronological-run.mjs` → `p4-diagnostic-oos-experiment.mjs` → `p4-diagnostic-arm-replay.mjs` → `p4-challenger-comparison.mjs` → `runSequentialFiveExpertReplay` / `collectP4DiagnosticEvidence`。
+- `p4-diagnostic-backend-research.mjs` 使用 `loadP4SegmentedHistoricalCandles` 取得已驗證 K 線；`p4-challenger-comparison.mjs` 明確以 `collectP4DiagnosticEvidence({...championResult,candles})` 及 challenger 同型呼叫，證實此比較路徑有傳入 K 線。
+- `collectP4DiagnosticEvidence` 透過 `attachClosedTimes` 依 `exitIndex` 對應 `closeTime`，形成 CLOSED `closedAt`，並依非零有限已結算 PnL 產生 `realizedWin`；已有單元測試，Railway 607/607 PASS。
+- **限制**：這證實目前 P4 診斷比較器的程式接線，尚未驗證新的 24 個月完整執行與 artifact 持久化。歷史 immutable round 的兩個欄位仍缺失；不得覆寫舊資料或聲稱新 round 已完成。下一步新增比較器至持久化 artifact 的端到端整合驗證，並確認新的 job ID 與 OOS 時間隔離。

@@ -21,7 +21,9 @@ for(const kind of kinds){
    if(response.ok)break;
    if(attempt===3||![429,500,502,503,504].includes(response.status))throw Error('manifest read failed '+response.status+' kind='+kind+' offset='+offset+' requestId='+(response.headers.get('x-request-id')??'unknown')+' retryAfter='+(response.headers.get('retry-after')??'none'));
   }
-  const page=await response.json();if(!Array.isArray(page))throw Error('invalid manifest page');
+  let page;
+  try{page=await response.json();}catch{throw Error('manifest JSON decode failed kind='+kind+' offset='+offset);}
+  if(!Array.isArray(page))throw Error('invalid manifest page kind='+kind+' offset='+offset);
   if(page.length>pageSize)throw Error('manifest page exceeds limit: '+kind+' offset='+offset);
   rows.push(...page);if(page.length<pageSize)break;
  }

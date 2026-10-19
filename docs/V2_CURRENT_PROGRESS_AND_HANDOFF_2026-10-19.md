@@ -407,3 +407,9 @@ group by artifact_kind;
 - Supabase `p4_research_rounds` 逐輪查核：12 輪 `preferredActor` 全為 null，Entry/Reward 診斷尚未導引探索；第 2 輪同窗研究改善，之後第 3～12 輪反覆搜尋 `rewardStopAtr` 正負一格，未形成有效因果診斷。不能將 12 輪視為 12 次成功學習。
 - `43c7899f` / `eca4f853` / `319719b8` 避免已訪候選重播；`fd496462` 擴大已耗盡的一格鄰域搜尋半徑；`7d2e790c` 測試；`096733c4` / `6b81d19f` / `f3625eac` 加入研究探索統計（總輪數、唯一候選、重複候選、診斷引導輪數、方向探測、探測來源）。Railway `f3625eac` SUCCESS，636/636 tests。
 - 後續需真正建立專家因果歸因與回饋；當前優先以新一批研究驗證 uniqueParameterSets 和 OOS，絕不可把同窗改善宣稱為泛化獲利。
+
+### 2026-10-20 跨輪受控實驗回饋（最新）
+- `c9559507` / `2047340c` / `53a49388`：同一研究窗僅一個參數變更時記錄 Entry/Reward 參數介入的交易數、淨損益差異、勝率差異及樣本門檻；不將同窗差異誤稱專家因果過錯。Railway 637/637 PASS。
+- `0004b649` / `bffd15e3` / `8cc5a9b8`：研究循環可從已完成輪次的受控實驗累積證據選下一輪探測方向，記錄 `probeEvidenceSource`、`evidenceGuidedRounds`；Railway 638/638 PASS。
+- `aa47ed02` / `0e78e1ba`：同參數同方向以最近一次足量介入結果取代過時的正向結果；測試 639/639 PASS，最後部署狀態仍待確認。
+- 尚未執行此版 12/24 輪正式研究；無 OOS 改善證據。下一步須以新 jobId 執行 HISTORICAL_24M、核對 explorationSummary、診斷覆蓋與 OOS，不能自動晉升 Champion，也不得自動下單。

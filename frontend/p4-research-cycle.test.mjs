@@ -48,3 +48,14 @@ test('equal baseline and challenger Entry faults do not steer next mutation',asy
  assert.equal(result.iterations[1].preferredActor,null);
  assert.equal(result.promotionAllowed,false);
 });
+
+test('unguided control ignores diagnostic focus and keeps reproducible mutation',async()=>{
+ const a=await runP4ResearchCycle({...base,iterations:2,explorationMode:'UNGUIDED',onIteration:round=>{
+  if(round.iteration===1)round.ledgerSnapshot.runs.at(-1).result.comparison.diagnosticAudit.challenger.actors.Entry.negative=9;
+ }});
+ const b=await runP4ResearchCycle({...base,iterations:2,explorationMode:'UNGUIDED'});
+ assert.equal(a.explorationMode,'UNGUIDED');
+ assert.equal(a.iterations[1].preferredActor,null);
+ assert.deepEqual(a.iterations.map(x=>x.candidate.parameters),b.iterations.map(x=>x.candidate.parameters));
+ assert.equal(a.promotionAllowed,false);
+});

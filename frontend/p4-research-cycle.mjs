@@ -10,7 +10,6 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
  let parentVersion=recovery.parentVersion,parentParameters=recovery.parentParameters;
  const ledger=recovery.completed.at(-1)?.ledgerSnapshot?structuredClone(recovery.completed.at(-1).ledgerSnapshot):createTrainingLedger({championVersion});
  const completed=recovery.completed;
- const initialVisited=completed.map(round=>round.candidate?.parameters).filter(Boolean);
  const ledgerHistoryComplete=completed.length===0||Boolean(completed.at(-1)?.ledgerSnapshot)&&completed.at(-1)?.ledgerHistoryComplete!==false;
  for(let i=recovery.nextIteration;i<iterations;i++){
   if(shouldStop())break;
@@ -30,10 +29,18 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   const direction=lastMutation?.to>lastMutation?.from?1:lastMutation?.to<lastMutation?.from?-1:0;
   // Research-only local feedback: continue a better same-window step, otherwise reverse it.
   // This is NOT causal expert diagnosis or proof of out-of-sample learning.
-  const directedProbe=explorationMode==='DIAGNOSTIC_GUIDED'&&!preferredActor&&direction!==0&&typeof lastMutation?.mutatedParameter==='string'&&previous?.feedback?.status==='RESEARCH_EVIDENCE_ONLY'&&previous?.feedback?.challenger?.closedTrades>=30&&previous?.feedback?.champion?.closedTrades>=30?{parameter:lastMutation.mutatedParameter,direction:lastImproved?direction:-direction}:null;
+  const priorContributions=completed.map(round=>round.ledgerSnapshot?.runs?.at(-1)?.result?.comparison?.parameterContribution).filter(p=>p?.schemaVersion==='P4_PARAMETER_INTERVENTION_V1'&&p.sufficient===true&&Number.isFinite(p.deltaNetRealizedPnl));
+  // Rank measured one-parameter interventions across ALL completed rounds.
+  // Never claim these same-window effects are independent OOS evidence.
+  const ranked=[...priorContributions].sort((a,b)=>b.deltaNetRealizedPnl-a.deltaNetRealizedPnl);
+  const best=ranked.find(p=>p.deltaNetRealizedPnl>0);
+  const evidenceDirection=best?Math.sign(best.to-best.from):0;
+  const evidenceProbe=best&&evidenceDirection!==0?{parameter:best.parameter,direction:evidenceDirection}:null;
+  const fallbackProbe=direction!==0&&typeof lastMutation?.mutatedParameter==='string'&&previous?.feedback?.status==='RESEARCH_EVIDENCE_ONLY'&&previous?.feedback?.challenger?.closedTrades>=30&&previous?.feedback?.champion?.closedTrades>=30?{parameter:lastMutation.mutatedParameter,direction:lastImproved?direction:-direction}:null;
+  const directedProbe=explorationMode==='DIAGNOSTIC_GUIDED'&&!preferredActor?(evidenceProbe??fallbackProbe):null;
   const visitedParameterSets=completed.map(round=>round.candidate?.parameters).filter(Boolean);
   const result=await runP4ResearchIteration({ledger:iterationLedger,runId,challengerVersion,seed,iteration:i,preferredActor,directedProbe,visitedParameterSets,championParameters:parentParameters,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,otherReplayOptions});
-  completed.push({iteration:i+1,runId,challengerVersion,explorationMode,preferredActor,directedProbe,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger),ledgerHistoryComplete});
+  completed.push({iteration:i+1,runId,challengerVersion,explorationMode,preferredActor,directedProbe,probeEvidenceSource:directedProbe?(evidenceProbe?'MULTI_ROUND_PARAMETER_CONTRIBUTION':'PREVIOUS_ROUND_FEEDBACK'):null,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger),ledgerHistoryComplete});
   if(result.feedback.proposedNextResearchParent===challengerVersion){
    parentVersion=challengerVersion;
    parentParameters=validateTrainingParameters(result.candidate.parameters);

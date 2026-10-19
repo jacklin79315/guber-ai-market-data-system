@@ -26,6 +26,7 @@ export function parseP4RunnerOptions(env=process.env){
  if(scope==='SMOKE'&&expectedCandles>500)throw Error('P4 initial runner limited to 500 candles');
  if(scope==='HISTORICAL_24M'){
   if(env.P4_RESEARCH_CONFIRM!=='RESEARCH_ONLY'||timeframe!=='1h'||symbol!=='BTCUSDT'||iterations>3||expectedCandles<17000||expectedCandles>18000)throw Error('P4 24-month research requires BTCUSDT 1h, 17000-18000 candles and at most 3 iterations');
+  if(!partitioned)throw Error('P4 24-month research requires chronological partitioned validation');
  }
  return {jobId,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,iterations,seed,expectedCandles,partitioned,scope};
 }

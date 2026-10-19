@@ -110,3 +110,8 @@ group by artifact_kind;
 - Railway deployment `71f9f359-4835-4d15-b6b7-9fff305d8adc`，commit `f280f7f4`：**SUCCESS**、healthcheck PASS、Node tests **596 pass / 0 fail**。
 - 檢查發現先前的「同 actor 多 FAULT」測試只產生一筆 Win FAULT，無法真正驗證重複歸因合併。commit `ae516fc4` 改用同時違反「負預期值」與「機率加權 EV 不一致」的證據，明確斷言合併前兩筆 Win FAULT，合併後一筆。**待新提交 CI／Railway 驗證**。
 - 24 月 immutable 歷史診斷 workflow 的實際 run ID、前後六專家覆蓋數據仍未取得；維持 P4 未驗收，研究模式不下單、不自動晉升。
+
+### P4 最新建置與既存歷史資料庫核對（2026-10-19）
+- Railway commit `bb86daf5` deployment `69e20020-fbb0-49fd-bc74-b743c9fd8191` **SUCCESS**；Node 測試 **596 pass / 0 fail**。
+- Supabase 唯讀查詢 `p4_research_artifact_chunks`，job `p4_btc_24m_accept_20261018` iteration 1：Champion `CHAMPION_DIAGNOSTICS` **254 chunks**（1227 standalone items + 243 fragments / 19 fragment starts，推算 1246 records）；Challenger `CHALLENGER_DIAGNOSTICS` **201 chunks**（1231 standalone items + 190 fragments / 15 fragment starts，推算 1246 records）。chunk_index 皆從 0 連續至最後索引；完整 SHA256／fragment 重組驗證仍需既有 reader workflow。
+- GitHub 連接器僅提供 commit 對應 PR workflow runs，無法列出 push/workflow_dispatch 歷史 run；目前未取得 GitHub Actions 24 月重評 run ID／完整結果。不可將既存 artifact 數量誤報為新版 reassessment 成果；P4 未驗收。

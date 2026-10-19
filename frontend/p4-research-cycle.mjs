@@ -17,7 +17,7 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   const runId='research-round-'+(i+1);
   // The single iteration's comparison uses the provided parent version and parameters.
   const iterationLedger={...ledger,championVersion:parentVersion};
-  const previousAudit=ledger.runs.at(-1)?.result?.comparison?.diagnosticAudit??completed.at(-1)?.ledgerSnapshot?.runs?.at(-1)?.result?.comparison?.diagnosticAudit;
+  const previousAudit=completed.at(-1)?.ledgerSnapshot?.runs?.at(-1)?.result?.comparison?.diagnosticAudit??ledger.runs.at(-1)?.result?.comparison?.diagnosticAudit;
   const entry=previousAudit?.challenger?.actors?.Entry?.negative??0;
   const reward=previousAudit?.challenger?.actors?.Reward?.negative??0;
   const preferredActor=entry>reward&&entry>0?'Entry':reward>entry&&reward>0?'Reward':null;

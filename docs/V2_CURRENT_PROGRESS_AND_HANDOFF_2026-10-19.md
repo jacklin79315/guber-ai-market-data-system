@@ -232,3 +232,10 @@ group by artifact_kind;
 ### 2026-10-19 P4 診斷不變條件測試驗收
 - `506c213464f2e9a8e058625724db4bbb7a74b573`：Reward RR 算術矛盾、Win EV 算術矛盾、數學一致不得臆造 SOUND，共新增 3 個測試。Railway deployment `271cd24b-1c20-455c-8b7b-a1d382292a5c` **SUCCESS，603 tests pass / 0 fail**。
 - 現有 `planP4EvidenceResearchTasks` 已將未知勝率、未知 EV、各專家因果證據缺口列入研究任務，尚不等於訓練模型或完成因果驗證。下階段優先驗證已結算 CLOSED 的勝率校準資格及 OOS 分割；SHADOW/WAIT 不可當實際交易報酬。
+
+### 2026-10-19 P4 校準資格驗證進度
+- `90e73986`：新增 58 筆 CLOSED 勝率證據不滿足 30/30 獨立校準最低門檻的回歸測試；Railway 604/604 PASS。
+- `772b5dbb`：分離缺少勝率與無效勝率；首次提交含換行語法錯誤，已由 `7d2d44fb` 修正，Railway 605/605 PASS，部署 SUCCESS。
+- `507c6a46`：24 個月重評 JSON 增加 `calibrationEligibility`，Railway 605/605 PASS 且部署 SUCCESS。
+- `9e75d1d6`：GitHub Actions 摘要顯示並驗證校準資格，增加依賴檔案的 push 觸發路徑；提交後查詢 commit workflow runs 暫無結果，**不得標記歷史重評 PASS 或宣稱已取得合格樣本數**。Railway 當時 DEPLOYING。
+- 已知每側 CLOSED 有數值勝率 58 筆，並不等於 58 筆完整可校準觀測；必須從新的歷史重評 artifact 取得 `eligible`、`excluded` 與時間窗驗證結果。研究模式，不更新權重、不自動下單。

@@ -32,10 +32,13 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   const priorContributions=completed.map(round=>round.ledgerSnapshot?.runs?.at(-1)?.result?.comparison?.parameterContribution).filter(p=>p?.schemaVersion==='P4_PARAMETER_INTERVENTION_V1'&&p.sufficient===true&&Number.isFinite(p.deltaNetRealizedPnl));
   // Rank measured one-parameter interventions across ALL completed rounds.
   // Never claim these same-window effects are independent OOS evidence.
-  const ranked=[...priorContributions].sort((a,b)=>b.deltaNetRealizedPnl-a.deltaNetRealizedPnl);
-  const best=ranked.find(p=>p.deltaNetRealizedPnl>0);
-  const evidenceDirection=best?Math.sign(best.to-best.from):0;
-  const evidenceProbe=best&&evidenceDirection!==0?{parameter:best.parameter,direction:evidenceDirection}:null;
+  // Compare the latest measured result for each parameter/direction, not the
+  // single largest historical win. Repeated failed probes must invalidate stale wins.
+  const latestByDirection=new Map();
+  for(const p of priorContributions){const direction=Math.sign(p.to-p.from);if(direction!==0)latestByDirection.set(p.parameter+'|'+direction,{...p,direction});}
+  const ranked=[...latestByDirection.values()].filter(p=>p.deltaNetRealizedPnl>0).sort((a,b)=>b.deltaNetRealizedPnl-a.deltaNetRealizedPnl);
+  const best=ranked[0];
+  const evidenceProbe=best?{parameter:best.parameter,direction:best.direction}:null;
   const fallbackProbe=direction!==0&&typeof lastMutation?.mutatedParameter==='string'&&previous?.feedback?.status==='RESEARCH_EVIDENCE_ONLY'&&previous?.feedback?.challenger?.closedTrades>=30&&previous?.feedback?.champion?.closedTrades>=30?{parameter:lastMutation.mutatedParameter,direction:lastImproved?direction:-direction}:null;
   const directedProbe=explorationMode==='DIAGNOSTIC_GUIDED'&&!preferredActor?(evidenceProbe??fallbackProbe):null;
   const visitedParameterSets=completed.map(round=>round.candidate?.parameters).filter(Boolean);

@@ -360,3 +360,8 @@ group by artifact_kind;
 - Guided：`exploration_mode=DIAGNOSTIC_GUIDED`、`job_id=p4_btc24m_guided_20261020`。
 - Control：`exploration_mode=UNGUIDED`、`job_id=p4_btc24m_control_20261020`。
 - 只讀核對兩個 job_id 在 `p4_research_checkpoints` 均尚不存在；GitHub connector 無 workflow_dispatch 啟動功能，故**兩組尚未觸發**。兩組應依序執行以避免資源競爭，並核對完成狀態、實際 OOS 已結算樣本與報告，不能只看 Actions SUCCESS。
+
+### 2026-10-20 P4 24m UNGUIDED 真實執行驗收
+- GitHub Actions run `39289350830` job `118185622326`（commit `92539b17`）**SUCCESS**。研究 `p4_btc24m_control_20261020`，`UNGUIDED`，BTCUSDT 1h 17,520 根，3/3 輪完成，CLI `validationStatus=OOS_EVALUATED`、`independentValidation=true`、`promotionAllowed=false`、`liveTrading=false`。
+- Supabase checkpoint phase COMPLETED / completedIterations 3；三輪研究區間 Champion→Challenger 淨損益：1 -274.9268→-280.6666 (86/85 CLOSED)、2 -274.9268→-272.3067 (86/85 CLOSED)、3 -272.3067→-235.1714 (85/73 CLOSED)。此為 **研究區間** 數字，並非 OOS 成績；所有輪次仍為負損益。
+- Guided 任務 `p4_btc24m_guided_20261020` 未在同次 checkpoint 查詢出現。尚未完成兩組 OOS 配對比較，也未確認 OOS closedTrades/netPnl 的持久化；不可宣稱診斷引導優於控制組。

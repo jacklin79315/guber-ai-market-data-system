@@ -199,3 +199,8 @@ group by artifact_kind;
 - Actions run `39268274819`, job `118113496292`, commit `6057c1f28fa3f9e0c30623665c6b396b8b87b933` **SUCCESS**；artifact `12194500283` SHA256 `1bd95a79a6919a24b937e1074f2c659ce3331c2dc69f1cadadd2626db0943721` 已下載解壓核對，status PASS。
 - Champion/Challenger 各 1246 筆，新增 Reward 歸因各 **0**，Reward FAULT 各 **0**；Risk SOUND 1227/1231；完整診斷 0/1246（兩組皆然）。分類 CLOSED 118/119、SHADOW 19/15、WAIT 1109/1112。
 - 解讀：新加的 Reward 數學不變條件在這批資料沒有觸發，不等於 Reward 預測已被驗證；維持 UNKNOWN，不得用零錯誤宣稱 SOUND、不得更新模型或下單。下一步應評估原始 evidence 欄位覆蓋及可驗證的因果判準。
+
+### P4 各專家因果輸入欄位覆蓋率（2026-10-19）
+- `1b87b898093c9b5d651ef942cb8d1595e8370f7d`：`inspectP4DecisionInputCoverage` 新增 CLOSED/SHADOW/WAIT/RETURN 分類、APPROVE、expertHistory/proposal 存在量，及 Entry.entryRange、Reward.expectedGain/expectedLoss/riskReward、Win.winProbability/expectedValue、Time.expectedHoldingMs 的**有效數值欄位覆蓋**。
+- `5533f2dcd386063f198454031fcdf12f03f572de`：歷史重評 runner 在正式 artifact 輸出 `decisionInputCoverage`，方便核對 24 個月兩組樣本實際可用證據。
+- 上述僅統計欄位可用性，不等於專家 SOUND/FAULT 或概率校準；**尚待 CI 與 Actions artifact 驗證**，嚴禁自動下單與模型更新。

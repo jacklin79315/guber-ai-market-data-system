@@ -47,6 +47,11 @@ for(const side of ['champion','challenger']){
  if(manifest.chunkCount!==(side==='champion'?254:201)||manifest.fragmented!==true)throw Error('unexpected immutable artifact manifest: '+side);
  if(report.before.reviewed+report.before.unresolved!==report.sourceRecords||report.after.reviewed+report.after.unresolved!==report.sourceRecords)throw Error('invalid reassessment coverage totals: '+side);
  if(report.modelUpdateApplied!==false)throw Error('unsafe model update flag: '+side);
+ const calibration=calibrationEligibility[side];
+ if(!calibration||calibration.total!==report.sourceRecords||calibration.mode!=='RESEARCH_ONLY'||calibration.promotionAllowed!==false)throw Error('invalid calibration eligibility: '+side);
+ // The immutable acceptance artifacts predate verified CLOSED timestamps/outcomes.
+ // Never accept fabricated eligible calibration observations from this round.
+ if(calibration.eligible!==0)throw Error('unexpected calibration eligibility in legacy immutable round: '+side);
  const inputs=decisionInputCoverage[side];
  if(!inputs||inputs.totalEvents!==report.sourceRecords||inputs.ordersEnabled!==false||inputs.modelUpdateApplied!==false)throw Error('invalid input coverage contract: '+side);
  if(Object.values(inputs.byOutcome??{}).reduce((n,row)=>n+row.records,0)!==report.sourceRecords)throw Error('invalid input coverage totals: '+side);

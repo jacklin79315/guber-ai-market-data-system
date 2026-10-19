@@ -276,3 +276,9 @@ group by artifact_kind;
 - `c8928fdd` 將手動 24m workflow 的 `P4_PARTITIONED` 設為 TRUE；`f5b24a06` 在後端限制 24m 需時間分割，`9ce2e45a` 修正既有測試的預期。時間分割是目前工程選擇，非使用者確認的永久固定比例需求；最新 Railway 測試/部署仍須核對。
 - 程式核對：`p4-research-cycle.mjs` 會依研究回饋選擇下一研究父版本；`p4-research-feedback.mjs` 目前僅用同窗口成本後淨損益且至少 30 筆 CLOSED 比較；`p4-partitioned-research-cycle.mjs` 只保留未使用的 OOS 區間，回傳 `RESERVED_NOT_EVALUATED`，**尚未執行獨立 OOS 驗證**。
 - 下一個主要開發任務：在不洩漏未來資料、不自動升級正式 Champion 的前提下，完成 OOS 獨立回放、成本與風險績效比較，以及診斷驅動的 Challenger 參數更新；避免持續堆疊無關防護。
+
+### 2026-10-19 P4 獨立 OOS 實際回放第一版
+- `46d8e0cc8619cffdc26a0f0a9827b64b6dd843e4`：`runP4PartitionedResearchCycle` 在研究迭代完成後，凍結研究選出的參數，對保留的時間後段 K 線執行 Champion 與凍結候選的隔離回放；回傳 OOS 已結算交易數、淨損益及樣本是否足夠，不自動升級正式 Champion。Railway 611/611 PASS、部署 SUCCESS。
+- `aadc93827269d9d60468943a8b5b1dbe37510e64`：新增研究提前停止時 OOS 不得宣稱已驗證的測試；Railway **612/612 PASS、部署 SUCCESS**。
+- `ca58d116a153857bbbdec71d9be656e59f5666e7`：新增完整研究→凍結→OOS 回放測試，確認 128 根研究、32 根未使用驗證資料、樣本不足時不宣稱改善。Railway build **613/613 PASS、0 fail**，部署尚待 SUCCESS 確認。
+- 此階段僅完成測試 fixture 的 OOS 流程；尚未完成新 24 個月真實歷史回放，也尚未證明診斷能有效更新 Challenger、獲利改善或正式 Champion 晉升。下一步應以診斷驅動參數學習、真實 OOS 績效（包含風險與成本）為主，不增加非必要防護。

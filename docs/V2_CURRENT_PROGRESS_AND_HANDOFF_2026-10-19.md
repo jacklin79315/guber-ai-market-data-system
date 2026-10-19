@@ -282,3 +282,8 @@ group by artifact_kind;
 - `aadc93827269d9d60468943a8b5b1dbe37510e64`：新增研究提前停止時 OOS 不得宣稱已驗證的測試；Railway **612/612 PASS、部署 SUCCESS**。
 - `ca58d116a153857bbbdec71d9be656e59f5666e7`：新增完整研究→凍結→OOS 回放測試，確認 128 根研究、32 根未使用驗證資料、樣本不足時不宣稱改善。Railway build **613/613 PASS、0 fail**，部署尚待 SUCCESS 確認。
 - 此階段僅完成測試 fixture 的 OOS 流程；尚未完成新 24 個月真實歷史回放，也尚未證明診斷能有效更新 Challenger、獲利改善或正式 Champion 晉升。下一步應以診斷驅動參數學習、真實 OOS 績效（包含風險與成本）為主，不增加非必要防護。
+
+### 2026-10-19 P4 診斷介入研究版本選擇
+- `6cefa3d002da5e6c15a24d7967fb39cee9afe55f`：`assessP4ResearchFeedback` 開始讀取既有 `comparison.diagnosticAudit.challenger.actors.Risk`；若有已診斷負面 Risk 事件，則即使 Challenger 同窗口淨損益較高，也不選為下一輪研究父版本。此為研究選擇門檻，不是模型參數自主更新，也不改正式 Champion。
+- `5b8e91200f006ae01aa0f8071abbb483f65ff383`：新增高損益但 Risk 負面診斷的回歸測試；提交後 Railway 尚待建置/部署驗證。
+- 重要限制：目前只對已歸因 Risk negative 生效；其他專家尚缺可信的參數級因果歸因，不得宣稱六角色診斷全面驅動自主學習。下一步建立 Entry/Reward 的可歸因方向性更新與獨立 OOS 驗證。

@@ -214,3 +214,10 @@ group by artifact_kind;
 - `a9463f36691068e4f694a1068d1ee59507083635` Railway deployment `11148f54-e14a-4ee8-a640-ba29d363cf24` SUCCESS，600 tests pass / 0 fail。
 - `83477921ac686ca4fd9e9052d554c7ab5f2d026d`：歷史重評 runner 除總量與 CLOSED/SHADOW/WAIT/RETURN 一致性外，要求 Entry.entryRange、Reward.expectedGain/expectedLoss/riskReward、Win.winProbability/expectedValue、Time.expectedHoldingMs 每個 outcome 的統計欄位存在且為整數；防止缺欄位報告誤判 PASS。
 - 待辦：確認新版 GitHub Actions artifact 的真實 24m `decisionInputCoverage`，根據有效資料數量決定診斷研究優先順序；不得以欄位存在當作 SOUND，亦不得自動更新模型或下單。
+
+### 2026-10-19 P4 歷史重評 HTTP 500 排查進度
+- GitHub Actions 於 2026-10-19T14:45Z 回報 `manifest read failed 500`；此為 Supabase REST 讀取階段錯誤，不能推論資料遺失或診斷不合格。
+- SQL 已確認 immutable chunk：CHAMPION_DIAGNOSTICS 254、CHALLENGER_DIAGNOSTICS 201；未刪除或重新訓練。
+- `aa232aa5`：縮小原本 payload manifest 分頁並加入暫時性錯誤重試；`23a077bf`：改成 metadata-only (`chunk_index,payload_sha256`) 索引，完整 payload 由原有 store reader 分批讀取並驗證 SHA256、重組碎片；`33d6f3aa`：輕量索引分頁調為 100；`a9a69fce`：修正 Actions 摘要 shell 引號；`0d56d567`：HTTP 錯誤含 requestId、offset；`b37096d8`：拒絕超出分頁上限；`526ce2e8`：區分 JSON 解碼與 HTTP 錯誤。
+- `b37096d8` Railway build 已 600 tests pass / 0 fail，當時 deployment 尚 DEPLOYING；`526ce2e8` 待 CI 驗證。
+- **阻塞：尚無新 GitHub Actions 歷史重評 PASS artifact**。切勿宣稱 1246+1246 筆已完成新一輪重評；仍需確認真實 decisionInputCoverage、六專家責任歸因與 OOS 有效性。系統研究專用，不下真單、不自動改模型。

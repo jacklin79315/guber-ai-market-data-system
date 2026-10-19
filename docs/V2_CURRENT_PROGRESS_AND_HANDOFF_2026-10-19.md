@@ -127,3 +127,8 @@ group by artifact_kind;
 - APPROVE 中三個 Risk 80% 資金占用規則必要欄位均為合法數值：Champion 118/118、Challenger 119/119；以 `(committedCapital+allocation)/equity > 0.800000001` 判斷，**兩組皆 0 筆違反**。這只代表已檢查 APPROVE 子集符合此單一 hard cap，不是所有 Risk 維度都 SOUND。
 - `expertHistory` 陣列長度：WAIT 均為 4 個步驟（Champion 1109／Challenger 1112），APPROVE 均為 6 個步驟（Champion 118／Challenger 119）。故不應以「WAIT 缺少 APPROVE 專用 Risk 欄位」推斷歷史資料缺失或診斷錯誤。
 - 尚有 Champion 19、Challenger 15 筆分段紀錄待 SHA256 驗證與重組，亦未執行完整 JS 重新歸因；不宣稱全部 1246 筆皆符合上述比例。
+
+### P4 歷史 WAIT 風控因果證據（唯讀 SQL 子集）
+- 在未分段資料 Champion 1109、Challenger 1112 筆 WAIT 中，`expertHistory` 的 `riskPosition` 均為 `WAIT / NON_POSITIVE_EXPECTANCY`；`proposalAtDecision.expectedValue` 均為可解析數值且 **<=0**，正 EV 與缺失皆 0。
+- 這支持現行 `assessP4ExpertHistory` 對該**單一規則**輸出 Risk SOUND 的證據條件；並非 WAIT 整體品質證明，也不是其他專家的 SOUND。正式 before/after 診斷仍需 JS SHA256 驗證重評。
+- 原始 unassessedActors：Entry、Reward、Win、Time、Brain 於所有未分段紀錄均缺少歸因；Risk 缺少歸因只出現在 WAIT（Champion 1109／Challenger 1112）。這是舊診斷狀態，不代表新版重評已填補。

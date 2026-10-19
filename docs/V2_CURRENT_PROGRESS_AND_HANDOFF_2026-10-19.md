@@ -154,3 +154,8 @@ group by artifact_kind;
 - Challenger 1246：CLOSED 119、SHADOW 15、WAIT 1112、RETURN 0。
 - 已重組的所有分段 APPROVE 紀錄皆為 SHADOW（Champion 19、Challenger 15）；先前完整 account/allocation 數值的 standalone APPROVE 則屬 CLOSED。**SHADOW 不能當作已結算績效，CLOSED 與 WAIT/SHADOW 應分開分析。**
 - 以上為 SQL 唯讀 JSON 重組及分類統計，並非 SHA256 驗證的 JS 診斷重評，尚無可核實的正式 before/after coverage report。
+
+### P4 SHADOW 六專家流程證據核對（2026-10-19）
+- SQL 唯讀重組 SHADOW：Champion 19、Challenger 15；全部 `expertHistory` 為陣列且包含 Entry/Reward/Win/Risk/Time 各 CONTINUE、Brain APPROVE 六步。
+- SHADOW 同時有非 null `proposalAtDecision.winProbability` 與 `expectedValue`：Champion 10/19、Challenger 10/15；其餘缺少兩項數值，不可推論已校準。
+- 專家流程完整 ≠ 六位專家 SOUND；SHADOW 不應混入 CLOSED 績效，亦不能憑流程繼續就回饋正分。仍待正式 SHA256 + JS reassessment。

@@ -390,3 +390,9 @@ group by artifact_kind;
 - OOS 3,504 根：Champion 90 CLOSED、勝率 34.44%、net PnL -188.62954878807437 USD、profitFactor 0.454895；selected 88 CLOSED、勝率 35.23%、net PnL -196.082788827089 USD、profitFactor 0.449239。Selected 較 Champion 差 7.45324 USD，不能晉升或聲稱穩定獲利。
 - Supabase checkpoint 確認保存 OOS selected net PnL -196.082788827089；三輪 preferredActor 均 null，且三輪 in-sample PnL 完全與舊 UNGUIDED 控制組相同（-280.67、-272.31、-235.17 challenger），故本次 DIAGNOSTIC_GUIDED **沒有實際觸發診斷導向變異**。必須先診斷此現象，不能據此聲稱引導學習優於對照。
 - 舊 UNGUIDED 控制組無 OOS report，不能與此輪直接進行完整配對 OOS 績效比較；下一步先核查診斷回饋可用性與 preferredActor 決策原因，再決定是否需要新的配對研究。
+
+### 2026-10-20 自主研究循環方向性探索（待部署驗收）
+- 真實 guided 24m job 的診斷 audit 中 Entry/Reward/Win/Time/Brain 大量 unresolved，Entry/Reward negative=0，因此 preferredActor 始終 null；並非已經有因果診斷學習。
+- `24adb5ba`、`c57b456e`、`2f07f2aa` 新增 bounded `directedProbe`：guided 模式若無可歸因專家且上一輪有 >=30 CLOSED 研究樣本，根據上一輪同區間淨損益改善與否，對同一參數續走或反向一 tick；仍是 **in-sample performance-guided research**，不能宣稱 causal diagnosis 或 OOS 有效；UNGUIDED 維持對照。
+- `3c25bcf1`、`7675de2b` 新增單位與循環測試；部署測試結果尚待確認。原始 Champion 不自動升級，不涉及實單。
+- 下一核心工作：提升 Entry/Reward 可歸因的決策品質診斷（不得僅憑盈虧判錯），建立診斷導向參數方向的實際證據，再進行配對 OOS 評估。

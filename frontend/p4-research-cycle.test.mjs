@@ -62,7 +62,7 @@ test('unguided control ignores diagnostic focus and keeps reproducible mutation'
 
 test('guided cycle uses prior measured research feedback for a directed probe when expert diagnosis is unresolved',async()=>{
  const result=await runP4ResearchCycle({...base,iterations:2,onIteration:round=>{
-  if(round.iteration===1)round.feedback.status='RESEARCH_EVIDENCE_ONLY';
+  if(round.iteration===1){round.feedback.status='RESEARCH_EVIDENCE_ONLY';round.feedback.champion.closedTrades=30;round.feedback.challenger.closedTrades=30;}
  }});
  const first=result.iterations[0].candidate;
  const second=result.iterations[1];
@@ -75,8 +75,15 @@ test('guided cycle uses prior measured research feedback for a directed probe wh
 
 test('unguided mode never adopts a measured directional probe',async()=>{
  const result=await runP4ResearchCycle({...base,iterations:2,explorationMode:'UNGUIDED',onIteration:round=>{
-  if(round.iteration===1)round.feedback.status='RESEARCH_EVIDENCE_ONLY';
+  if(round.iteration===1){round.feedback.status='RESEARCH_EVIDENCE_ONLY';round.feedback.champion.closedTrades=30;round.feedback.challenger.closedTrades=30;}
  }});
  assert.equal(result.iterations[1].directedProbe,null);
  assert.equal(result.iterations[1].candidate.probeSource,undefined);
+});
+
+test('guided research does not learn a direction from fewer than 30 settled trades',async()=>{
+ const result=await runP4ResearchCycle({...base,iterations:2,onIteration:round=>{
+  if(round.iteration===1)round.feedback.status='RESEARCH_EVIDENCE_ONLY';
+ }});
+ assert.equal(result.iterations[1].directedProbe,null);
 });

@@ -4,8 +4,9 @@ import {mergeP4ActorAssessments,assessP4ProposalInvariants} from './p4-rule-diag
 import {diagnoseP4Decision} from './p4-independent-diagnosis.mjs';
 
 test('P4 merges same-actor faults without violating unique actor diagnosis',()=>{
- const evidence={action:'APPROVE',proposalAtDecision:{winProbability:1.2,expectedValue:-1}};
+ const evidence={action:'APPROVE',proposalAtDecision:{winProbability:0.6,expectedGain:3,expectedLoss:1,expectedValue:-1}};
  const checks=assessP4ProposalInvariants({evidence});
+ assert.equal(checks.filter(x=>x.actor==='Win'&&x.quality==='FAULT').length,2);
  const merged=mergeP4ActorAssessments(checks);
  assert.equal(merged.filter(x=>x.actor==='Win').length,1);
  assert.equal(merged.find(x=>x.actor==='Win').quality,'FAULT');

@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/p4-existing-diagnostic-reassessment.yml'
+      - 'frontend/p4-persisted-diagnostic-reassessment.mjs'
+      - 'frontend/p4-autonomous-diagnostic-research.mjs'
+      - 'frontend/p4-rule-diagnostician.mjs'
+      - 'frontend/p4-existing-diagnostic-reassessment-runner.mjs'
 permissions:
   contents: read
 concurrency:

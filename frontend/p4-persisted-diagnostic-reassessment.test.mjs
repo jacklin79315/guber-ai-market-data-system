@@ -25,3 +25,27 @@ test('reassessment is idempotent and does not duplicate existing actor',()=>{
 test('duplicate historical decision IDs fail closed',()=>{
  assert.throws(()=>reassessP4PersistedDiagnostics({records:[make(),make()]}),/duplicate/);
 });
+
+test('outcome-specific coverage isolates shadow from closed and wait',()=>{
+ const wait=make();
+ const closed=make();
+ closed.diagnosis.decisionId='closed-1';
+ closed.diagnosis.outcome='CLOSED';
+ closed.evidence={action:'APPROVE',accountAtDecision:{equity:100,committedCapital:20},allocation:10,proposalAtDecision:{expectedHoldingMs:1000}};
+ const shadow=structuredClone(closed);
+ shadow.diagnosis.decisionId='shadow-1';
+ shadow.diagnosis.outcome='SHADOW';
+ shadow.evidence.accountAtDecision={};
+ const report=reassessP4PersistedDiagnostics({records:[wait,closed,shadow]});
+ assert.equal(report.byOutcome.CLOSED.records,1);
+ assert.equal(report.byOutcome.SHADOW.records,1);
+ assert.equal(report.byOutcome.WAIT.records,1);
+ assert.equal(report.byOutcome.RETURN.records,0);
+ assert.equal(report.byOutcome.CLOSED.missingByActor.Risk,0);
+ assert.equal(report.byOutcome.SHADOW.missingByActor.Risk,1);
+ assert.equal(report.byOutcome.WAIT.missingByActor.Risk,0);
+ assert.equal(Object.values(report.byOutcome).reduce((n,row)=>n+row.records,0),report.sourceRecords);
+ assert.equal(Object.values(report.byOutcome).reduce((n,row)=>n+row.afterReviewed,0),report.after.reviewed);
+ assert.equal(report.modelUpdateApplied,false);
+ assert.equal(report.ordersEnabled,false);
+});

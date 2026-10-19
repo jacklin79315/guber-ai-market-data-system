@@ -9,6 +9,8 @@ test('reassesses immutable WAIT evidence without claiming full review',()=>{
  assert.equal(result.addedByActor.Risk,1);
  assert.equal(result.attributionAfter.Risk.sound,1);
  assert.equal(result.attributionAfter.Risk.fault,0);
+ assert.equal(result.missingAfter.Risk,0);
+ assert.equal(result.missingAfter.Brain,1);
  assert.equal(result.after.unresolved,1);
  assert.equal(result.reassessments[0].diagnosis.attribution[0].quality,'SOUND');
  assert.equal(result.reassessments[0].feedback.appliedToModels,false);

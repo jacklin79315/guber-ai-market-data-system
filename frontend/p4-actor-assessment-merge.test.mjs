@@ -39,3 +39,16 @@ test('P4 persisted reassessment retains a newly evidenced fault over prior narro
  assert.equal(output.ordersEnabled,false);
  assert.equal(records[0].diagnosis.attribution[0].quality,'SOUND');
 });
+
+test('P4 maps normalized Win and Risk expert identifiers without losing contradictions',async()=>{
+ const {assessP4ExpertHistory}=await import('./p4-rule-diagnostician.mjs');
+ for(const expert of ['winProbability','win_probability','Win Probability']){
+  const result=assessP4ExpertHistory({evidence:{action:'APPROVE',expertHistory:[{expert,action:'CONTINUE',reason:'NON_POSITIVE_EXPECTANCY'}]}});
+  assert.equal(result[0]?.actor,'Win');
+  assert.equal(result[0]?.quality,'FAULT');
+ }
+ for(const expert of ['riskPosition','risk_position','Risk Position']){
+  const result=assessP4ExpertHistory({evidence:{action:'APPROVE',expertHistory:[{expert,action:'CONTINUE',reason:'NON_POSITIVE_EXPECTANCY'}]}});
+  assert.equal(result[0]?.actor,'Risk');
+ }
+});

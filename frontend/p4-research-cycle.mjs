@@ -17,7 +17,11 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   const runId='research-round-'+(i+1);
   // The single iteration's comparison uses the provided parent version and parameters.
   const iterationLedger={...ledger,championVersion:parentVersion};
-  const result=await runP4ResearchIteration({ledger:iterationLedger,runId,challengerVersion,seed,iteration:i,championParameters:parentParameters,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,otherReplayOptions});
+  const previousAudit=ledger.runs.at(-1)?.result?.comparison?.diagnosticAudit;
+  const entry=previousAudit?.challenger?.actors?.Entry?.negative??0;
+  const reward=previousAudit?.challenger?.actors?.Reward?.negative??0;
+  const preferredActor=entry>reward&&entry>0?'Entry':reward>entry&&reward>0?'Reward':null;
+  const result=await runP4ResearchIteration({ledger:iterationLedger,runId,challengerVersion,seed,iteration:i,preferredActor,championParameters:parentParameters,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,otherReplayOptions});
   completed.push({iteration:i+1,runId,challengerVersion,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger),ledgerHistoryComplete});
   if(result.feedback.proposedNextResearchParent===challengerVersion){
    parentVersion=challengerVersion;

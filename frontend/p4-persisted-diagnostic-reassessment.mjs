@@ -10,12 +10,14 @@ export function reassessP4PersistedDiagnostics({records}={}){
  const addedByActor=Object.fromEntries(['Entry','Reward','Win','Risk','Time','Brain'].map(a=>[a,0]));
  const attributionAfter=Object.fromEntries(['Entry','Reward','Win','Risk','Time','Brain'].map(a=>[a,{sound:0,fault:0,unknown:0}]));
  const missingAfter=Object.fromEntries(['Entry','Reward','Win','Risk','Time','Brain'].map(a=>[a,0]));
+ const byOutcome=Object.fromEntries(Object.keys(outcomes).map(k=>[k,{records:0,beforeReviewed:0,afterReviewed:0,missingByActor:Object.fromEntries(Object.keys(addedByActor).map(a=>[a,0]))}]));
  const reassessments=[];
  for(const record of records){
   const old=record?.diagnosis,evidence=record?.evidence;
   if(old?.schemaVersion!=='P4_DIAGNOSIS_V1'||typeof old.decisionId!=='string'||!old.decisionId||!Object.hasOwn(outcomes,old.outcome)||!evidence||typeof evidence!=='object'||seen.has(old.decisionId))throw Error('invalid or duplicate persisted diagnostic evidence');
-  seen.add(old.decisionId);outcomes[old.outcome]++;
+  seen.add(old.decisionId);outcomes[old.outcome]++;byOutcome[old.outcome].records++;
   before[old.requiresReview?'unresolved':'reviewed']++;
+  if(!old.requiresReview)byOutcome[old.outcome].beforeReviewed++;
   const event={outcome:old.outcome,evidence};
   const risk=assessP4RiskEvidence(event),proposal=assessP4ProposalInvariants(event),history=assessP4ExpertHistory(event);
   const newAssessments=mergeP4ActorAssessments([...risk,...proposal,...history]);
@@ -24,9 +26,10 @@ export function reassessP4PersistedDiagnostics({records}={}){
   for(const a of newAssessments){if(!previous.some(b=>b.actor===a.actor))addedByActor[a.actor]++;}
   const diagnosis=diagnoseP4Decision({decisionId:old.decisionId,outcome:old.outcome,evidence,assessments:combined});
   after[diagnosis.requiresReview?'unresolved':'reviewed']++;
-  for(const actor of diagnosis.unassessedActors)missingAfter[actor]++;
+  if(!diagnosis.requiresReview)byOutcome[old.outcome].afterReviewed++;
+  for(const actor of diagnosis.unassessedActors){missingAfter[actor]++;byOutcome[old.outcome].missingByActor[actor]++;}
   for(const attribution of diagnosis.attribution)attributionAfter[attribution.actor][attribution.quality.toLowerCase()]++;
   reassessments.push({diagnosis,feedback:scoreP4DiagnosticFeedback(diagnosis)});
  }
- return {schemaVersion:'P4_PERSISTED_DIAGNOSTIC_REASSESSMENT_V1',mode:'RESEARCH_ONLY',sourceRecords:records.length,outcomes,before,after,addedByActor,attributionAfter,missingAfter,modelUpdateApplied:false,ordersEnabled:false,championPromotionAllowed:false,reassessments};
+ return {schemaVersion:'P4_PERSISTED_DIAGNOSTIC_REASSESSMENT_V1',mode:'RESEARCH_ONLY',sourceRecords:records.length,outcomes,byOutcome,before,after,addedByActor,attributionAfter,missingAfter,modelUpdateApplied:false,ordersEnabled:false,championPromotionAllowed:false,reassessments};
 }

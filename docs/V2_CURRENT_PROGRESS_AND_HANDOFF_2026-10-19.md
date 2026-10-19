@@ -421,3 +421,9 @@ group by artifact_kind;
 - OOS research-12：87 CLOSED，35 W / 52 L，勝率 40.2299%，net PnL -117.63342771185252，報酬 -1.1763%，PF 0.583859。相較 Champion OOS 淨損益改善 70.99612107622185 USD（少虧約 37.6%），但仍虧損、PF < 1，無可盈利證據。
 - 研究窗單參數實驗記錄：rewardStopAtr 1.5→1.4 改善 +36.78 USD；1.4→1.3 惡化 -35.74 USD；rewardTakeAtr 3→2.9→2.8→2.7→2.6→2.5→2.4 連續正向邊際改善。此為同窗比較，不能當獨立泛化證據；研究輪次受前輪結果影響，不能當獨立樣本數。
 - 後續優先：檢查不同時段/市場狀態與其他幣種的 OOS；建立可靠專家診斷歸因；維持手動 Champion 授權與手動交易。不得宣稱已達穩定獲利。
+
+### 2026-10-20 OOS 時間穩定性驗證實作
+- `29d66b0b`：凍結研究選出的 Challenger 後，額外以完整 OOS 的前半段與後半段各自回放 Champion / Challenger，輸出 `oosEvaluation.timeWindowDiagnostics` 與 `validationMidpointMs`。此為兩次獨立重啟的診斷回放，不能把兩段 PnL 相加當成完整 OOS PnL。
+- `ccc02552`：分段輸出測試；`5583cb7b`：GitHub Actions 結尾 JSON 輸出分段數據；Railway 639/639 PASS。
+- `94da3a64`：完成 checkpoint 的 `oosReport` 同步保留 `timeWindowDiagnostics`，目前尚待 Railway 部署驗收。
+- **尚無新版正式 12/24 輪的分段 OOS 實際結果**；上一批 39312522702 的 -117.63 USD 是分段功能之前的完整 OOS，不可反推分段成績。須新 jobId 手動啟動研究工作流程後驗證。系統只做研究建議，不自動下單。

@@ -12,7 +12,9 @@ export function assessP4ResearchFeedback({comparison,minClosedTrades=30,diagnost
  const champion=summarize(a),challenger=summarize(b);
  const sufficient=champion.closedTrades>=minClosedTrades&&challenger.closedTrades>=minClosedTrades;
  const risk=diagnosticAudit?.challenger?.actors?.Risk;
- const blockingRiskFault=Boolean(risk&&Number.isSafeInteger(risk.negative)&&risk.negative>0);
- const improved=sufficient&&!blockingRiskFault&&challenger.netRealizedPnl>champion.netRealizedPnl;
- return {status:sufficient?'RESEARCH_EVIDENCE_ONLY':'INSUFFICIENT_RESEARCH_SAMPLES',champion,challenger,minClosedTrades,improvedInSameWindow:improved,blockedByDiagnosticRisk: blockingRiskFault,proposedNextResearchParent:improved?challenger.version:champion.version,independentValidation:false,promotionAllowed:false,reason:blockingRiskFault?'Challenger has diagnosed Risk faults; research parent cannot advance on PnL alone':sufficient?'Same-window net PnL is research feedback only; separate untouched validation required':'Insufficient settled trades for research selection'};
+ const actors=diagnosticAudit?.challenger?.actors;
+ const blockingActors=actors?['Entry','Reward','Win','Risk','Time','Brain'].filter(name=>Number.isSafeInteger(actors[name]?.negative)&&actors[name].negative>0):[];
+ const blockingRiskFault=blockingActors.includes('Risk');
+ const improved=sufficient&&blockingActors.length===0&&challenger.netRealizedPnl>champion.netRealizedPnl;
+ return {status:sufficient?'RESEARCH_EVIDENCE_ONLY':'INSUFFICIENT_RESEARCH_SAMPLES',champion,challenger,minClosedTrades,improvedInSameWindow:improved,blockedByDiagnosticRisk: blockingRiskFault,blockingDiagnosticActors:blockingActors,proposedNextResearchParent:improved?challenger.version:champion.version,independentValidation:false,promotionAllowed:false,reason:blockingActors.length?'Challenger has diagnosed expert faults ('+blockingActors.join(', ')+'); research parent cannot advance on PnL alone':sufficient?'Same-window net PnL is research feedback only; separate untouched validation required':'Insufficient settled trades for research selection'};
 }

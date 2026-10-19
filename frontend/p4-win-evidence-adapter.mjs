@@ -10,7 +10,8 @@ export function extractP4ClosedWinObservations({records}={}){
   const needsReview=r.diagnosis.requiresReview===true||r.feedback.requiresReview===true;
   if(needsReview)excluded.unresolved++;
   const e=r.evidence,p=e.proposalAtDecision?.winProbability;
-  if(p==null){excluded.missingProbability++;continue;}\n  if(typeof p!=='number'||!Number.isFinite(p)||p<0||p>1){excluded.invalidProbability++;continue;}
+  if(p==null){excluded.missingProbability++;continue;}
+  if(typeof p!=='number'||!Number.isFinite(p)||p<0||p>1){excluded.invalidProbability++;continue;}
   // Require original, explicit timestamps and realized binary labels. Never infer missing facts.
   if(!Number.isSafeInteger(e.decisionTime)||!Number.isSafeInteger(e.closedAt)||e.closedAt<=e.decisionTime){excluded.missingTimestamps++;continue;}
   if(e.realizedWin!==true&&e.realizedWin!==false){excluded.missingOutcome++;continue;}

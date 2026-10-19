@@ -16,9 +16,9 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
    endpoint.searchParams.set('select','chunk_index,payload,payload_sha256');
    endpoint.searchParams.set('order','chunk_index.asc');
    const rows=[];
-   for(let offset=0;offset<manifest.chunkCount;offset+=25){
+   for(let offset=0;offset<manifest.chunkCount;offset+=5){
     const page=new URL(endpoint);
-    page.searchParams.set('limit',String(Math.min(25,manifest.chunkCount-offset)));
+    page.searchParams.set('limit',String(Math.min(5,manifest.chunkCount-offset)));
     page.searchParams.set('offset',String(offset));
     let response;
     for(let attempt=0;attempt<3;attempt++){

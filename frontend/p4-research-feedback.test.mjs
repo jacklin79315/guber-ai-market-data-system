@@ -7,3 +7,13 @@ test('P4 feedback rejects insufficient trade samples even when challenger wins',
 test('P4 feedback may nominate research parent but never promote Champion',()=>{const r=assessP4ResearchFeedback({comparison:comparison(sample('champion',35,1),sample('challenger',35,10))});assert.equal(r.proposedNextResearchParent,'challenger');assert.equal(r.independentValidation,false);assert.equal(r.promotionAllowed,false)});
 test('P4 feedback rejects missing cost reconciliation',()=>{const b=sample('challenger',35,10);b.metrics.costLedgerComplete=false;assert.throws(()=>assessP4ResearchFeedback({comparison:comparison(sample('champion',35,1),b)}),/incomplete P4 cost/)});
 test('P4 feedback rejects invalid independent validation claims',()=>{const c=comparison(sample('champion',35,1),sample('challenger',35,10));c.independentValidation=true;assert.throws(()=>assessP4ResearchFeedback({comparison:c}),/invalid P4/)});
+
+test('diagnosed challenger Risk fault blocks advancing research parent despite higher net PnL',()=>{
+ const c=comparison(sample('champion',35,1),sample('challenger',35,10));
+ c.diagnosticAudit={challenger:{actors:{Risk:{negative:2}}}};
+ const r=assessP4ResearchFeedback({comparison:c});
+ assert.equal(r.blockedByDiagnosticRisk,true);
+ assert.equal(r.improvedInSameWindow,false);
+ assert.equal(r.proposedNextResearchParent,'champion');
+ assert.equal(r.promotionAllowed,false);
+});

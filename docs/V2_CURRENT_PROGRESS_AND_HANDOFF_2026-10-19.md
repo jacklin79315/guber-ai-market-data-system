@@ -142,3 +142,9 @@ group by artifact_kind;
 - Commit `070d4e524017780ab6f3239524d5bd5a45a6a674` 的 Railway deployment `c2d32394-fcad-4d83-a85f-00cb81e8dc1c` 為 **SUCCESS**；build Node tests **596 pass / 0 fail**。
 - Runner 新增 fail-closed 驗收：Champion、Challenger 每側必須 1246 筆；before/after reviewed+unresolved 都等於 sourceRecords；modelUpdateApplied=false；原有 artifact reader SHA256 與 fragment 完整性驗證維持。
 - Workflow `.github/workflows/p4-existing-diagnostic-reassessment.yml` 的 push.paths 包含 runner，故 commit 符合觸發條件；但 GitHub 連接器無法列出 push-triggered workflow runs，公開 Actions 頁面也未成功取得。**沒有可核實的 workflow run ID、report JSON 或 before/after 實際統計，正式 P4 歷史重評尚未驗收**。
+
+### P4 分段 artifact 唯讀重組完成（2026-10-19）
+- 使用 Supabase SQL `jsonb_array_elements WITH ORDINALITY` + fragment `part=0` 分組 + `string_agg(data ORDER BY chunk_index,ord)::jsonb` 重組：Champion **19/19**、Challenger **15/15** 分段紀錄全部完整且 `P4_DIAGNOSIS_V1`、`P4_FEEDBACK_V1` 格式有效；皆為 APPROVE。與 standalone Champion 1227、Challenger 1231 合計**各 1246 筆**。
+- **重要校正**：分段 APPROVE 紀錄中 `accountAtDecision.equity/committedCapital/allocation` 三個數值欄位完整者 **0/19、0/15**，因此先前「全部 APPROVE Risk 資金占用欄位完整」只適用 standalone 子集（Champion 118、Challenger 119），**不得擴大宣稱為全部 APPROVE**。
+- 分段 APPROVE 同時有數值型 `winProbability`、`expectedValue`：Champion **10/19**、Challenger **10/15**；合併 standalone 後各有 68 筆。全體 APPROVE Champion 137、Challenger 134；其他欄位品質及完整 JS 診斷待正式驗證。
+- SQL 重組僅驗證 JSON 解析與 part 數量，**不等同 SHA256 chunk integrity 或 JS reassessment PASS**。無模型更新、無下單、無資料修改。

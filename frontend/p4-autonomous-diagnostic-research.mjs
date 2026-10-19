@@ -88,8 +88,25 @@ export function inspectP4DecisionInputCoverage({records}={}){
    if(p.expectedValue==null)unknownExpectedValue++;
   }
  }
+ const fields={Entry:['entryRange'],Reward:['expectedGain','expectedLoss','riskReward'],Win:['winProbability','expectedValue'],Time:['expectedHoldingMs']};
+ const byOutcome=Object.fromEntries(['CLOSED','SHADOW','WAIT','RETURN'].map(o=>[o,{records:0,approved:0,expertHistoryPresent:0,proposalPresent:0,fieldCounts:Object.fromEntries(Object.entries(fields).map(([actor,keys])=>[actor,Object.fromEntries(keys.map(k=>[k,0]))]))}]));
+ for(const row of records){
+  const o=row.diagnosis.outcome;
+  if(!Object.hasOwn(byOutcome,o))throw Error('invalid diagnostic outcome');
+  const slot=byOutcome[o],e=row.evidence,p=e.proposalAtDecision;
+  slot.records++;
+  if(e.action==='APPROVE')slot.approved++;
+  if(Array.isArray(e.expertHistory))slot.expertHistoryPresent++;
+  if(p&&typeof p==='object'){
+   slot.proposalPresent++;
+   for(const [actor,keys] of Object.entries(fields))for(const key of keys){
+    const v=p[key];
+    if((typeof v==='number'&&Number.isFinite(v))||(key==='entryRange'&&Array.isArray(v)&&v.length===2&&v.every(Number.isFinite)))slot.fieldCounts[actor][key]++;
+   }
+  }
+ }
  const count=records.length;
- return {schemaVersion:'P4_DECISION_INPUT_COVERAGE_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,totalEvents:count,missing,unknownProbability,unknownExpectedValue,approvedWithUnknownProbability,notes:'Unknown probability in explicit exploration mode is not automatically a decision fault; collect calibration evidence before assigning blame.'};
+ return {schemaVersion:'P4_DECISION_INPUT_COVERAGE_V1',mode:'RESEARCH_ONLY',ordersEnabled:false,modelUpdateApplied:false,totalEvents:count,byOutcome,missing,unknownProbability,unknownExpectedValue,approvedWithUnknownProbability,notes:'Unknown probability in explicit exploration mode is not automatically a decision fault; collect calibration evidence before assigning blame.'};
 }
 
 /**

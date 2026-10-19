@@ -137,3 +137,8 @@ group by artifact_kind;
 - 在未分段 Champion 118、Challenger 119 筆 APPROVE：`expectedGain`、`expectedLoss`、`riskReward` 皆為數值；依 JS 同級容差 `1e-6 * max(1,abs(rr))` 檢查，RR 矛盾 **0/0**。
 - `winProbability` 數值越界 **0/0**；明確數值型負 `expectedValue` 仍 APPROVE **0/0**。注意空值不代表合法數值；數值型 Win probability 與 EV 同時存在的 APPROVE 各僅 **58 筆**（Champion 58/118、Challenger 58/119），剩餘 Champion 60、Challenger 61 筆為 null。
 - 這些是有限的資料一致性／guardrail 檢查，不等於 Win 勝率已校準，也不等於策略盈利。正式 SHA256 重組後的 JS 歷史 reassessment 仍未完成。
+
+### P4 完整歷史重評執行器部署驗證（2026-10-19）
+- Commit `070d4e524017780ab6f3239524d5bd5a45a6a674` 的 Railway deployment `c2d32394-fcad-4d83-a85f-00cb81e8dc1c` 為 **SUCCESS**；build Node tests **596 pass / 0 fail**。
+- Runner 新增 fail-closed 驗收：Champion、Challenger 每側必須 1246 筆；before/after reviewed+unresolved 都等於 sourceRecords；modelUpdateApplied=false；原有 artifact reader SHA256 與 fragment 完整性驗證維持。
+- Workflow `.github/workflows/p4-existing-diagnostic-reassessment.yml` 的 push.paths 包含 runner，故 commit 符合觸發條件；但 GitHub 連接器無法列出 push-triggered workflow runs，公開 Actions 頁面也未成功取得。**沒有可核實的 workflow run ID、report JSON 或 before/after 實際統計，正式 P4 歷史重評尚未驗收**。

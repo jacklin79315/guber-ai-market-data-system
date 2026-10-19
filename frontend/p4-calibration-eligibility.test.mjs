@@ -21,3 +21,13 @@ test('58 valid CLOSED probabilities remain insufficient for independent 30/30 ca
  assert.equal(result.status,'INSUFFICIENT_VERIFIED_EVIDENCE');
  assert.equal(result.promotionAllowed,false);
 });
+
+test('closed calibration evidence distinguishes missing from invalid probability',()=>{
+ const base={diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1',outcome:'CLOSED',requiresReview:true},feedback:{schemaVersion:'P4_FEEDBACK_V1',requiresReview:true}};
+ const records=[{...base,evidence:{decisionTime:1,closedAt:2,realizedWin:true,proposalAtDecision:{winProbability:null}}},{...base,evidence:{decisionTime:3,closedAt:4,realizedWin:false,proposalAtDecision:{winProbability:1.5}}},{...base,evidence:{decisionTime:5,closedAt:6,realizedWin:true,proposalAtDecision:{winProbability:0.5}}}];
+ const report=checkP4CalibrationEligibility(records,30);
+ assert.equal(report.excluded.missingProbability,1);
+ assert.equal(report.excluded.invalidProbability,1);
+ assert.equal(report.eligible,1);
+ assert.equal(report.ready,false);
+});

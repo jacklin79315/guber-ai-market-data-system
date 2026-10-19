@@ -13,7 +13,7 @@ for(const kind of kinds){
  const pageSize=5;
  for(let offset=0;;offset+=pageSize){
   const endpoint=new URL('/rest/v1/p4_research_artifact_chunks',url);
-  for(const [k,v] of Object.entries({job_id:'eq.'+jobId,iteration:'eq.1',artifact_kind:'eq.'+kind,select:'chunk_index,payload,payload_sha256',order:'chunk_index.asc',limit:String(pageSize),offset:String(offset)}))endpoint.searchParams.set(k,v);
+  for(const [k,v] of Object.entries({job_id:'eq.'+jobId,iteration:'eq.1',artifact_kind:'eq.'+kind,select:'chunk_index,payload_sha256',order:'chunk_index.asc',limit:String(pageSize),offset:String(offset)}))endpoint.searchParams.set(k,v);
   let response;
   for(let attempt=0;attempt<4;attempt++){
    try{response=await fetch(endpoint,{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'},signal:AbortSignal.timeout(60000)});}

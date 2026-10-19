@@ -33,6 +33,7 @@ for(const kind of kinds){
 const store=createP4ArtifactChunkStore({supabaseUrl:url,serviceRoleKey:key});
 const result=await inspectPersistedP4ResearchRound({store,jobId,iteration,manifests});
 const summary=Object.fromEntries(['champion','challenger'].map(label=>[label,result.results[label].reassessment]));
+const decisionInputCoverage=Object.fromEntries(['champion','challenger'].map(label=>[label,result.results[label].decisionInputs]));
 // Fail closed if an incomplete or mismatched historical round is supplied.
 // This acceptance round has 1,246 immutable decisions per side, including fragments.
 for(const side of ['champion','challenger']){
@@ -50,4 +51,4 @@ for(const side of ['champion','challenger']){
  }
  if(Object.values(by).reduce((sum,row)=>sum+row.records,0)!==report.sourceRecords||Object.values(by).reduce((sum,row)=>sum+row.afterReviewed,0)!==report.after.reviewed)throw Error('per-outcome totals do not reconcile: '+side);
 }
-process.stdout.write(JSON.stringify({status:'PASS',jobId,iteration,manifestCounts:Object.fromEntries(Object.entries(manifests).map(([k,m])=>[k,{chunks:m.chunkCount,records:m.recordCount,fragmented:m.fragmented}])),summary,modelUpdateApplied:false,ordersEnabled:false})+'\n');
+process.stdout.write(JSON.stringify({status:'PASS',jobId,iteration,decisionInputCoverage,manifestCounts:Object.fromEntries(Object.entries(manifests).map(([k,m])=>[k,{chunks:m.chunkCount,records:m.recordCount,fragmented:m.fragmented}])),summary,modelUpdateApplied:false,ordersEnabled:false})+'\n');

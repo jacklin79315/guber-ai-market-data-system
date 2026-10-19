@@ -9,6 +9,7 @@ on:
       - 'frontend/p4-autonomous-diagnostic-research.mjs'
       - 'frontend/p4-rule-diagnostician.mjs'
       - 'frontend/p4-existing-diagnostic-reassessment-runner.mjs'
+      - 'frontend/p4-autonomous-diagnostic-research.test.mjs'
 permissions:
   contents: read
 concurrency:

@@ -258,3 +258,9 @@ group by artifact_kind;
 - `p4-diagnostic-backend-research.mjs` 使用 `loadP4SegmentedHistoricalCandles` 取得已驗證 K 線；`p4-challenger-comparison.mjs` 明確以 `collectP4DiagnosticEvidence({...championResult,candles})` 及 challenger 同型呼叫，證實此比較路徑有傳入 K 線。
 - `collectP4DiagnosticEvidence` 透過 `attachClosedTimes` 依 `exitIndex` 對應 `closeTime`，形成 CLOSED `closedAt`，並依非零有限已結算 PnL 產生 `realizedWin`；已有單元測試，Railway 607/607 PASS。
 - **限制**：這證實目前 P4 診斷比較器的程式接線，尚未驗證新的 24 個月完整執行與 artifact 持久化。歷史 immutable round 的兩個欄位仍缺失；不得覆寫舊資料或聲稱新 round 已完成。下一步新增比較器至持久化 artifact 的端到端整合驗證，並確認新的 job ID 與 OOS 時間隔離。
+
+### 2026-10-19 P4 CLOSED 證據端到端模擬持久化驗收
+- `ee46e0f3b08cee14fd6c935f85aa0fb996d5b10f`：新增 P4 Champion/Challenger 比較器整合測試，使用原始 K 線驗證 CLOSED `closedAt` 對應 K 線、`closedAt > decisionTime`、`realizedWin` boolean 與模型不更新。Railway **608/608 PASS**，部署 SUCCESS。
+- `24f59cf5f2f6e45f42e5d0e84b369cc61e421f8e`：新增 P4 比較結果 → 模擬 artifact chunk write/read（hash 完整性）→ `extractP4ClosedWinObservations` 的端到端測試；兩組 CLOSED 結算欄位完整，且不允許模型更新或 Champion promotion。Railway deployment `be8e5fa6-d391-492c-b6f7-b893fbf5154e` **SUCCESS，609/609 PASS、0 fail**。
+- **驗收界線**：此為 mock Supabase 介面的測試，不是新 24 個月正式 artifact 的寫入/讀回；未啟動新回合、未覆寫舊 immutable round、未調整正式權重或下單。
+- 下一步：確認新研究 job 的持久化執行入口、唯一 job ID、OOS 窗口與完整 CLOSED 因果證據，再決定是否進行真實歷史回放驗收；不得把模擬測試的成功等同真實資料校準合格。

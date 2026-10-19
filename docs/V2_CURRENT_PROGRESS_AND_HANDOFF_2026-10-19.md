@@ -293,3 +293,8 @@ group by artifact_kind;
 - `cc135fc99c7fc35ca8ca6a681b7fb8c1c3ec1b28`：同窗口研究父版本選擇不再只看 Risk；只要 Challenger 診斷 audit 中 Entry/Reward/Win/Risk/Time/Brain 任一角色有 `negative > 0`，即阻擋僅憑較高淨損益選作下一研究父版本。UNKNOWN/unresolved 不虛構 FAULT。
 - `1196f5d11a11bb1ec517c10f912ddaf184fa6408`：新增 Reward 已歸因錯誤阻擋及 Entry unresolved 不誤判兩項測試；提交時 Railway 尚待最新建置/部署驗證。
 - 仍只是研究父版本篩選，**不是**六專家可歸因參數更新、完整自主學習或正式模型升級；下一步應以實際診斷原因指向可訓練參數，並用 OOS 證明改善。
+
+### 2026-10-19 P4 多角色診斷比較修復
+- 前版 `511f454c` Railway 617 tests / 616 pass / 1 fail：同樣 Risk 缺失的 Champion/Challenger 應可比較改善，但現有六角色絕對負面阻擋導致錯誤拒絕。
+- `6e1cc94ba2c7ef31bc67788c7ec4655c37a4d36b` 修正 `p4-research-feedback.mjs`：比較 Entry/Reward/Win/Risk/Time/Brain 各自的已診斷負面數與 Champion 基準，僅 Challenger 較差或缺可信基準時阻擋研究父版本前進。既有相同 Risk 負面測試、Reward 負面測試與 UNKNOWN 不虛構測試應一併驗收。
+- 最新 commit Railway 尚 BUILDING，未宣稱 PASS。此仍是診斷參與**研究候選選擇**，不是診斷驅動參數調整或完整自主學習。

@@ -25,7 +25,7 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
      try{response=await fetchImpl(page.toString(),{method:'GET',headers,signal:AbortSignal.timeout(60000)});}
      catch(error){if(attempt===2||!/fetch|timeout|abort|network/i.test(String(error?.message??error)))throw error;continue;}
      if(response.ok)break;
-     if(attempt===2||![429,500,502,503,504].includes(response.status))throw Error('P4 artifact read failed: '+response.status+' offset='+offset);
+     if(attempt===2||![429,500,502,503,504].includes(response.status))throw Error('P4 artifact read failed: '+response.status+' kind='+kind+' offset='+offset+' requestId='+(response.headers.get('x-request-id')??'unknown'));
     }
     const batch=await response.json();
     if(!Array.isArray(batch)||batch.length!==Math.min(25,manifest.chunkCount-offset))throw Error('P4 artifact chunk count mismatch');

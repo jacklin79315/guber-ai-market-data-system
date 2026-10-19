@@ -178,3 +178,8 @@ group by artifact_kind;
 - Actions run [39265430947](https://github.com/jacklin79315/guber-ai-market-data-system/actions/runs/39265430947) job 118103650013，head `94161205` SUCCESS；artifact 12193076679，SHA256 `20e0a0ee7f0542e831c88f8e936cf5e21d86421f03238d80bf54504003dd8451`，已實際下載解析。
 - 報告 1246/side，PASS，原本診斷完整度仍 0；但 **沒有 `byOutcome`**。根因：`frontend/p4-autonomous-diagnostic-research.mjs` 的 `inspectPersistedP4ResearchRound` 在重新組裝 `reassessment` 摘要時漏傳 `byOutcome`，不是原始資料遺失。
 - 修復 commit `e8b18e7cb7e32a8ad9317840dbec8bba4ef12514` 已補上摘要欄位傳遞。**尚待此 commit 的 CI 24 個月重評 artifact 驗證**；舊 run 不可視為分類報告驗收。
+
+### P4 分類隔離測試通過（2026-10-19）
+- Commit `0a8928d55132a58c0745f8495abc39804102047f` 在 `frontend/p4-persisted-diagnostic-reassessment.test.mjs` 增加 CLOSED/SHADOW/WAIT 分類隔離測試，檢查 Risk 缺證據只落在 SHADOW、分類總數與整體一致，以及不更新模型/不啟用交易。
+- Railway deployment `09c8f6f3-c261-4092-99c0-5f8040dbeff0` **SUCCESS**；Node tests **597 pass / 0 fail**。
+- 仍須核對含 `byOutcome` 的新版 GitHub Actions artifact；不得將 Railway test pass 視為 24 個月歷史重評驗收。

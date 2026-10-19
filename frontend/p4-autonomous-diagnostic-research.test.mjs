@@ -103,3 +103,27 @@ test('reads actual round manifest champion/challenger keys',async()=>{
  assert.deepEqual(seen,[['CHAMPION_DIAGNOSTICS',4],['CHALLENGER_DIAGNOSTICS',5]]);
  assert.equal(result.ordersEnabled,false);
 });
+
+test('causal input coverage counts finite fields per outcome without fabricating missing values',()=>{
+ const row=(outcome,action,p)=>({diagnosis:{schemaVersion:'P4_DIAGNOSIS_V1',outcome},evidence:{action,proposalAtDecision:p,expertHistory:[]}});
+ const report=inspectP4DecisionInputCoverage({records:[
+  row('CLOSED','APPROVE',{entryRange:[10,11],expectedGain:2,expectedLoss:1,riskReward:2,winProbability:0.6,expectedValue:0.8,expectedHoldingMs:3600000}),
+  row('SHADOW','APPROVE',{entryRange:[11,10],expectedGain:null,expectedLoss:Infinity,riskReward:NaN,winProbability:null,expectedValue:null,expectedHoldingMs:null}),
+  row('WAIT','WAIT',{expectedValue:-1})
+ ]});
+ assert.equal(report.byOutcome.CLOSED.records,1);
+ assert.equal(report.byOutcome.CLOSED.fieldCounts.Entry.entryRange,1);
+ assert.equal(report.byOutcome.CLOSED.fieldCounts.Reward.expectedLoss,1);
+ assert.equal(report.byOutcome.CLOSED.fieldCounts.Win.winProbability,1);
+ assert.equal(report.byOutcome.CLOSED.fieldCounts.Time.expectedHoldingMs,1);
+ assert.equal(report.byOutcome.SHADOW.records,1);
+ assert.equal(report.byOutcome.SHADOW.fieldCounts.Entry.entryRange,1);
+ assert.equal(report.byOutcome.SHADOW.fieldCounts.Reward.expectedLoss,0);
+ assert.equal(report.byOutcome.SHADOW.fieldCounts.Reward.riskReward,0);
+ assert.equal(report.byOutcome.SHADOW.fieldCounts.Win.winProbability,0);
+ assert.equal(report.byOutcome.WAIT.records,1);
+ assert.equal(report.byOutcome.WAIT.fieldCounts.Win.expectedValue,1);
+ assert.equal(report.byOutcome.RETURN.records,0);
+ assert.equal(report.ordersEnabled,false);
+ assert.equal(report.modelUpdateApplied,false);
+});

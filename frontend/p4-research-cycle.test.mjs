@@ -93,3 +93,16 @@ test('research cycle reports actual unique candidates rather than treating round
 test('research exploration exposes only controlled single-parameter contributions, not invented expert faults',async()=>{const result=await runP4ResearchCycle(base);assert.equal(result.explorationSummary.parameterContributions.length,3);for(const row of result.explorationSummary.parameterContributions){assert.ok(['Entry','Reward'].includes(row.actor));assert.equal(row.causalExpertFaultEstablished,false);assert.equal(row.sameWindow,true);assert.equal(row.sufficient,false)}});
 
 test('accumulated parameter contribution guides later research without declaring expert fault',async()=>{const result=await runP4ResearchCycle({...base,iterations:3,onIteration:round=>{if(round.iteration===1){const comparison=round.ledgerSnapshot.runs.at(-1).result.comparison;comparison.parameterContribution={schemaVersion:'P4_PARAMETER_INTERVENTION_V1',actor:'Reward',parameter:'rewardStopAtr',from:1.5,to:1.6,sameWindow:true,causalExpertFaultEstablished:false,sufficient:true,deltaNetRealizedPnl:12};}}});assert.equal(result.iterations[1].probeEvidenceSource,'MULTI_ROUND_PARAMETER_CONTRIBUTION');assert.equal(result.iterations[1].directedProbe.parameter,'rewardStopAtr');assert.equal(result.explorationSummary.evidenceGuidedRounds,2)});
+
+test('newer loss replaces an older gain for the same parameter direction',async()=>{
+ const result=await runP4ResearchCycle({...base,iterations:4,onIteration:round=>{
+  if(round.iteration>2)return;
+  round.ledgerSnapshot.runs.at(-1).result.comparison.parameterContribution={
+   schemaVersion:'P4_PARAMETER_INTERVENTION_V1',actor:'Reward',parameter:'rewardStopAtr',
+   from:1.5,to:1.6,sameWindow:true,causalExpertFaultEstablished:false,sufficient:true,
+   deltaNetRealizedPnl:round.iteration===1?12:-9
+  };
+ }});
+ assert.equal(result.iterations[1].probeEvidenceSource,'MULTI_ROUND_PARAMETER_CONTRIBUTION');
+ assert.notEqual(result.iterations[2].probeEvidenceSource,'MULTI_ROUND_PARAMETER_CONTRIBUTION');
+});

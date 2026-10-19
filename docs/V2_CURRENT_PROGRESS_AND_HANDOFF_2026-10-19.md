@@ -159,3 +159,11 @@ group by artifact_kind;
 - SQL 唯讀重組 SHADOW：Champion 19、Challenger 15；全部 `expertHistory` 為陣列且包含 Entry/Reward/Win/Risk/Time 各 CONTINUE、Brain APPROVE 六步。
 - SHADOW 同時有非 null `proposalAtDecision.winProbability` 與 `expectedValue`：Champion 10/19、Challenger 10/15；其餘缺少兩項數值，不可推論已校準。
 - 專家流程完整 ≠ 六位專家 SOUND；SHADOW 不應混入 CLOSED 績效，亦不能憑流程繼續就回饋正分。仍待正式 SHA256 + JS reassessment。
+
+### P4 GitHub Actions 正式 24 個月重評報告已取得（2026-10-19，關鍵驗收）
+- GitHub Actions run [39233114328](https://github.com/jacklin79315/guber-ai-market-data-system/actions/runs/39233114328)，job 117995623973，commit `070d4e524017780ab6f3239524d5bd5a45a6a674`：所有步驟 SUCCESS。
+- 已實際下載並解析 artifact `p4-24m-readonly-reassessment` ID **12177528150**（ZIP SHA256 `c22691055ff83a4c977c1f284d83baa62630a19ed9bde9798b4e9f941a2829e0`），報告 `status=PASS`，`modelUpdateApplied=false`、`ordersEnabled=false`。
+- Champion 254 chunks / 1246 records；CLOSED 118、SHADOW 19、WAIT 1109。before reviewed 0/unresolved 1246；after reviewed **0**/unresolved **1246**。addedByActor Risk 1109，其餘五專家 0。Risk SOUND 1227、FAULT 0、missing 19；Entry/Reward/Win/Time/Brain 各 missing 1246。
+- Challenger 201 chunks / 1246 records；CLOSED 119、SHADOW 15、WAIT 1112。before reviewed 0/unresolved 1246；after reviewed **0**/unresolved **1246**。addedByActor Risk 1112，其餘五專家 0。Risk SOUND 1231、FAULT 0、missing 15；Entry/Reward/Win/Time/Brain 各 missing 1246。
+- **結論：執行及 artifact integrity PASS，但完整診斷覆蓋率仍 0%，不可宣稱 P4 診斷完成或模型改善。** Risk SOUND 只表示狹義規則符合，不代表完整風險品質；禁止依此調整權重或升級 Champion。
+- 後續：優先釐清為何既有 `assessP4ExpertHistory`、`assessP4ProposalInvariants` 未產生其餘五專家 SOUND（目前規則多數僅在可證明違規時輸出 FAULT，並不自動替正常流程給 SOUND）；設計有明確證據門檻的正向歸因與 UNKNOWN，不得憑 PnL 或無證據硬填完整度。

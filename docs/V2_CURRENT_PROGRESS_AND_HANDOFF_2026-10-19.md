@@ -401,3 +401,9 @@ group by artifact_kind;
 - 後端 `0980a755` 24m 研究上限由 3 輪擴為 24 輪（保留 `HISTORICAL_24M`、BTC 1h、chronological partitioned OOS、RESEARCH_ONLY、不得下實單或自動晉升 Champion）。
 - `b8c2d182` 更新上限測試，允許 24 拒絕 25；`19e6b58a` GitHub Actions 改預設 12 輪、可選 3/12/24 輪，timeout 360 分鐘，job_id 自動產生。
 - 尚未啟動新的長輪數研究，部署驗收待完成。24 輪上限是執行批次，不保證有效學習；同一資料多輪搜尋仍須獨立 OOS、診斷歸因，避免把研究內改善誤認為泛化能力。
+
+### 2026-10-20 12 輪實際研究與搜尋修正
+- GitHub Actions `39301249722` / job `118226708280` SUCCESS；12/12 輪，17,520 根 BTCUSDT 1h K 線，OOS 3,504 根。原始 Champion OOS 90 CLOSED，淨損益 -188.62954878807437；選中研究版 `P3_RULE_BRAIN_V2_EXPLORATION-research-2` OOS 96 CLOSED，淨損益 -194.8915225420473。OOS 未改善，沒有自動晉升。
+- Supabase `p4_research_rounds` 逐輪查核：12 輪 `preferredActor` 全為 null，Entry/Reward 診斷尚未導引探索；第 2 輪同窗研究改善，之後第 3～12 輪反覆搜尋 `rewardStopAtr` 正負一格，未形成有效因果診斷。不能將 12 輪視為 12 次成功學習。
+- `43c7899f` / `eca4f853` / `319719b8` 避免已訪候選重播；`fd496462` 擴大已耗盡的一格鄰域搜尋半徑；`7d2e790c` 測試；`096733c4` / `6b81d19f` / `f3625eac` 加入研究探索統計（總輪數、唯一候選、重複候選、診斷引導輪數、方向探測、探測來源）。Railway `f3625eac` SUCCESS，636/636 tests。
+- 後續需真正建立專家因果歸因與回饋；當前優先以新一批研究驗證 uniqueParameterSets 和 OOS，絕不可把同窗改善宣稱為泛化獲利。

@@ -22,6 +22,7 @@ for(const kind of kinds){
    if(attempt===3||![429,500,502,503,504].includes(response.status))throw Error('manifest read failed '+response.status+' kind='+kind+' offset='+offset+' requestId='+(response.headers.get('x-request-id')??'unknown')+' retryAfter='+(response.headers.get('retry-after')??'none'));
   }
   const page=await response.json();if(!Array.isArray(page))throw Error('invalid manifest page');
+  if(page.length>pageSize)throw Error('manifest page exceeds limit: '+kind+' offset='+offset);
   rows.push(...page);if(page.length<pageSize)break;
  }
  if(!rows.length)throw Error('missing existing diagnostic chunks: '+kind);

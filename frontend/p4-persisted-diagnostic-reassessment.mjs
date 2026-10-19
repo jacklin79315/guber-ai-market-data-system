@@ -1,5 +1,5 @@
 import {diagnoseP4Decision,scoreP4DiagnosticFeedback} from './p4-independent-diagnosis.mjs';
-import {assessP4ExpertHistory,assessP4RiskEvidence,assessP4ProposalInvariants} from './p4-rule-diagnostician.mjs';
+import {assessP4ExpertHistory,assessP4RiskEvidence,assessP4ProposalInvariants,mergeP4ActorAssessments} from './p4-rule-diagnostician.mjs';
 
 // Read-only, deterministic reassessment of immutable historical evidence.
 // Original diagnosis/feedback and stored artifacts are never mutated.
@@ -18,13 +18,10 @@ export function reassessP4PersistedDiagnostics({records}={}){
   before[old.requiresReview?'unresolved':'reviewed']++;
   const event={outcome:old.outcome,evidence};
   const risk=assessP4RiskEvidence(event),proposal=assessP4ProposalInvariants(event),history=assessP4ExpertHistory(event);
-  const newAssessments=[...risk,...proposal,...history].filter((a,i,arr)=>arr.findIndex(b=>b.actor===a.actor)===i);
+  const newAssessments=mergeP4ActorAssessments([...risk,...proposal,...history]);
   const previous=Array.isArray(old.attribution)?old.attribution:[];
-  const combined=[...previous];
-  for(const a of newAssessments){
-   if(combined.some(b=>b.actor===a.actor))continue;
-   combined.push(a);addedByActor[a.actor]++;
-  }
+  const combined=mergeP4ActorAssessments([...previous,...newAssessments]);
+  for(const a of newAssessments){if(!previous.some(b=>b.actor===a.actor))addedByActor[a.actor]++;}
   const diagnosis=diagnoseP4Decision({decisionId:old.decisionId,outcome:old.outcome,evidence,assessments:combined});
   after[diagnosis.requiresReview?'unresolved':'reviewed']++;
   for(const actor of diagnosis.unassessedActors)missingAfter[actor]++;

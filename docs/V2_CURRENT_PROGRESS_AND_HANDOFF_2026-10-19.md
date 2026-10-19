@@ -413,3 +413,11 @@ group by artifact_kind;
 - `0004b649` / `bffd15e3` / `8cc5a9b8`：研究循環可從已完成輪次的受控實驗累積證據選下一輪探測方向，記錄 `probeEvidenceSource`、`evidenceGuidedRounds`；Railway 638/638 PASS。
 - `aa47ed02` / `0e78e1ba`：同參數同方向以最近一次足量介入結果取代過時的正向結果；測試 639/639 PASS，最後部署狀態仍待確認。
 - 尚未執行此版 12/24 輪正式研究；無 OOS 改善證據。下一步須以新 jobId 執行 HISTORICAL_24M、核對 explorationSummary、診斷覆蓋與 OOS，不能自動晉升 Champion，也不得自動下單。
+
+### 2026-10-20 新一批 12 輪研究實測（Actions 39312522702）
+- Job `118265520413` SUCCESS；commit `2bed8b3f`；BTCUSDT 1h 共 17,520 K、12/12 輪，研究窗 14,016 K、OOS 3,504 K，使用 `DIAGNOSTIC_GUIDED`，未自動下單、未自動晉升 Champion。
+- explorationSummary：12 組唯一候選、0 重複、11 輪 directed、6 輪由累積單參數比較證據引導、0 輪由 Entry/Reward 專家因果診斷引導。`probeSources` SEEDED_MUTATION 3 / PRIOR_SAME_WINDOW_RESULT 9。不可稱真正專家診斷已學會。
+- OOS Champion：90 CLOSED，31 W / 59 L，勝率 34.4444%，net PnL -188.62954878807437，報酬 -1.8863%，PF 0.454895。
+- OOS research-12：87 CLOSED，35 W / 52 L，勝率 40.2299%，net PnL -117.63342771185252，報酬 -1.1763%，PF 0.583859。相較 Champion OOS 淨損益改善 70.99612107622185 USD（少虧約 37.6%），但仍虧損、PF < 1，無可盈利證據。
+- 研究窗單參數實驗記錄：rewardStopAtr 1.5→1.4 改善 +36.78 USD；1.4→1.3 惡化 -35.74 USD；rewardTakeAtr 3→2.9→2.8→2.7→2.6→2.5→2.4 連續正向邊際改善。此為同窗比較，不能當獨立泛化證據；研究輪次受前輪結果影響，不能當獨立樣本數。
+- 後續優先：檢查不同時段/市場狀態與其他幣種的 OOS；建立可靠專家診斷歸因；維持手動 Champion 授權與手動交易。不得宣稱已達穩定獲利。

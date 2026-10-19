@@ -87,3 +87,5 @@ test('guided research does not learn a direction from fewer than 30 settled trad
  }});
  assert.equal(result.iterations[1].directedProbe,null);
 });
+
+test('research cycle reports actual unique candidates rather than treating rounds as learning',async()=>{const result=await runP4ResearchCycle({...base,iterations:6});assert.equal(result.explorationSummary.totalRounds,6);assert.equal(result.explorationSummary.uniqueParameterSets,6);assert.equal(result.explorationSummary.duplicateParameterSets,0);assert.equal(result.explorationSummary.diagnosticActorDirectedRounds,0)});

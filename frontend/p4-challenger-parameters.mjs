@@ -7,8 +7,10 @@ export function validateTrainingParameters(params){
  for(const k of keys){const {min,max,step}=SPECS[k],v=params[k];if(!Number.isFinite(v)||v<min-1e-9||v>max+1e-9||Math.abs((v-min)/step-Math.round((v-min)/step))>1e-6)throw Error('invalid parameter '+k)}
  return structuredClone(params);
 }
-export function generateChallengerParameters({parent,seed,iteration=0,preferredActor=null,directedProbe=null}={}){
+export function generateChallengerParameters({parent,seed,iteration=0,preferredActor=null,directedProbe=null,visitedParameterSets=[]}={}){
  const current=validateTrainingParameters(parent);
+ const visited=new Set(visitedParameterSets.map(p=>JSON.stringify(validateTrainingParameters(p))));
+ const unseen=p=>!visited.has(JSON.stringify(p));
  if(!Number.isSafeInteger(seed)||seed<0||!Number.isSafeInteger(iteration)||iteration<0)throw Error('invalid mutation seed');
  // Integer-only deterministic mixing, independent of Math.random and process state.
  let x=(seed^(Math.imul(iteration+1,0x9e3779b1)))>>>0;
@@ -17,7 +19,7 @@ export function generateChallengerParameters({parent,seed,iteration=0,preferredA
   const {parameter,direction}=directedProbe;
   if(!Object.hasOwn(SPECS,parameter)||![1,-1].includes(direction))throw Error('invalid directed research probe');
   const {min,max,step}=SPECS[parameter],at=Math.round((current[parameter]-min)/step),ticks=Math.round((max-min)/step),candidate=at+direction;
-  if(candidate>=0&&candidate<=ticks){current[parameter]=round(min+candidate*step);return {parameters:validateTrainingParameters(current),mutatedParameter:parameter,from:parent[parameter],to:current[parameter],seed,iteration,probeSource:'PRIOR_SAME_WINDOW_RESULT'};}
+  if(candidate>=0&&candidate<=ticks){const trial={...current,[parameter]:round(min+candidate*step)};if(unseen(trial))return {parameters:validateTrainingParameters(trial),mutatedParameter:parameter,from:parent[parameter],to:trial[parameter],seed,iteration,probeSource:'PRIOR_SAME_WINDOW_RESULT'};}
  }
  const preferredKeys=preferredActor==='Entry'?keys.filter(k=>k.startsWith('entry')):preferredActor==='Reward'?keys.filter(k=>k.startsWith('reward')):keys;
  const offset=next()%preferredKeys.length;
@@ -26,8 +28,10 @@ export function generateChallengerParameters({parent,seed,iteration=0,preferredA
   const ticks=Math.round((max-min)/step),at=Math.round((current[key]-min)/step);
   const direction=(next()&1)?1:-1;
   const candidate=at+direction;
-  if(candidate>=0&&candidate<=ticks){current[key]=round(min+candidate*step);return {parameters:validateTrainingParameters(current),mutatedParameter:key,from:parent[key],to:current[key],seed,iteration}}
+  if(candidate>=0&&candidate<=ticks){const trial={...current,[key]:round(min+candidate*step)};if(unseen(trial))return {parameters:validateTrainingParameters(trial),mutatedParameter:key,from:parent[key],to:trial[key],seed,iteration}}
  }
- return {parameters:current,mutatedParameter:null,from:null,to:null,seed,iteration};
+ // Search all one-tick neighbors before admitting exhaustion; never recycle a known candidate.
+ for(const key of preferredKeys){const {min,max,step}=SPECS[key],at=Math.round((current[key]-min)/step),ticks=Math.round((max-min)/step);for(const direction of [-1,1]){const index=at+direction;if(index<0||index>ticks)continue;const trial={...current,[key]:round(min+index*step)};if(unseen(trial))return {parameters:validateTrainingParameters(trial),mutatedParameter:key,from:parent[key],to:trial[key],seed,iteration,probeSource:'UNSEEN_NEIGHBOR'};}}
+ return {parameters:current,mutatedParameter:null,from:null,to:null,seed,iteration,probeSource:'NEIGHBORS_EXHAUSTED'};
 }
 export const DEFAULT_TRAINING_PARAMETERS=Object.freeze({entryLookback:20,entryThreshold:0.001,rewardAtrPeriod:14,rewardStopAtr:1.5,rewardTakeAtr:3});

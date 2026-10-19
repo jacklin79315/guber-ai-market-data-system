@@ -329,3 +329,9 @@ group by artifact_kind;
 - `d0fc53af`：研究循環新增 `explorationMode`，`DIAGNOSTIC_GUIDED`（預設）按 Entry/Reward 相對負面診斷選參數家族，`UNGUIDED` 忽略診斷，沿用確定性種子變異；每輪與回傳結果記錄模式，供同資料同種子對照。
 - `894c5d8f`：新增未引導模式可重現性測試，確保診斷事件不影響控制組變異。Railway 尚在建置，未宣稱通過。
 - 注意：尚未實際執行 guided/unguided 的 24 個月歷史 OOS 對照；模式切換與單元測試不代表績效改善。
+
+### 2026-10-20 P4 雙模式配對 OOS 對照研究
+- 上版 `86ce7a4c` Railway **622/622 PASS**，部署 SUCCESS。
+- `3edc90eb` 新增 `frontend/p4-guidance-ab-comparison.mjs`，同一輸入、同一 seed、同一時間切分，依序執行 DIAGNOSTIC_GUIDED 和 UNGUIDED，兩組均完成 OOS 且各自有足夠已結算樣本才回傳 OOS 損益差；禁止自動 Champion promotion。
+- `6655d310` 新增 160 根 1h K 線 WAIT fixture 的雙組 OOS 測試，預期回報樣本不足而非虛構勝者。Railway 尚 BUILDING，未宣稱通過。
+- 未執行真實 24 個月歷史雙組對照，尚無證據認定診斷引導勝過一般探索。

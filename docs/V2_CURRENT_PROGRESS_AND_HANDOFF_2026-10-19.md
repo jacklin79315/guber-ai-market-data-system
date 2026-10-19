@@ -228,3 +228,7 @@ group by artifact_kind;
 - 完整六專家診斷兩組皆 **0/1246**；Risk SOUND Champion 1227、Challenger 1231；其餘 Entry/Reward/Win/Time/Brain 仍缺因果歸因證據，不得宣稱模型已學習或改善收益。
 - 已核對有效輸入：Champion APPROVE 且勝率未知 69，Challenger 66；CLOSED 勝率數值覆蓋兩組皆 58，SHADOW 兩組皆 10。SHADOW 不算已結算交易。
 - `3ebbe5c1` Railway deployment `c13f2252-0d4a-41e5-ac42-36c9f3fb3c5b` SUCCESS，600 tests pass / 0 fail。先前 HTTP 500 阻塞已於此輪正式歷史重評解除。下一階段聚焦可驗證的因果證據及獨立 OOS 驗證；禁止自動下單與自動更新正式權重。
+
+### 2026-10-19 P4 診斷不變條件測試驗收
+- `506c213464f2e9a8e058625724db4bbb7a74b573`：Reward RR 算術矛盾、Win EV 算術矛盾、數學一致不得臆造 SOUND，共新增 3 個測試。Railway deployment `271cd24b-1c20-455c-8b7b-a1d382292a5c` **SUCCESS，603 tests pass / 0 fail**。
+- 現有 `planP4EvidenceResearchTasks` 已將未知勝率、未知 EV、各專家因果證據缺口列入研究任務，尚不等於訓練模型或完成因果驗證。下階段優先驗證已結算 CLOSED 的勝率校準資格及 OOS 分割；SHADOW/WAIT 不可當實際交易報酬。

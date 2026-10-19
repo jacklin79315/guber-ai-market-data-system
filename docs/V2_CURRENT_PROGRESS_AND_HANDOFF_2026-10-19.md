@@ -83,3 +83,10 @@ group by artifact_kind;
 
 ## 6. 新對話首個工作指令
 請讀 `PROJECT_HANDOFF.md`、本檔、正式規劃書全文、P0～P7 大綱、10/17 資料庫字典；透過 GitHub、Supabase、Railway 重新核對即時狀態，先列出現階段、已實作、已驗證、未完成及偏離規劃的項目。然後直接從 §3 的第一個尚未完成項目開始工程實作；不重啟已失敗的舊參數臂、不憑記憶恢復四策略、不把 2,458 Risk SOUND 當成已學會獲利，並持續更新本檔。
+
+## 7. 2026-10-19 P4 診斷歸因去重修正（待 CI 驗證）
+- 針對同一角色由多項不變條件產生重複歸因、或窄範圍 SOUND 掩蓋 FAULT 的問題，新增 `mergeP4ActorAssessments`：同一角色只保留一筆，FAULT 優先於 SOUND／UNKNOWN，合併證據鍵及檢查理由。此修正只處理**診斷證據整合**，不代表市場預測能力改善。
+- 即時 `p4-diagnostic-evidence.mjs` 與歷史唯讀 `p4-persisted-diagnostic-reassessment.mjs` 共用同一合併方式；歷史新歸因數僅計算先前缺少的角色。
+- 新增 `frontend/p4-actor-assessment-merge.test.mjs` 測試：同角色多項 FAULT 不應造成診斷重複角色錯誤；Risk SOUND／FAULT 不論順序皆須保留 FAULT 及所有證據。
+- GitHub 依序提交：`3de90bbc`、`83ce044e`、`223ff5f2`、`8e7dbf32`。**提交成功不等於 CI 通過**；下一步必須查自動歷史重評及測試是否通過，確認保存資料的 before/after 與缺失歸因統計，才可標記驗收。
+- 安全邊界不變：無真實交易、無模型權重回寫、無 Champion 晉升；P4 尚未驗收完成。

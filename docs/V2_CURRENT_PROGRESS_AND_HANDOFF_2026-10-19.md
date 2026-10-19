@@ -396,3 +396,8 @@ group by artifact_kind;
 - `24adb5ba`、`c57b456e`、`2f07f2aa` 新增 bounded `directedProbe`：guided 模式若無可歸因專家且上一輪有 >=30 CLOSED 研究樣本，根據上一輪同區間淨損益改善與否，對同一參數續走或反向一 tick；仍是 **in-sample performance-guided research**，不能宣稱 causal diagnosis 或 OOS 有效；UNGUIDED 維持對照。
 - `3c25bcf1`、`7675de2b` 新增單位與循環測試；部署測試結果尚待確認。原始 Champion 不自動升級，不涉及實單。
 - 下一核心工作：提升 Entry/Reward 可歸因的決策品質診斷（不得僅憑盈虧判錯），建立診斷導向參數方向的實際證據，再進行配對 OOS 評估。
+
+### 2026-10-20 大樣本自主研究輪數放寬
+- 後端 `0980a755` 24m 研究上限由 3 輪擴為 24 輪（保留 `HISTORICAL_24M`、BTC 1h、chronological partitioned OOS、RESEARCH_ONLY、不得下實單或自動晉升 Champion）。
+- `b8c2d182` 更新上限測試，允許 24 拒絕 25；`19e6b58a` GitHub Actions 改預設 12 輪、可選 3/12/24 輪，timeout 360 分鐘，job_id 自動產生。
+- 尚未啟動新的長輪數研究，部署驗收待完成。24 輪上限是執行批次，不保證有效學習；同一資料多輪搜尋仍須獨立 OOS、診斷歸因，避免把研究內改善誤認為泛化能力。

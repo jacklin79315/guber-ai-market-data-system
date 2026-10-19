@@ -40,5 +40,14 @@ for(const side of ['champion','challenger']){
  if(manifest.recordCount!==1246||report?.sourceRecords!==manifest.recordCount)throw Error('incomplete 24-month historical reassessment: '+side);
  if(report.before.reviewed+report.before.unresolved!==report.sourceRecords||report.after.reviewed+report.after.unresolved!==report.sourceRecords)throw Error('invalid reassessment coverage totals: '+side);
  if(report.modelUpdateApplied!==false)throw Error('unsafe model update flag: '+side);
+ const by=report.byOutcome;
+ if(!by||typeof by!=='object')throw Error('missing per-outcome diagnostic report: '+side);
+ const actors=['Entry','Reward','Win','Risk','Time','Brain'];
+ for(const outcome of ['CLOSED','SHADOW','WAIT','RETURN']){
+  const row=by[outcome];
+  if(!row||row.records!==report.outcomes[outcome]||!Number.isInteger(row.beforeReviewed)||!Number.isInteger(row.afterReviewed)||row.beforeReviewed<0||row.afterReviewed<0||row.beforeReviewed>row.records||row.afterReviewed>row.records)throw Error('invalid outcome coverage: '+side+'/'+outcome);
+  for(const actor of actors){const missing=row.missingByActor?.[actor];if(!Number.isInteger(missing)||missing<0||missing>row.records)throw Error('invalid actor coverage: '+side+'/'+outcome+'/'+actor);}
+ }
+ if(Object.values(by).reduce((sum,row)=>sum+row.records,0)!==report.sourceRecords||Object.values(by).reduce((sum,row)=>sum+row.afterReviewed,0)!==report.after.reviewed)throw Error('per-outcome totals do not reconcile: '+side);
 }
 process.stdout.write(JSON.stringify({status:'PASS',jobId,iteration,manifestCounts:Object.fromEntries(Object.entries(manifests).map(([k,m])=>[k,{chunks:m.chunkCount,records:m.recordCount,fragmented:m.fragmented}])),summary,modelUpdateApplied:false,ordersEnabled:false})+'\n');

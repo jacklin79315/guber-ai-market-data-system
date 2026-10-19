@@ -35,11 +35,11 @@ on:
         default: "1792425600000"
         type: string
       iterations:
-        description: "Research iterations (1 to 3)"
+        description: "Autonomous research iterations (3, 12 or 24)"
         required: true
-        default: "3"
+        default: "12"
         type: choice
-        options: ["1", "2", "3"]
+        options: ["3", "12", "24"]
 permissions:
   contents: read
 concurrency:
@@ -48,7 +48,7 @@ concurrency:
 jobs:
   bounded-research:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 360
     environment: p4-research
     defaults:
       run:

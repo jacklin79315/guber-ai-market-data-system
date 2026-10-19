@@ -365,3 +365,7 @@ group by artifact_kind;
 - GitHub Actions run `39289350830` job `118185622326`（commit `92539b17`）**SUCCESS**。研究 `p4_btc24m_control_20261020`，`UNGUIDED`，BTCUSDT 1h 17,520 根，3/3 輪完成，CLI `validationStatus=OOS_EVALUATED`、`independentValidation=true`、`promotionAllowed=false`、`liveTrading=false`。
 - Supabase checkpoint phase COMPLETED / completedIterations 3；三輪研究區間 Champion→Challenger 淨損益：1 -274.9268→-280.6666 (86/85 CLOSED)、2 -274.9268→-272.3067 (86/85 CLOSED)、3 -272.3067→-235.1714 (85/73 CLOSED)。此為 **研究區間** 數字，並非 OOS 成績；所有輪次仍為負損益。
 - Guided 任務 `p4_btc24m_guided_20261020` 未在同次 checkpoint 查詢出現。尚未完成兩組 OOS 配對比較，也未確認 OOS closedTrades/netPnl 的持久化；不可宣稱診斷引導優於控制組。
+
+### 2026-10-20 P4 OOS 輸出補強
+- `5e008dc2` 將完整 OOS `champion`/`selected` 指標（含 CLOSED 數、淨損益）、樣本充足性、選擇版本與改善標記輸出到 GitHub Actions 執行日誌，供**新啟動**研究核對；不是 Supabase 永久 OOS 報告，不能回填舊任務。
+- 已完成的 UNGUIDED job `p4_btc24m_control_20261020` 仍需單獨核實 OOS 數據；不可僅憑 `OOS_EVALUATED` 判定獲利。

@@ -10,13 +10,19 @@ const kinds=['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS'];
 const manifests={};
 for(const kind of kinds){
  const rows=[];
- for(let offset=0;;offset+=50){
+ const pageSize=5;
+ for(let offset=0;;offset+=pageSize){
   const endpoint=new URL('/rest/v1/p4_research_artifact_chunks',url);
-  for(const [k,v] of Object.entries({job_id:'eq.'+jobId,iteration:'eq.1',artifact_kind:'eq.'+kind,select:'chunk_index,payload,payload_sha256',order:'chunk_index.asc',limit:'50',offset:String(offset)}))endpoint.searchParams.set(k,v);
-  const response=await fetch(endpoint,{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'},signal:AbortSignal.timeout(60000)});
-  if(!response.ok)throw Error('manifest read failed '+response.status);
+  for(const [k,v] of Object.entries({job_id:'eq.'+jobId,iteration:'eq.1',artifact_kind:'eq.'+kind,select:'chunk_index,payload,payload_sha256',order:'chunk_index.asc',limit:String(pageSize),offset:String(offset)}))endpoint.searchParams.set(k,v);
+  let response;
+  for(let attempt=0;attempt<4;attempt++){
+   try{response=await fetch(endpoint,{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'},signal:AbortSignal.timeout(60000)});}
+   catch(error){if(attempt===3)throw error;continue;}
+   if(response.ok)break;
+   if(attempt===3||![429,500,502,503,504].includes(response.status))throw Error('manifest read failed '+response.status+' kind='+kind+' offset='+offset);
+  }
   const page=await response.json();if(!Array.isArray(page))throw Error('invalid manifest page');
-  rows.push(...page);if(page.length<50)break;
+  rows.push(...page);if(page.length<pageSize)break;
  }
  if(!rows.length)throw Error('missing existing diagnostic chunks: '+kind);
  let fragments=0,parts=0,standalone=0;

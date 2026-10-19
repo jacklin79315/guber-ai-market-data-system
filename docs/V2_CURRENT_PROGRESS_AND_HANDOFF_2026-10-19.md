@@ -287,3 +287,9 @@ group by artifact_kind;
 - `6cefa3d002da5e6c15a24d7967fb39cee9afe55f`：`assessP4ResearchFeedback` 開始讀取既有 `comparison.diagnosticAudit.challenger.actors.Risk`；若有已診斷負面 Risk 事件，則即使 Challenger 同窗口淨損益較高，也不選為下一輪研究父版本。此為研究選擇門檻，不是模型參數自主更新，也不改正式 Champion。
 - `5b8e91200f006ae01aa0f8071abbb483f65ff383`：新增高損益但 Risk 負面診斷的回歸測試；提交後 Railway 尚待建置/部署驗證。
 - 重要限制：目前只對已歸因 Risk negative 生效；其他專家尚缺可信的參數級因果歸因，不得宣稱六角色診斷全面驅動自主學習。下一步建立 Entry/Reward 的可歸因方向性更新與獨立 OOS 驗證。
+
+### 2026-10-19 P4 六角色診斷參與研究版本選擇
+- 前一輪 `5b8e9120` 已於 Railway **614/614 PASS**、部署 SUCCESS。
+- `cc135fc99c7fc35ca8ca6a681b7fb8c1c3ec1b28`：同窗口研究父版本選擇不再只看 Risk；只要 Challenger 診斷 audit 中 Entry/Reward/Win/Risk/Time/Brain 任一角色有 `negative > 0`，即阻擋僅憑較高淨損益選作下一研究父版本。UNKNOWN/unresolved 不虛構 FAULT。
+- `1196f5d11a11bb1ec517c10f912ddaf184fa6408`：新增 Reward 已歸因錯誤阻擋及 Entry unresolved 不誤判兩項測試；提交時 Railway 尚待最新建置/部署驗證。
+- 仍只是研究父版本篩選，**不是**六專家可歸因參數更新、完整自主學習或正式模型升級；下一步應以實際診斷原因指向可訓練參數，並用 OOS 證明改善。

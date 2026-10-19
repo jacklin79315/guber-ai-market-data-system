@@ -33,4 +33,12 @@ for(const kind of kinds){
 const store=createP4ArtifactChunkStore({supabaseUrl:url,serviceRoleKey:key});
 const result=await inspectPersistedP4ResearchRound({store,jobId,iteration,manifests});
 const summary=Object.fromEntries(['champion','challenger'].map(label=>[label,result.results[label].reassessment]));
+// Fail closed if an incomplete or mismatched historical round is supplied.
+// This acceptance round has 1,246 immutable decisions per side, including fragments.
+for(const side of ['champion','challenger']){
+ const manifest=manifests[side],report=summary[side];
+ if(manifest.recordCount!==1246||report?.sourceRecords!==manifest.recordCount)throw Error('incomplete 24-month historical reassessment: '+side);
+ if(report.before.reviewed+report.before.unresolved!==report.sourceRecords||report.after.reviewed+report.after.unresolved!==report.sourceRecords)throw Error('invalid reassessment coverage totals: '+side);
+ if(report.modelUpdateApplied!==false)throw Error('unsafe model update flag: '+side);
+}
 process.stdout.write(JSON.stringify({status:'PASS',jobId,iteration,manifestCounts:Object.fromEntries(Object.entries(manifests).map(([k,m])=>[k,{chunks:m.chunkCount,records:m.recordCount,fragmented:m.fragmented}])),summary,modelUpdateApplied:false,ordersEnabled:false})+'\n');

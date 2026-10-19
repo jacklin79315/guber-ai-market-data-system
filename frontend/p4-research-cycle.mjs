@@ -18,8 +18,10 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   // The single iteration's comparison uses the provided parent version and parameters.
   const iterationLedger={...ledger,championVersion:parentVersion};
   const previousAudit=completed.at(-1)?.ledgerSnapshot?.runs?.at(-1)?.result?.comparison?.diagnosticAudit??ledger.runs.at(-1)?.result?.comparison?.diagnosticAudit;
-  const entry=previousAudit?.challenger?.actors?.Entry?.negative??0;
-  const reward=previousAudit?.challenger?.actors?.Reward?.negative??0;
+  const baseline=previousAudit?.champion?.actors;
+  const challenger=previousAudit?.challenger?.actors;
+  const entry=Math.max(0,(challenger?.Entry?.negative??0)-(baseline?.Entry?.negative??0));
+  const reward=Math.max(0,(challenger?.Reward?.negative??0)-(baseline?.Reward?.negative??0));
   const preferredActor=entry>reward&&entry>0?'Entry':reward>entry&&reward>0?'Reward':null;
   const result=await runP4ResearchIteration({ledger:iterationLedger,runId,challengerVersion,seed,iteration:i,preferredActor,championParameters:parentParameters,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,otherReplayOptions});
   completed.push({iteration:i+1,runId,challengerVersion,preferredActor,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger),ledgerHistoryComplete});

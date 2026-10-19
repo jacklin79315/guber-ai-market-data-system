@@ -26,3 +26,35 @@ test('P4 comparison preserves causal CLOSED evidence for both arms without model
   }
  }
 });
+
+import {createP4ArtifactChunkStore} from './p4-supabase-artifact-chunks.mjs';
+import {extractP4ClosedWinObservations} from './p4-win-evidence-adapter.mjs';
+test('P4 CLOSED evidence survives immutable chunk write/read before calibration eligibility',async()=>{
+ const bars=Array.from({length:90},(_,i)=>{const c=i<20?100:105+i-20;return {symbol:'BTCUSDT',timeframe:'1h',closeTime:(i+1)*3600000-1,open:c,high:c+1,low:c-1,close:c}});
+ const result=await compareChallengerReplay({...options,candles:bars,brain:async()=>({action:'APPROVE',reason:'persisted causal evidence fixture'}),challenger:{version:'challenger-v2',parameters:{...defaults,entryLookback:6}}});
+ const chunks=new Map();
+ const fetchImpl=async(url,opts)=>{
+  const u=new URL(url),kind=u.searchParams.get('artifact_kind')?.replace('eq.','');
+  if(opts.method==='POST'){
+   const p=JSON.parse(opts.body),key=p.p_artifact_kind+':'+p.p_chunk_index;
+   chunks.set(key,{chunk_index:p.p_chunk_index,payload:p.p_payload,payload_sha256:p.p_payload_sha256});
+   return {ok:true,json:async()=>true};
+  }
+  const offset=Number(u.searchParams.get('offset')??0),limit=Number(u.searchParams.get('limit')??1000);
+  return {ok:true,json:async()=>[...chunks.entries()].filter(([k])=>k.startsWith(kind+':')).map(([,v])=>v).sort((a,b)=>a.chunk_index-b.chunk_index).slice(offset,offset+limit)};
+ };
+ const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});
+ for(const side of ['champion','challenger']){
+  const kind=side.toUpperCase()+'_DIAGNOSTICS',records=result.diagnosticEvidence[side];
+  const manifest=await store.write({jobId:'p4-causal-fixture',ownerToken:'test-owner-token-12345',specFingerprint:'a'.repeat(64),iteration:1,kind,records,maxChunkBytes:4096});
+  const restored=await store.read({jobId:'p4-causal-fixture',iteration:1,kind,manifest});
+  assert.deepEqual(restored,records);
+  const settled=restored.filter(x=>x.diagnosis.outcome==='CLOSED');
+  assert.ok(settled.length>0);
+  assert.ok(settled.every(x=>Number.isSafeInteger(x.evidence.closedAt)&&typeof x.evidence.realizedWin==='boolean'));
+  const observations=extractP4ClosedWinObservations({records:restored});
+  assert.equal(observations.modelUpdateApplied,false);
+  assert.equal(observations.championPromotionAllowed,false);
+  assert.equal(observations.totalRecords,records.length);
+ }
+});

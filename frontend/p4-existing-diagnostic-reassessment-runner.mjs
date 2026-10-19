@@ -10,7 +10,7 @@ const kinds=['CHAMPION_DIAGNOSTICS','CHALLENGER_DIAGNOSTICS'];
 const manifests={};
 for(const kind of kinds){
  const rows=[];
- const pageSize=5;
+ const pageSize=100;
  for(let offset=0;;offset+=pageSize){
   const endpoint=new URL('/rest/v1/p4_research_artifact_chunks',url);
   for(const [k,v] of Object.entries({job_id:'eq.'+jobId,iteration:'eq.1',artifact_kind:'eq.'+kind,select:'chunk_index,payload_sha256',order:'chunk_index.asc',limit:String(pageSize),offset:String(offset)}))endpoint.searchParams.set(k,v);

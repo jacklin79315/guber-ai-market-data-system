@@ -26,10 +26,10 @@ test('approved out-of-range probability is a Win fault, independent of PnL',()=>
 test('unknown probability is not treated as an error',()=>{
  assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{winProbability:null}}}),[]);
 });
-test('explicit negative expected value is a Reward fault without reading outcome',()=>{
+test('explicit negative expected value belongs to Win field ownership without reading outcome',()=>{
  const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{expectedValue:-0.1},netPnl:100}});
  assert.equal(findings.length,1);
- assert.equal(findings[0].actor,'Reward');
+ assert.equal(findings[0].actor,'Win');
 });
 test('non-approved WAIT with negative expectancy is not automatically a fault',()=>{
  assert.deepEqual(assessP4ProposalInvariants({evidence:{action:'WAIT',proposalAtDecision:{expectedValue:-0.1}}}),[]);

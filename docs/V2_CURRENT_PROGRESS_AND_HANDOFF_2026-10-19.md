@@ -132,3 +132,8 @@ group by artifact_kind;
 - 在未分段資料 Champion 1109、Challenger 1112 筆 WAIT 中，`expertHistory` 的 `riskPosition` 均為 `WAIT / NON_POSITIVE_EXPECTANCY`；`proposalAtDecision.expectedValue` 均為可解析數值且 **<=0**，正 EV 與缺失皆 0。
 - 這支持現行 `assessP4ExpertHistory` 對該**單一規則**輸出 Risk SOUND 的證據條件；並非 WAIT 整體品質證明，也不是其他專家的 SOUND。正式 before/after 診斷仍需 JS SHA256 驗證重評。
 - 原始 unassessedActors：Entry、Reward、Win、Time、Brain 於所有未分段紀錄均缺少歸因；Risk 缺少歸因只出現在 WAIT（Champion 1109／Challenger 1112）。這是舊診斷狀態，不代表新版重評已填補。
+
+### P4 APPROVE Reward/Win 決策不變量核對（唯讀 SQL 子集）
+- 在未分段 Champion 118、Challenger 119 筆 APPROVE：`expectedGain`、`expectedLoss`、`riskReward` 皆為數值；依 JS 同級容差 `1e-6 * max(1,abs(rr))` 檢查，RR 矛盾 **0/0**。
+- `winProbability` 數值越界 **0/0**；明確數值型負 `expectedValue` 仍 APPROVE **0/0**。注意空值不代表合法數值；數值型 Win probability 與 EV 同時存在的 APPROVE 各僅 **58 筆**（Champion 58/118、Challenger 58/119），剩餘 Champion 60、Challenger 61 筆為 null。
+- 這些是有限的資料一致性／guardrail 檢查，不等於 Win 勝率已校準，也不等於策略盈利。正式 SHA256 重組後的 JS 歷史 reassessment 仍未完成。

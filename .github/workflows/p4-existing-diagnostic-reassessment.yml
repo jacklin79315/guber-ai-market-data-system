@@ -48,8 +48,8 @@ jobs:
           for(const side of ["champion","challenger"]){
             const s=report.summary[side];
             const inputs=report.decisionInputCoverage?.[side];
-            if(!inputs||inputs.totalEvents!==s.sourceRecords||!inputs.byOutcome)throw Error('missing decision input coverage: '+side);
-            if(Object.values(inputs.byOutcome).reduce((n,row)=>n+row.records,0)!==s.sourceRecords)throw Error('decision input outcome counts mismatch: '+side);
+            if(!inputs||inputs.totalEvents!==s.sourceRecords||!inputs.byOutcome)throw Error("missing decision input coverage: "+side);
+            if(Object.values(inputs.byOutcome).reduce((n,row)=>n+row.records,0)!==s.sourceRecords)throw Error("decision input outcome counts mismatch: "+side);
             lines.push("|"+side+"|"+s.sourceRecords+"|"+s.before.reviewed+"|"+s.after.reviewed+"|");
             lines.push("","### "+side+" diagnostic coverage","","```json",JSON.stringify({outcomes:s.outcomes,byOutcome:s.byOutcome,addedByActor:s.addedByActor,attributionAfter:s.attributionAfter,missingAfter:s.missingAfter,decisionInputCoverage:inputs},null,2),"```");
           }

@@ -23,3 +23,6 @@ test('directed research probe moves the selected parameter exactly one bounded t
  assert.equal(r.probeSource,'PRIOR_SAME_WINDOW_RESULT');
  assert.deepEqual(Object.keys(r.parameters).filter(k=>r.parameters[k]!==defaults[k]),['entryLookback']);
 });
+
+test('visited candidates are not replayed when a fresh one-tick neighbor exists',()=>{const first=generate({parent:defaults,seed:7,iteration:0});const second=generate({parent:defaults,seed:7,iteration:0,visitedParameterSets:[first.parameters]});assert.notDeepEqual(second.parameters,first.parameters);assert.equal(Object.keys(defaults).filter(k=>second.parameters[k]!==defaults[k]).length,1)});
+test('directed probe falls back to an unseen neighbor instead of repeating a failed candidate',()=>{const prior=generate({parent:defaults,seed:7,iteration:0,directedProbe:{parameter:'rewardStopAtr',direction:1}});const next=generate({parent:defaults,seed:7,iteration:1,directedProbe:{parameter:'rewardStopAtr',direction:1},visitedParameterSets:[prior.parameters]});assert.notDeepEqual(next.parameters,prior.parameters)});

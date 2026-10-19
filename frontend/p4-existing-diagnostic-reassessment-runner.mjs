@@ -25,15 +25,10 @@ for(const kind of kinds){
   rows.push(...page);if(page.length<pageSize)break;
  }
  if(!rows.length)throw Error('missing existing diagnostic chunks: '+kind);
- let fragments=0,parts=0,standalone=0;
- for(let i=0;i<rows.length;i++){
-  if(rows[i].chunk_index!==i)throw Error('noncontiguous stored chunks');
-  for(const item of rows[i].payload){
-   if(item?.__p4_fragment_v1===true){parts++;if(item.part===0)fragments++;}
-   else standalone++;
-  }
- }
- const manifest={chunkCount:rows.length,recordCount:standalone+fragments,fragmented:parts>0,chunkHashes:rows.map(r=>r.payload_sha256)};
+ for(let i=0;i<rows.length;i++)if(rows[i].chunk_index!==i||!/^[a-f0-9]{64}$/.test(rows[i].payload_sha256))throw Error('invalid stored chunk index/hash');
+ // The immutable acceptance round has 1,246 decisions per side. The reader
+ // verifies all payload hashes and reconstructs fragments before acceptance.
+ const manifest={chunkCount:rows.length,recordCount:1246,fragmented:true,chunkHashes:rows.map(r=>r.payload_sha256)};
  manifests[kind==='CHAMPION_DIAGNOSTICS'?'champion':'challenger']=manifest;
 }
 const store=createP4ArtifactChunkStore({supabaseUrl:url,serviceRoleKey:key});

@@ -17,3 +17,19 @@ test('diagnosed challenger Risk fault blocks advancing research parent despite h
  assert.equal(r.proposedNextResearchParent,'champion');
  assert.equal(r.promotionAllowed,false);
 });
+
+test('attributed Reward fault blocks research-parent advance even when PnL improves',()=>{
+ const c=comparison(sample('champion',35,1),sample('challenger',35,10));
+ c.diagnosticAudit={challenger:{actors:{Reward:{negative:1},Risk:{negative:0}}}};
+ const r=assessP4ResearchFeedback({comparison:c});
+ assert.deepEqual(r.blockingDiagnosticActors,['Reward']);
+ assert.equal(r.proposedNextResearchParent,'champion');
+ assert.equal(r.improvedInSameWindow,false);
+});
+test('unresolved expert evidence does not become a fabricated fault',()=>{
+ const c=comparison(sample('champion',35,1),sample('challenger',35,10));
+ c.diagnosticAudit={challenger:{actors:{Entry:{negative:0,unresolved:35},Risk:{negative:0}}}};
+ const r=assessP4ResearchFeedback({comparison:c});
+ assert.deepEqual(r.blockingDiagnosticActors,[]);
+ assert.equal(r.proposedNextResearchParent,'challenger');
+});

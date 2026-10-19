@@ -47,7 +47,7 @@ jobs:
           for(const side of ["champion","challenger"]){
             const s=report.summary[side];
             lines.push("|"+side+"|"+s.sourceRecords+"|"+s.before.reviewed+"|"+s.after.reviewed+"|");
-            lines.push("","### "+side+" diagnostic coverage","","```json",JSON.stringify({outcomes:s.outcomes,addedByActor:s.addedByActor,attributionAfter:s.attributionAfter,missingAfter:s.missingAfter},null,2),"```");
+            lines.push("","### "+side+" diagnostic coverage","","```json",JSON.stringify({outcomes:s.outcomes,byOutcome:s.byOutcome,addedByActor:s.addedByActor,attributionAfter:s.attributionAfter,missingAfter:s.missingAfter},null,2),"```");
           }
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join("\n")+"\n");
           '

@@ -270,3 +270,9 @@ group by artifact_kind;
 - `09412ee0ba19d3b00e24e24aab03b2d04604ab29`：抽出 `assertP4ClosedArchiveTimes` 供測試與原執行路徑共用，避免測試與正式防護分岔；Railway 部署 SUCCESS。
 - `4827afed9951babebdbe3ce0f47f42f4846b68dc`：新增兩項回歸測試，分別確認 Champion/Challenger 的錯誤或缺失結算時間被阻擋，以及零損益/未知勝負不會被捏造為校準有效。Railway **611/611 PASS，0 fail**；截至紀錄時部署狀態 BUILDING，待確認 SUCCESS。
 - 仍未啟動新的真實 24 個月研究回合；既有 immutable artifacts 不變，研究模式不下單、不更新模型、不升級 Champion。
+
+### 2026-10-19 依使用者指示調整 P4 優先順序
+- 使用者明確重申：私人及少數朋友使用的**投資研究顧問**，不執行真實下單；停止新增非必要商業級防護，優先完成 AI 診斷、Challenger 自主學習與獨立驗證。
+- `c8928fdd` 將手動 24m workflow 的 `P4_PARTITIONED` 設為 TRUE；`f5b24a06` 在後端限制 24m 需時間分割，`9ce2e45a` 修正既有測試的預期。時間分割是目前工程選擇，非使用者確認的永久固定比例需求；最新 Railway 測試/部署仍須核對。
+- 程式核對：`p4-research-cycle.mjs` 會依研究回饋選擇下一研究父版本；`p4-research-feedback.mjs` 目前僅用同窗口成本後淨損益且至少 30 筆 CLOSED 比較；`p4-partitioned-research-cycle.mjs` 只保留未使用的 OOS 區間，回傳 `RESERVED_NOT_EVALUATED`，**尚未執行獨立 OOS 驗證**。
+- 下一個主要開發任務：在不洩漏未來資料、不自動升級正式 Champion 的前提下，完成 OOS 獨立回放、成本與風險績效比較，以及診斷驅動的 Challenger 參數更新；避免持續堆疊無關防護。

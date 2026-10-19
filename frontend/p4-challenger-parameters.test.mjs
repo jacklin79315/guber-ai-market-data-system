@@ -7,3 +7,11 @@ test('each mutation changes exactly one parameter and stays in bounds',()=>{for(
 test('invalid ranges are rejected',()=>{assert.throws(()=>validateTrainingParameters({...defaults,rewardStopAtr:50}),/invalid parameter/);assert.throws(()=>validateTrainingParameters({...defaults,entryLookback:1.5}),/invalid parameter/)});
 test('invalid seed and unknown parameters are rejected',()=>{assert.throws(()=>generate({parent:defaults,seed:-1}),/seed/);assert.throws(()=>validateTrainingParameters({...defaults,unknown:1}),/shape/)});
 test('mutation never modifies parent parameters',()=>{const p={...defaults};generate({parent:p,seed:4});assert.deepEqual(p,defaults)});
+
+test('attributed expert focus explores only its owned parameter family',()=>{
+ for(const actor of ['Entry','Reward'])for(let i=0;i<50;i++){
+  const result=generate({parent:defaults,seed:19,iteration:i,preferredActor:actor});
+  assert.ok(result.mutatedParameter.startsWith(actor.toLowerCase()));
+  assert.equal(Object.keys(defaults).filter(k=>result.parameters[k]!==defaults[k]).length,1);
+ }
+});

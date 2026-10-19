@@ -221,3 +221,10 @@ group by artifact_kind;
 - `aa232aa5`：縮小原本 payload manifest 分頁並加入暫時性錯誤重試；`23a077bf`：改成 metadata-only (`chunk_index,payload_sha256`) 索引，完整 payload 由原有 store reader 分批讀取並驗證 SHA256、重組碎片；`33d6f3aa`：輕量索引分頁調為 100；`a9a69fce`：修正 Actions 摘要 shell 引號；`0d56d567`：HTTP 錯誤含 requestId、offset；`b37096d8`：拒絕超出分頁上限；`526ce2e8`：區分 JSON 解碼與 HTTP 錯誤。
 - `b37096d8` Railway build 已 600 tests pass / 0 fail，當時 deployment 尚 DEPLOYING；`526ce2e8` 待 CI 驗證。
 - **阻塞：尚無新 GitHub Actions 歷史重評 PASS artifact**。切勿宣稱 1246+1246 筆已完成新一輪重評；仍需確認真實 decisionInputCoverage、六專家責任歸因與 OOS 有效性。系統研究專用，不下真單、不自動改模型。
+
+### 2026-10-19 P4 歷史重評正式解除阻塞（Actions 39275063376）
+- GitHub Actions run `39275063376` job `118137096046`，commit `3ebbe5c13df06a2302171f50cc0bf70447f19e59`：**SUCCESS**；artifact `p4-24m-readonly-reassessment` ID `12196532863`，已下載解析 `p4-reassessment-report.json`，`status=PASS`，`ordersEnabled=false`，`modelUpdateApplied=false`。
+- 完整讀取及重組 immutable chunk：Champion 254、Challenger 201，兩組各 1246 決策。Champion CLOSED 118 / SHADOW 19 / WAIT 1109；Challenger CLOSED 119 / SHADOW 15 / WAIT 1112。RETURN 均 0。
+- 完整六專家診斷兩組皆 **0/1246**；Risk SOUND Champion 1227、Challenger 1231；其餘 Entry/Reward/Win/Time/Brain 仍缺因果歸因證據，不得宣稱模型已學習或改善收益。
+- 已核對有效輸入：Champion APPROVE 且勝率未知 69，Challenger 66；CLOSED 勝率數值覆蓋兩組皆 58，SHADOW 兩組皆 10。SHADOW 不算已結算交易。
+- `3ebbe5c1` Railway deployment `c13f2252-0d4a-41e5-ac42-36c9f3fb3c5b` SUCCESS，600 tests pass / 0 fail。先前 HTTP 500 阻塞已於此輪正式歷史重評解除。下一階段聚焦可驗證的因果證據及獨立 OOS 驗證；禁止自動下單與自動更新正式權重。

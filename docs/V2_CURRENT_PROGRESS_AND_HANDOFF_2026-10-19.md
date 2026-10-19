@@ -148,3 +148,9 @@ group by artifact_kind;
 - **重要校正**：分段 APPROVE 紀錄中 `accountAtDecision.equity/committedCapital/allocation` 三個數值欄位完整者 **0/19、0/15**，因此先前「全部 APPROVE Risk 資金占用欄位完整」只適用 standalone 子集（Champion 118、Challenger 119），**不得擴大宣稱為全部 APPROVE**。
 - 分段 APPROVE 同時有數值型 `winProbability`、`expectedValue`：Champion **10/19**、Challenger **10/15**；合併 standalone 後各有 68 筆。全體 APPROVE Champion 137、Challenger 134；其他欄位品質及完整 JS 診斷待正式驗證。
 - SQL 重組僅驗證 JSON 解析與 part 數量，**不等同 SHA256 chunk integrity 或 JS reassessment PASS**。無模型更新、無下單、無資料修改。
+
+### P4 全部歷史紀錄 outcome 分類核對（2026-10-19）
+- Champion 1246：CLOSED 118、SHADOW 19、WAIT 1109、RETURN 0。
+- Challenger 1246：CLOSED 119、SHADOW 15、WAIT 1112、RETURN 0。
+- 已重組的所有分段 APPROVE 紀錄皆為 SHADOW（Champion 19、Challenger 15）；先前完整 account/allocation 數值的 standalone APPROVE 則屬 CLOSED。**SHADOW 不能當作已結算績效，CLOSED 與 WAIT/SHADOW 應分開分析。**
+- 以上為 SQL 唯讀 JSON 重組及分類統計，並非 SHA256 驗證的 JS 診斷重評，尚無可核實的正式 before/after coverage report。

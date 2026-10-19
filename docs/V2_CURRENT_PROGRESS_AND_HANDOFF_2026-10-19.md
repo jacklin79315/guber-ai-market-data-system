@@ -369,3 +369,8 @@ group by artifact_kind;
 ### 2026-10-20 P4 OOS 輸出補強
 - `5e008dc2` 將完整 OOS `champion`/`selected` 指標（含 CLOSED 數、淨損益）、樣本充足性、選擇版本與改善標記輸出到 GitHub Actions 執行日誌，供**新啟動**研究核對；不是 Supabase 永久 OOS 報告，不能回填舊任務。
 - 已完成的 UNGUIDED job `p4_btc24m_control_20261020` 仍需單獨核實 OOS 數據；不可僅憑 `OOS_EVALUATED` 判定獲利。
+
+### 2026-10-20 P4 OOS 永久摘要保存實作
+- `d418419e` checkpoint 可選 `oosReport` 驗證；`f47f7752` partitioned 研究完成時透過現有 fenced checkpoint 保存 `validationStatus`、`independentValidation`、`promotionAllowed=false`、`selectedVersion`、`sufficient`、`metrics`（Champion 與 Selected 的交易數及淨損益）。`f47f7752` Railway SUCCESS。
+- `6c81371a` 新增 OOS checkpoint 持久化/非法數據測試；`2f5c6749` 不允許 OOS_EVALUATED 卻沒有 metrics；`5f94ff9f` 新增對應回歸測試。最新 Railway 尚待驗證。
+- 既有控制組 checkpoint 不會被新程式自動回填；勿重跑相同 job_id，應以新 ID 執行或另外設計受控回填。沒有執行任何實際交易或模型晉升。

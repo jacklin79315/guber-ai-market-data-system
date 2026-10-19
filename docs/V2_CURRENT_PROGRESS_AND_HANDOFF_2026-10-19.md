@@ -90,3 +90,8 @@ group by artifact_kind;
 - 新增 `frontend/p4-actor-assessment-merge.test.mjs` 測試：同角色多項 FAULT 不應造成診斷重複角色錯誤；Risk SOUND／FAULT 不論順序皆須保留 FAULT 及所有證據。
 - GitHub 依序提交：`3de90bbc`、`83ce044e`、`223ff5f2`、`8e7dbf32`。**提交成功不等於 CI 通過**；下一步必須查自動歷史重評及測試是否通過，確認保存資料的 before/after 與缺失歸因統計，才可標記驗收。
 - 安全邊界不變：無真實交易、無模型權重回寫、無 Champion 晉升；P4 尚未驗收完成。
+
+### P4 診斷合併修正驗證補記（2026-10-19）
+- Railway `uber-v2-control-center` commit `d15c1fe75db7ab0a3fabbf6b89b2c99649af5ac9`，deployment `cffbcd1c-19ad-4692-a981-73712c6ba85f` 狀態 **SUCCESS**；建置測試輸出 **594 pass**。前一版 `dd75f278` 因新增測試檢出合併理由被拆成字元而失敗（593 pass、1 fail），已在 `d15c1fe7` 修復。
+- 此驗證證明程式測試／Railway 建置成功，**不是** GitHub 歷史重評 workflow 成功或歷史歸因統計已改變。GitHub Actions 新 run ID 與 24 月前後統計仍待查證。
+- 另查 Supabase `p4_diagnostic_research_summaries`，最新可見 `p4_auto_20261019_d_job_1` 於 2026-10-18 22:11 UTC 已存檔，status `OOS_RESEARCH_EVALUATED`，followUpPlan 標示 `SELECTED_CHALLENGER_DID_NOT_IMPROVE_OOS`，**不可誤當 OOS 提升或正式晉升**。此為既存研究摘要，不是本次修正新跑的 24 月歷史重評。

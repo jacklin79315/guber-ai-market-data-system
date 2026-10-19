@@ -95,3 +95,19 @@ export function assessP4ProposalInvariants({evidence}={}){
  }
  return results;
 }
+
+// Combine independent checks without hiding a fault behind a narrower SOUND.
+// This remains one attribution per actor, as required by P4_DIAGNOSIS_V1.
+export function mergeP4ActorAssessments(assessments){
+ const result=new Map();
+ const priority={UNKNOWN:0,SOUND:1,FAULT:2};
+ for(const assessment of assessments){
+  const previous=result.get(assessment.actor);
+  if(!previous){result.set(assessment.actor,{...assessment,evidenceKeys:[...assessment.evidenceKeys]});continue;}
+  const keys=[...new Set([...previous.evidenceKeys,...assessment.evidenceKeys])];
+  const reasons=[...new Set([previous.reason,...assessment.reason])].join(' | ');
+  const winner=priority[assessment.quality]>priority[previous.quality]?assessment:previous;
+  result.set(assessment.actor,{...winner,reason:reasons,evidenceKeys:keys});
+ }
+ return [...result.values()];
+}

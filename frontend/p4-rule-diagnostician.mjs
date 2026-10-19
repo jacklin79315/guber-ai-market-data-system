@@ -105,7 +105,7 @@ export function mergeP4ActorAssessments(assessments){
   const previous=result.get(assessment.actor);
   if(!previous){result.set(assessment.actor,{...assessment,evidenceKeys:[...assessment.evidenceKeys]});continue;}
   const keys=[...new Set([...previous.evidenceKeys,...assessment.evidenceKeys])];
-  const reasons=[...new Set([previous.reason,...assessment.reason])].join(' | ');
+  const reasons=[...new Set([previous.reason,assessment.reason])].join(' | ');
   const winner=priority[assessment.quality]>priority[previous.quality]?assessment:previous;
   result.set(assessment.actor,{...winner,reason:reasons,evidenceKeys:keys});
  }

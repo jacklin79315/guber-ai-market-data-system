@@ -323,3 +323,9 @@ group by artifact_kind;
 - 確認 `p4-challenger-comparison.mjs` 會實際計算六角色 `diagnosticAudit` 並傳給研究回饋，並非只有測試資料。
 - `0f4a15f1`：跨輪 Entry/Reward 探索焦點改為比較 Challenger 相對 Champion 的已歸因負面事件增量，不再只看 Challenger 絕對數；`9ef894b6` 增加雙方相同 Entry 負面事件時不得偏向 Entry 的測試。
 - Railway 最新版仍 BUILDING，尚待驗收；尚未進行真實 24 個月 OOS 績效比較或證明參數方向具有預測改善。
+
+### 2026-10-20 P4 診斷引導與一般探索對照準備
+- 前版 `c04b699f` Railway **621/621 PASS**，部署 SUCCESS。
+- `d0fc53af`：研究循環新增 `explorationMode`，`DIAGNOSTIC_GUIDED`（預設）按 Entry/Reward 相對負面診斷選參數家族，`UNGUIDED` 忽略診斷，沿用確定性種子變異；每輪與回傳結果記錄模式，供同資料同種子對照。
+- `894c5d8f`：新增未引導模式可重現性測試，確保診斷事件不影響控制組變異。Railway 尚在建置，未宣稱通過。
+- 注意：尚未實際執行 guided/unguided 的 24 個月歷史 OOS 對照；模式切換與單元測試不代表績效改善。

@@ -115,3 +115,9 @@ group by artifact_kind;
 - Railway commit `bb86daf5` deployment `69e20020-fbb0-49fd-bc74-b743c9fd8191` **SUCCESS**；Node 測試 **596 pass / 0 fail**。
 - Supabase 唯讀查詢 `p4_research_artifact_chunks`，job `p4_btc_24m_accept_20261018` iteration 1：Champion `CHAMPION_DIAGNOSTICS` **254 chunks**（1227 standalone items + 243 fragments / 19 fragment starts，推算 1246 records）；Challenger `CHALLENGER_DIAGNOSTICS` **201 chunks**（1231 standalone items + 190 fragments / 15 fragment starts，推算 1246 records）。chunk_index 皆從 0 連續至最後索引；完整 SHA256／fragment 重組驗證仍需既有 reader workflow。
 - GitHub 連接器僅提供 commit 對應 PR workflow runs，無法列出 push/workflow_dispatch 歷史 run；目前未取得 GitHub Actions 24 月重評 run ID／完整結果。不可將既存 artifact 數量誤報為新版 reassessment 成果；P4 未驗收。
+
+### P4 24 月保存資料：唯讀證據可用性盤點（非正式重評）
+- 直接查詢 Supabase `p4_research_artifact_chunks`，排除 `__p4_fragment_v1` 分段資料；Champion 1227、Challenger 1231 筆可直接解析紀錄。兩組全部有 `evidence.expertHistory` 非空陣列，也全部原始 `diagnosis.requiresReview=true`。
+- `proposalAtDecision.expectedValue` 欄位有值：Champion 1167、Challenger 1170。注意「有值」不等於已校準／有預測效力。
+- `accountAtDecision.equity`、`committedCapital`、`allocation` 三欄皆有值：Champion 118、Challenger 119；僅代表 Risk 資金占用檢查的基本欄位齊備，尚須依動作／數值合法性判定能否歸因。其他紀錄可能為 WAIT／RETURN，不能把未滿足 APPROVE 檢查條件直接當作 Risk 缺陷。
+- 此 SQL 盤點**不包含**分段後重組的各 19／15 筆紀錄，**沒有**執行完整 SHA256 讀取與 JS `reassessP4PersistedDiagnostics`，也不是 GitHub Actions 重評結果。需完整報告才能評估六專家覆蓋率前後變化。

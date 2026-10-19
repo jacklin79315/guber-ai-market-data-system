@@ -189,3 +189,8 @@ group by artifact_kind;
 - Champion 1246: CLOSED 118, SHADOW 19, WAIT 1109；Challenger 1246: CLOSED 119, SHADOW 15, WAIT 1112。RETURN 均 0；分類加總一致。
 - `byOutcome` 已確實出現在正式 artifact：兩組 CLOSED/WAIT Risk missing=0；SHADOW Risk missing 分別 19/15；Entry、Reward、Win、Time、Brain 在各類全部缺失。兩組 beforeReviewed=afterReviewed=0，仍是 **診斷完整度 0**，不可混淆成分類報告驗收失敗。
 - 後續優先依可驗證的逐專家證據補齊歸因，保持 UNKNOWN 不臆測，嚴禁根據 SHADOW 誤算已結算績效；未授權自動下單/自動權重更新。
+
+### P4 Reward 數學不變條件增量（2026-10-19）
+- `6057c1f28fa3f9e0c30623665c6b396b8b87b933`：核准提案若 `expectedLoss<=0` 或 `riskReward<0` 且欄位為有限數值，新增 Reward FAULT；缺值維持 UNKNOWN，不依 PnL 判定。
+- `11417121caf3dd3253f3880b1e03e2894bd457ed`：新增兩項 Reward 單元測試，Railway deployment `24c21d77-e802-433d-9a46-c22bcad3a949` **SUCCESS**，**599 tests pass / 0 fail**。
+- `.github/workflows/p4-existing-diagnostic-reassessment.yml` 對規則檔 push 有自動觸發；尚未取得上述新規則對應 Actions run 的歷史重評報告，故 **不可宣稱 24m 資料已有 Reward FAULT**。

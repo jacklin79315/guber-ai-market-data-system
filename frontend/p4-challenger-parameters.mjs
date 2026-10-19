@@ -7,12 +7,18 @@ export function validateTrainingParameters(params){
  for(const k of keys){const {min,max,step}=SPECS[k],v=params[k];if(!Number.isFinite(v)||v<min-1e-9||v>max+1e-9||Math.abs((v-min)/step-Math.round((v-min)/step))>1e-6)throw Error('invalid parameter '+k)}
  return structuredClone(params);
 }
-export function generateChallengerParameters({parent,seed,iteration=0,preferredActor=null}={}){
+export function generateChallengerParameters({parent,seed,iteration=0,preferredActor=null,directedProbe=null}={}){
  const current=validateTrainingParameters(parent);
  if(!Number.isSafeInteger(seed)||seed<0||!Number.isSafeInteger(iteration)||iteration<0)throw Error('invalid mutation seed');
  // Integer-only deterministic mixing, independent of Math.random and process state.
  let x=(seed^(Math.imul(iteration+1,0x9e3779b1)))>>>0;
  const next=()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return x>>>0};
+ if(directedProbe!==null){
+  const {parameter,direction}=directedProbe;
+  if(!Object.hasOwn(SPECS,parameter)||![1,-1].includes(direction))throw Error('invalid directed research probe');
+  const {min,max,step}=SPECS[parameter],at=Math.round((current[parameter]-min)/step),ticks=Math.round((max-min)/step),candidate=at+direction;
+  if(candidate>=0&&candidate<=ticks){current[parameter]=round(min+candidate*step);return {parameters:validateTrainingParameters(current),mutatedParameter:parameter,from:parent[parameter],to:current[parameter],seed,iteration,probeSource:'PRIOR_SAME_WINDOW_RESULT'};}
+ }
  const preferredKeys=preferredActor==='Entry'?keys.filter(k=>k.startsWith('entry')):preferredActor==='Reward'?keys.filter(k=>k.startsWith('reward')):keys;
  const offset=next()%preferredKeys.length;
  for(let j=0;j<preferredKeys.length;j++){

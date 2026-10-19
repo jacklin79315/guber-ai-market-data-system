@@ -374,3 +374,8 @@ group by artifact_kind;
 - `d418419e` checkpoint 可選 `oosReport` 驗證；`f47f7752` partitioned 研究完成時透過現有 fenced checkpoint 保存 `validationStatus`、`independentValidation`、`promotionAllowed=false`、`selectedVersion`、`sufficient`、`metrics`（Champion 與 Selected 的交易數及淨損益）。`f47f7752` Railway SUCCESS。
 - `6c81371a` 新增 OOS checkpoint 持久化/非法數據測試；`2f5c6749` 不允許 OOS_EVALUATED 卻沒有 metrics；`5f94ff9f` 新增對應回歸測試。最新 Railway 尚待驗證。
 - 既有控制組 checkpoint 不會被新程式自動回填；勿重跑相同 job_id，應以新 ID 執行或另外設計受控回填。沒有執行任何實際交易或模型晉升。
+
+### 2026-10-20 P4 OOS 模型來源驗證
+- `13ead74e` 強制 OOS selectedVersion 來源為研究前綴的 Champion 或已完成 Challenger；Railway SUCCESS。
+- `3a33cf7b` 加入 frozen selection 來源測試；`69b1b1a3` 調整先驗證模型來源、再讀取參數的順序；最新版本部署測試待確認。
+- OOS 結果 checkpoint 保存只對新研究有效；舊控制組沒有自動回填。診斷引導與未引導 OOS 實際績效尚未配對驗證。

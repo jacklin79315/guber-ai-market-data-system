@@ -384,3 +384,9 @@ group by artifact_kind;
 - GitHub commit `05bc9829b1bc4abf192a3941d6f7739b7bff4c76` Railway SUCCESS，628 tests / 628 pass / 0 fail；OOS checkpoint 持久化、來源驗證及回歸測試已通過建置。
 - Supabase 唯讀核實 `p4_btc24m_control_20261020` checkpoint `COMPLETED` / 3 iterations，但 `oosReport=null`（舊版任務）；未查得 `p4_btc24m_guided_20261020` 完成 checkpoint。不可將舊版缺失 OOS 指標視為零。
 - 下一步以新 job_id 執行同時間窗、同 seed、同 3 輪之 DIAGNOSTIC_GUIDED/UNGUIDED 配對研究，兩組皆需完整 OOS 指標及交易數；驗證前不宣稱學習有效、不自動晉升 Champion、不下實單。
+
+### 2026-10-20 診斷引導組實際 24m 研究結果（Actions run 39297381416）
+- 工作成功完成；job_id `p4_btc24m_DIAGNOSTIC_GUIDED_39297381416`；17,520 BTCUSDT 1h K 線，3 輪，HISTORICAL_24M、PARTITIONED=TRUE，OOS_EVALUATED，independentValidation=true，promotionAllowed=false。
+- OOS 3,504 根：Champion 90 CLOSED、勝率 34.44%、net PnL -188.62954878807437 USD、profitFactor 0.454895；selected 88 CLOSED、勝率 35.23%、net PnL -196.082788827089 USD、profitFactor 0.449239。Selected 較 Champion 差 7.45324 USD，不能晉升或聲稱穩定獲利。
+- Supabase checkpoint 確認保存 OOS selected net PnL -196.082788827089；三輪 preferredActor 均 null，且三輪 in-sample PnL 完全與舊 UNGUIDED 控制組相同（-280.67、-272.31、-235.17 challenger），故本次 DIAGNOSTIC_GUIDED **沒有實際觸發診斷導向變異**。必須先診斷此現象，不能據此聲稱引導學習優於對照。
+- 舊 UNGUIDED 控制組無 OOS report，不能與此輪直接進行完整配對 OOS 績效比較；下一步先核查診斷回饋可用性與 preferredActor 決策原因，再決定是否需要新的配對研究。

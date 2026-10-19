@@ -41,6 +41,15 @@ for(const side of ['champion','challenger']){
  if(manifest.recordCount!==1246||report?.sourceRecords!==manifest.recordCount)throw Error('incomplete 24-month historical reassessment: '+side);
  if(report.before.reviewed+report.before.unresolved!==report.sourceRecords||report.after.reviewed+report.after.unresolved!==report.sourceRecords)throw Error('invalid reassessment coverage totals: '+side);
  if(report.modelUpdateApplied!==false)throw Error('unsafe model update flag: '+side);
+ const inputs=decisionInputCoverage[side];
+ if(!inputs||inputs.totalEvents!==report.sourceRecords||inputs.ordersEnabled!==false||inputs.modelUpdateApplied!==false)throw Error('invalid input coverage contract: '+side);
+ if(Object.values(inputs.byOutcome??{}).reduce((n,row)=>n+row.records,0)!==report.sourceRecords)throw Error('invalid input coverage totals: '+side);
+ for(const outcome of ['CLOSED','SHADOW','WAIT','RETURN']){
+  const slot=inputs.byOutcome[outcome];
+  if(!slot||slot.records!==report.outcomes[outcome]||slot.approved>slot.records||slot.proposalPresent>slot.records||slot.expertHistoryPresent>slot.records)throw Error('invalid input outcome: '+side+'/'+outcome);
+  for(const fields of Object.values(slot.fieldCounts??{}))for(const count of Object.values(fields))if(!Number.isInteger(count)||count<0||count>slot.proposalPresent)throw Error('invalid causal field count: '+side+'/'+outcome);
+ }
+
  const by=report.byOutcome;
  if(!by||typeof by!=='object')throw Error('missing per-outcome diagnostic report: '+side);
  const actors=['Entry','Reward','Win','Risk','Time','Brain'];

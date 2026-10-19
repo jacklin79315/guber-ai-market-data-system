@@ -317,3 +317,9 @@ group by artifact_kind;
 - `cfe66dbc` 改由上一輪已保存的 `ledgerSnapshot` 優先取得診斷，Railway **619/619 PASS**，部署進行中。
 - `60877a5e` 補上 Reward 診斷引導下一輪 Reward 參數探索的跨輪測試，Railway 尚待建置驗收。
 - 目前實現「已歸因問題 → 下一輪參數家族選擇 → 研究回放」初步閉環；仍未證明參數方向最佳、OOS 改善或穩定獲利，也不自動下單／升級 Champion。
+
+### 2026-10-19 P4 相對診斷探索修正
+- 上一版 `0c98daf5` Railway **620/620 PASS**，部署 SUCCESS。
+- 確認 `p4-challenger-comparison.mjs` 會實際計算六角色 `diagnosticAudit` 並傳給研究回饋，並非只有測試資料。
+- `0f4a15f1`：跨輪 Entry/Reward 探索焦點改為比較 Challenger 相對 Champion 的已歸因負面事件增量，不再只看 Challenger 絕對數；`9ef894b6` 增加雙方相同 Entry 負面事件時不得偏向 Entry 的測試。
+- Railway 最新版仍 BUILDING，尚待驗收；尚未進行真實 24 個月 OOS 績效比較或證明參數方向具有預測改善。

@@ -4,8 +4,8 @@ import {runP4ResearchIteration} from './p4-single-iteration.mjs';
 import {validateTrainingParameters} from './p4-challenger-parameters.mjs';
 // Bounded research loop only. No Champion promotion, persistence, or live orders.
 // A research parent may change; the ledger Champion remains immutable.
-export async function runP4ResearchCycle({championVersion,championParameters,iterations,seed,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},otherReplayOptions={},shouldStop=()=>false,onIteration,resumeRounds=[]}={}){
- if(typeof championVersion!=='string'||!championVersion||!Number.isSafeInteger(iterations)||iterations<1||iterations>100||!Number.isSafeInteger(seed)||seed<0||typeof shouldStop!=='function'||(onIteration!==undefined&&typeof onIteration!=='function'))throw Error('invalid P4 research cycle configuration');
+export async function runP4ResearchCycle({championVersion,championParameters,iterations,seed,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions={},otherReplayOptions={},shouldStop=()=>false,onIteration,resumeRounds=[],explorationMode='DIAGNOSTIC_GUIDED'}={}){
+ if(typeof championVersion!=='string'||!championVersion||!Number.isSafeInteger(iterations)||iterations<1||iterations>100||!Number.isSafeInteger(seed)||seed<0||!['DIAGNOSTIC_GUIDED','UNGUIDED'].includes(explorationMode)||typeof shouldStop!=='function'||(onIteration!==undefined&&typeof onIteration!=='function'))throw Error('invalid P4 research cycle configuration');
  const recovery=restoreP4ResearchRounds({championVersion,championParameters,iterations,rounds:resumeRounds});
  let parentVersion=recovery.parentVersion,parentParameters=recovery.parentParameters;
  const ledger=recovery.completed.at(-1)?.ledgerSnapshot?structuredClone(recovery.completed.at(-1).ledgerSnapshot):createTrainingLedger({championVersion});
@@ -22,9 +22,9 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
   const challenger=previousAudit?.challenger?.actors;
   const entry=Math.max(0,(challenger?.Entry?.negative??0)-(baseline?.Entry?.negative??0));
   const reward=Math.max(0,(challenger?.Reward?.negative??0)-(baseline?.Reward?.negative??0));
-  const preferredActor=entry>reward&&entry>0?'Entry':reward>entry&&reward>0?'Reward':null;
+  const preferredActor=explorationMode==='DIAGNOSTIC_GUIDED'?(entry>reward&&entry>0?'Entry':reward>entry&&reward>0?'Reward':null):null;
   const result=await runP4ResearchIteration({ledger:iterationLedger,runId,challengerVersion,seed,iteration:i,preferredActor,championParameters:parentParameters,candles,featureAtDecision,historyAtDecision,brain,costs,accountOptions,otherReplayOptions});
-  completed.push({iteration:i+1,runId,challengerVersion,preferredActor,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger),ledgerHistoryComplete});
+  completed.push({iteration:i+1,runId,challengerVersion,explorationMode,preferredActor,candidate:result.candidate,feedback:result.feedback,ledgerSnapshot:structuredClone(ledger),ledgerHistoryComplete});
   if(result.feedback.proposedNextResearchParent===challengerVersion){
    parentVersion=challengerVersion;
    parentParameters=validateTrainingParameters(result.candidate.parameters);
@@ -40,5 +40,5 @@ export async function runP4ResearchCycle({championVersion,championParameters,ite
    active.diagnosticArtifactManifest=structuredClone(archived.diagnosticArtifactManifest);
   }
  }
- return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,iterations:completed,ledger:structuredClone(ledger),ledgerHistoryComplete,independentValidation:false,promotionAllowed:false};
+ return {status:completed.length===iterations?'RESEARCH_CYCLE_COMPLETED':'RESEARCH_CYCLE_STOPPED',championVersion:ledger.championVersion,researchParentVersion:parentVersion,completedIterations:completed.length,explorationMode,iterations:completed,ledger:structuredClone(ledger),ledgerHistoryComplete,independentValidation:false,promotionAllowed:false};
 }

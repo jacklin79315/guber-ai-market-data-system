@@ -100,3 +100,8 @@ group by artifact_kind;
 - 回歸測試 commit `6f4737ab` Railway 部署 `ef5b12f3-91ed-494f-b2ed-7546f926c00d` **SUCCESS**，建置測試 **595 pass / 0 fail**；涵蓋舊 SOUND 與新 FAULT 衝突時不覆寫原始診斷。
 - GitHub workflow `.github/workflows/p4-existing-diagnostic-reassessment.yml` commit `e7d8c911`：重新評估輸出存成 `p4-reassessment-report.json`，成功後在 GitHub Actions Step Summary 顯示 Champion/Challenger before/after 與各角色 SOUND/FAULT/UNKNOWN、missingAfter；同時上傳 14 天保留的報告 artifact。保留 SHA256 驗證、唯讀、無模型更新與無真實下單。
 - **待驗證**：新 workflow 的實際 run ID、執行結論、24 月完整歷史 before/after 數據；不能僅因 workflow 提交成功就標記完成，也不可拿既存 OOS 研究摘要代替本次重評。
+
+### P4 歷史專家名稱正規化缺口（待驗證）
+- 發現 `assessP4ExpertHistory` 先用 `String(...).replace(/[-_ ]/g,'').toLowerCase()` 正規化名稱，卻只在 `actorFor` 中定義駝峰 `winProbability` 與 `riskPosition`，造成 `win_probability`／`risk_position` 等格式無法識別；缺失的診斷證據不能推斷為 SOUND。
+- commit `8510c7bc` 補上正規化 `winprobability`、`riskposition` 對應，commit `1d1b83e9` 加入多種名稱回歸測試。**待 Railway 建置與既存歷史重評驗證**。
+- workflow `e7d8c911` 已設定歷史重評報告與 artifact，但此處尚未取得可核對的 GitHub Actions run ID 或 24 月重評統計，不能標記歷史重評 PASS。

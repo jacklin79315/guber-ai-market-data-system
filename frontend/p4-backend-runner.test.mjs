@@ -17,3 +17,9 @@ test('24-month BTC research is opt-in, partitioned and bounded',()=>{
  assert.throws(()=>parseP4RunnerOptions({...valid,P4_RESEARCH_SCOPE:'HISTORICAL_24M'}),/24-month research/);
  assert.throws(()=>parseP4RunnerOptions({...valid,P4_RESEARCH_SCOPE:'OTHER'}),/P4_RESEARCH_SCOPE/);
 });
+
+test('backend accepts both research modes and rejects unknown exploration mode',()=>{
+ assert.equal(parseP4RunnerOptions(valid).explorationMode,'DIAGNOSTIC_GUIDED');
+ assert.equal(parseP4RunnerOptions({...valid,P4_EXPLORATION_MODE:'UNGUIDED'}).explorationMode,'UNGUIDED');
+ assert.throws(()=>parseP4RunnerOptions({...valid,P4_EXPLORATION_MODE:'RANDOM'}),/P4_EXPLORATION_MODE/);
+});

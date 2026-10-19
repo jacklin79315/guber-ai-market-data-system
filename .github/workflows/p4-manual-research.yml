@@ -55,7 +55,7 @@ jobs:
       P4_AS_OF_MS: ${{ inputs.as_of_ms }}
       P4_ITERATIONS: ${{ inputs.iterations }}
       P4_RESEARCH_SCOPE: ${{ inputs.research_scope }}
-      P4_PARTITIONED: 'FALSE'
+      P4_PARTITIONED: ${{ inputs.research_scope == 'HISTORICAL_24M' && 'TRUE' || 'FALSE' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

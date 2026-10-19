@@ -347,3 +347,9 @@ group by artifact_kind;
 - `2b152501` Railway **625/625 PASS**，部署 SUCCESS。手動 24m workflow 可選探索模式，並傳入實際歷史研究。
 - `4cd3b24d` 修正 `p4-backend-runner.mjs` 終端輸出過去把 `independentValidation` 固定寫 `false` 的問題；現在回報真實 `validationStatus`、`independentValidation`、`explorationMode`，並保持 `promotionAllowed:false` / `liveTrading:false`。Railway 最新版 BUILDING，未完成驗收。
 - GitHub connector 目前未提供新建 workflow_dispatch 的動作，故尚未實際啟動 24m 歷史研究；不能把單元測試當成真實研究結果。兩組需各自獨立 job_id、相同資料窗及 seed，並分別檢查資料完整性、已結算樣本量與 OOS。
+
+### 2026-10-20 P4 24m 實際資料只讀核對
+- Railway `84dd84c3` 部署 SUCCESS、**625/625 PASS**；`4cd3b24d` 的 OOS CLI 輸出修正已併入最新部署。
+- Supabase `raw_candles` BTCUSDT/1h：26,420 根，時間唯一 26,420，跨全段時間間隔異常 0；`market_features` BTCUSDT/1h：26,220 根。
+- 可供手動 HISTORICAL_24M 工作的末端 17,520 根窗口：`P4_FROM_MS=1729353600000`、`P4_TO_MS=1792422000000`，raw 與 features 各 17,520 根；應在實際執行時選擇大於末根收盤時間的 `P4_AS_OF_MS`，並由 preflight 確認完整性。
+- 尚未觸發 Actions 或產生新研究績效。兩組模式使用相同窗口/seed、不同 job_id；避免重用舊 fingerprint checkpoint。

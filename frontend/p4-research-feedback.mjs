@@ -11,10 +11,9 @@ export function assessP4ResearchFeedback({comparison,minClosedTrades=30,diagnost
  };
  const champion=summarize(a),challenger=summarize(b);
  const sufficient=champion.closedTrades>=minClosedTrades&&challenger.closedTrades>=minClosedTrades;
- const risk=diagnosticAudit?.challenger?.actors?.Risk;
- const baselineRisk=diagnosticAudit?.champion?.actors?.Risk;
  const actors=diagnosticAudit?.challenger?.actors;
- const blockingActors=actors?['Entry','Reward','Win','Risk','Time','Brain'].filter(name=>Number.isSafeInteger(actors[name]?.negative)&&actors[name].negative>0):[];
+ const baselineActors=diagnosticAudit?.champion?.actors;
+ const blockingActors=actors?['Entry','Reward','Win','Risk','Time','Brain'].filter(name=>Number.isSafeInteger(actors[name]?.negative)&&actors[name].negative>0&&(!Number.isSafeInteger(baselineActors?.[name]?.negative)||actors[name].negative>baselineActors[name].negative)):[];
  const blockingRiskFault=blockingActors.includes('Risk');
  const improved=sufficient&&blockingActors.length===0&&challenger.netRealizedPnl>champion.netRealizedPnl;
  return {status:sufficient?'RESEARCH_EVIDENCE_ONLY':'INSUFFICIENT_RESEARCH_SAMPLES',champion,challenger,minClosedTrades,improvedInSameWindow:improved,blockedByDiagnosticRisk: blockingRiskFault,blockingDiagnosticActors:blockingActors,proposedNextResearchParent:improved?challenger.version:champion.version,independentValidation:false,promotionAllowed:false,reason:blockingActors.length?'Challenger has diagnosed expert faults ('+blockingActors.join(', ')+'); research parent cannot advance on PnL alone':sufficient?'Same-window net PnL is research feedback only; separate untouched validation required':'Insufficient settled trades for research selection'};

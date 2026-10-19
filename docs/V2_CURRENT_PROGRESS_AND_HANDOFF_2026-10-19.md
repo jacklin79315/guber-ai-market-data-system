@@ -245,3 +245,10 @@ group by artifact_kind;
 - CLOSED 中 `evidence.realizedWin` 明確 boolean = **0/118、0/119**；`evidence.closedAt` 數值時間戳記 = **0/118、0/119**。現行 `extractP4ClosedWinObservations` 同時要求有效機率、`decisionTime`、`closedAt`、`realizedWin`，故**目前可用校準樣本必為 0**，不是 58。
 - Champion CLOSED evidence 已確認有 `netPnl`、`exitReason`、`exitPrice`、`decisionTime`，但沒有 `realizedWin` 或 `closedAt`。**不得直接以 netPnl 正負推導並回填歷史 `realizedWin`，亦不得捏造 closedAt**；應先追查 replay CLOSED 事件原始結算時間與 outcome 定義、確定可驗證且無未來資訊洩漏後再新增證據輸出與新一輪 replay。
 - GitHub Actions commit `9e75d1d6` 的 workflow run 查詢當時為空；Railway `9e75d1d6` 部署 SUCCESS。以上 SQL 為直接資料庫觀察，不代表 Actions artifact 已完成重新驗證。
+
+### 2026-10-19 P4 CLOSED 因果結算證據驗證與舊資料防護
+- `frontend/p3-causal-history.mjs` 的 `attachClosedTimes` 可用同交易對、同週期的 `exitIndex` 對應原始 K 線 `closeTime`，並拒絕索引越界與非遞增 K 線；`frontend/p4-diagnostic-evidence.mjs` 可將 `closedTime` 保存為 `closedAt`，將非零且有限的已結算 `pnl` 標為 `realizedWin`。缺資料仍為 null，不可臆測。
+- Commit `32eb283edf0b1491d2e17a0b871875d393ed1565` 新增 CLOSED 結算時間與無效索引測試；Railway 607 tests pass / 0 fail，部署 SUCCESS。
+- Commit `9c2167ea648d818e10c15100efd83f36a53e5a93` 在唯讀舊歷史重評 runner 加入校準資格 fail-closed 防護：已知 immutable round 的 eligible 必須為 0，且 mode=RESEARCH_ONLY、promotionAllowed=false；Railway 607 tests pass / 0 fail，部署 SUCCESS。
+- **尚未定位完整 24 個月 replay 的呼叫端是否實際傳入 candles 與 exitIndex**，亦未啟動新的 24 個月 replay；舊 round 不得覆寫。此階段只驗證組件及安全門檻，**不可宣稱完整資料鏈已驗收或已具備自主學習能力**。
+- 下一步：找出 replay runner 真實入口及 `collectP4DiagnosticEvidence` 呼叫點，新增整合測試確認 CLOSED 的 `closedAt` / `realizedWin` 隨新 artifact 保存，並以獨立時間窗驗證校準資格；研究專用，不自動下單、不更新正式模型權重。

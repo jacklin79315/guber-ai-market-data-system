@@ -9,7 +9,7 @@ test('P4 artifact chunks are written, read back and verified',async()=>{
    rows.push({chunk_index:b.p_chunk_index,payload:JSON.parse(JSON.stringify(b.p_payload,(_key,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v)),payload_sha256:b.p_payload_sha256});
    return {ok:true,json:async()=>true};
   }
-  const u=new URL(_url),offset=Number(u.searchParams.get('offset')??0),limit=Number(u.searchParams.get('limit')??rows.length);
+  const u=new URL(url),offset=Number(u.searchParams.get('offset')??0),limit=Number(u.searchParams.get('limit')??rows.length);
   return {ok:true,json:async()=>rows.slice(offset,offset+limit)};
  };
  const store=createP4ArtifactChunkStore({supabaseUrl:'https://example.supabase.co',serviceRoleKey:'test',fetchImpl});

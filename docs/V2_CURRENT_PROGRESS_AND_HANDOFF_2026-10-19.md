@@ -183,3 +183,9 @@ group by artifact_kind;
 - Commit `0a8928d55132a58c0745f8495abc39804102047f` 在 `frontend/p4-persisted-diagnostic-reassessment.test.mjs` 增加 CLOSED/SHADOW/WAIT 分類隔離測試，檢查 Risk 缺證據只落在 SHADOW、分類總數與整體一致，以及不更新模型/不啟用交易。
 - Railway deployment `09c8f6f3-c261-4092-99c0-5f8040dbeff0` **SUCCESS**；Node tests **597 pass / 0 fail**。
 - 仍須核對含 `byOutcome` 的新版 GitHub Actions artifact；不得將 Railway test pass 視為 24 個月歷史重評驗收。
+
+### P4 24m byOutcome 正式驗收（2026-10-19）
+- GitHub Actions run `39266985531`, job `118109072090`, commit `530af7a31b9dfe82d04c942706a8b367a4d834dd` **SUCCESS**；artifact ID `12193173718` SHA256 `a9b3627d064fa294ed7d5e599acdacc89560586c885ddf5303e62b6d4c24b4bd`，已下載解析，`status=PASS`、`modelUpdateApplied=false`、`ordersEnabled=false`。
+- Champion 1246: CLOSED 118, SHADOW 19, WAIT 1109；Challenger 1246: CLOSED 119, SHADOW 15, WAIT 1112。RETURN 均 0；分類加總一致。
+- `byOutcome` 已確實出現在正式 artifact：兩組 CLOSED/WAIT Risk missing=0；SHADOW Risk missing 分別 19/15；Entry、Reward、Win、Time、Brain 在各類全部缺失。兩組 beforeReviewed=afterReviewed=0，仍是 **診斷完整度 0**，不可混淆成分類報告驗收失敗。
+- 後續優先依可驗證的逐專家證據補齊歸因，保持 UNKNOWN 不臆測，嚴禁根據 SHADOW 誤算已結算績效；未授權自動下單/自動權重更新。

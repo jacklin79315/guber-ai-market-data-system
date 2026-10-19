@@ -379,3 +379,8 @@ group by artifact_kind;
 - `13ead74e` 強制 OOS selectedVersion 來源為研究前綴的 Champion 或已完成 Challenger；Railway SUCCESS。
 - `3a33cf7b` 加入 frozen selection 來源測試；`69b1b1a3` 調整先驗證模型來源、再讀取參數的順序；最新版本部署測試待確認。
 - OOS 結果 checkpoint 保存只對新研究有效；舊控制組沒有自動回填。診斷引導與未引導 OOS 實際績效尚未配對驗證。
+
+### 2026-10-20 P4 最新部署驗收與待辦
+- GitHub commit `05bc9829b1bc4abf192a3941d6f7739b7bff4c76` Railway SUCCESS，628 tests / 628 pass / 0 fail；OOS checkpoint 持久化、來源驗證及回歸測試已通過建置。
+- Supabase 唯讀核實 `p4_btc24m_control_20261020` checkpoint `COMPLETED` / 3 iterations，但 `oosReport=null`（舊版任務）；未查得 `p4_btc24m_guided_20261020` 完成 checkpoint。不可將舊版缺失 OOS 指標視為零。
+- 下一步以新 job_id 執行同時間窗、同 seed、同 3 輪之 DIAGNOSTIC_GUIDED/UNGUIDED 配對研究，兩組皆需完整 OOS 指標及交易數；驗證前不宣稱學習有效、不自動晉升 Champion、不下實單。

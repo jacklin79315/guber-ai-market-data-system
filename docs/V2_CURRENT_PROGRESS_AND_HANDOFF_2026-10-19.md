@@ -353,3 +353,10 @@ group by artifact_kind;
 - Supabase `raw_candles` BTCUSDT/1h：26,420 根，時間唯一 26,420，跨全段時間間隔異常 0；`market_features` BTCUSDT/1h：26,220 根。
 - 可供手動 HISTORICAL_24M 工作的末端 17,520 根窗口：`P4_FROM_MS=1729353600000`、`P4_TO_MS=1792422000000`，raw 與 features 各 17,520 根；應在實際執行時選擇大於末根收盤時間的 `P4_AS_OF_MS`，並由 preflight 確認完整性。
 - 尚未觸發 Actions 或產生新研究績效。兩組模式使用相同窗口/seed、不同 job_id；避免重用舊 fingerprint checkpoint。
+
+### 2026-10-20 P4 24m 雙組手動研究執行參數（待觸發）
+- Supabase 只讀檢查：BTCUSDT 1h 末端 17,520 根原始資料及特徵均齊；`rsi_12`、`atr_percent`、`volume_ratio`、`macd` 在此窗口空值均為 0。
+- GitHub Actions workflow：`.github/workflows/p4-manual-research.yml`（手動 workflow_dispatch）。兩組共同參數：`research_scope=HISTORICAL_24M`、`from_ms=1729353600000`、`to_ms=1792422000000`、`as_of_ms=1792425600000`、`iterations=3`。兩組須使用相同預設 seed 7。
+- Guided：`exploration_mode=DIAGNOSTIC_GUIDED`、`job_id=p4_btc24m_guided_20261020`。
+- Control：`exploration_mode=UNGUIDED`、`job_id=p4_btc24m_control_20261020`。
+- 只讀核對兩個 job_id 在 `p4_research_checkpoints` 均尚不存在；GitHub connector 無 workflow_dispatch 啟動功能，故**兩組尚未觸發**。兩組應依序執行以避免資源競爭，並核對完成狀態、實際 OOS 已結算樣本與報告，不能只看 Actions SUCCESS。

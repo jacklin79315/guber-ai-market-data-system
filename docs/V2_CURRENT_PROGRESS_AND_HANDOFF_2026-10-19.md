@@ -167,3 +167,9 @@ group by artifact_kind;
 - Challenger 201 chunks / 1246 records；CLOSED 119、SHADOW 15、WAIT 1112。before reviewed 0/unresolved 1246；after reviewed **0**/unresolved **1246**。addedByActor Risk 1112，其餘五專家 0。Risk SOUND 1231、FAULT 0、missing 15；Entry/Reward/Win/Time/Brain 各 missing 1246。
 - **結論：執行及 artifact integrity PASS，但完整診斷覆蓋率仍 0%，不可宣稱 P4 診斷完成或模型改善。** Risk SOUND 只表示狹義規則符合，不代表完整風險品質；禁止依此調整權重或升級 Champion。
 - 後續：優先釐清為何既有 `assessP4ExpertHistory`、`assessP4ProposalInvariants` 未產生其餘五專家 SOUND（目前規則多數僅在可證明違規時輸出 FAULT，並不自動替正常流程給 SOUND）；設計有明確證據門檻的正向歸因與 UNKNOWN，不得憑 PnL 或無證據硬填完整度。
+
+### P4 分類重評報告程式驗證（2026-10-19）
+- Commit `2c65562ff548083da546604134da9459dd7408b5` 新增唯讀 `byOutcome`：CLOSED/SHADOW/WAIT/RETURN 各自記錄 records、beforeReviewed、afterReviewed、missingByActor。
+- Commit `94161205c72bb2a5d1a39531e73bdf0267fc07a1` 將 `byOutcome` 加入 GitHub Actions Step Summary（原始 JSON artifact 隨 runner 自動包含此欄位）。
+- Railway control center 部署 `085ad7b5-9467-46ba-9eb6-18ace128ae59` SUCCESS，Node tests 596 pass / 0 fail。
+- 尚未取得 **commit 94161205** 對應的 GitHub Actions 新重評 run/artifact；不可將 Railway 成功誤認為歷史重評完成。原先 run 39233114328 的正式結果仍有效，但其 commit 是 `070d4e52`、沒有 `byOutcome`。

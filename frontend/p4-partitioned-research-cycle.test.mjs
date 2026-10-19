@@ -25,6 +25,10 @@ test('completed research evaluates frozen parameters on untouched later candles 
  assert.equal(result.validationStatus,'OOS_INSUFFICIENT_CLOSED_TRADES');
  assert.equal(result.oosEvaluation.processedCandles,32);
  assert.equal(result.oosEvaluation.selectedBeforeOos,true);
+ assert.equal(result.oosEvaluation.timeWindowDiagnostics.length,2);
+ assert.equal(result.oosEvaluation.timeWindowDiagnostics[0].window,'EARLY');
+ assert.equal(result.oosEvaluation.timeWindowDiagnostics[1].window,'LATE');
+ assert.ok(Number.isFinite(result.oosEvaluation.timeWindowDiagnostics[0].selected.netRealizedPnl));
  assert.equal(result.oosEvaluation.improvedNetPnl,null);
  assert.equal(result.promotionAllowed,false);
 });

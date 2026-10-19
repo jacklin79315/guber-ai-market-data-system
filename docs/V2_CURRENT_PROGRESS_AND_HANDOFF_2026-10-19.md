@@ -342,3 +342,8 @@ group by artifact_kind;
 - `d3aa6e1b`：歷史研究工作將探索模式納入 job fingerprint 並傳入研究循環，確保兩種模式不能混用同一 checkpoint。
 - `07522093`：GitHub Actions 手動執行介面新增 `exploration_mode` 選項；`a5b64aa6`：補模式解析測試。最新 Railway 尚待驗收。
 - 目前尚未手動觸發真實 24m 雙組訓練。歷史研究每組須不同 job_id；舊 job checkpoint 可能因新增 fingerprint 欄位而不相容，切勿直接覆蓋。
+
+### 2026-10-20 P4 真實研究入口驗收與 OOS 狀態輸出修正
+- `2b152501` Railway **625/625 PASS**，部署 SUCCESS。手動 24m workflow 可選探索模式，並傳入實際歷史研究。
+- `4cd3b24d` 修正 `p4-backend-runner.mjs` 終端輸出過去把 `independentValidation` 固定寫 `false` 的問題；現在回報真實 `validationStatus`、`independentValidation`、`explorationMode`，並保持 `promotionAllowed:false` / `liveTrading:false`。Railway 最新版 BUILDING，未完成驗收。
+- GitHub connector 目前未提供新建 workflow_dispatch 的動作，故尚未實際啟動 24m 歷史研究；不能把單元測試當成真實研究結果。兩組需各自獨立 job_id、相同資料窗及 seed，並分別檢查資料完整性、已結算樣本量與 OOS。

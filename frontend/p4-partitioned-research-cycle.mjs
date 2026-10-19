@@ -21,6 +21,8 @@ export async function runP4PartitionedResearchCycle({candles,partitionOptions={}
  const metrics={champion:oos.champion.metrics,selected:oos.challenger.metrics};
  const minClosedTrades=30;
  const validationMidpointMs=partition.validation[Math.floor(partition.validation.length/2)].closeTime;
+ const validationEarly=partition.validation.slice(0,Math.floor(partition.validation.length/2));
+ const validationLate=partition.validation.slice(Math.floor(partition.validation.length/2));
  const sufficient=metrics.champion.closedTrades>=minClosedTrades&&metrics.selected.closedTrades>=minClosedTrades;
  return {...result,partition:{schemaVersion:partition.schemaVersion,boundary:partition.boundary,researchCount:partition.researchCount,validationCount:partition.validationCount,validationUntouched:true},independentValidation:true,promotionAllowed:false,validationStatus:sufficient?'OOS_EVALUATED':'OOS_INSUFFICIENT_CLOSED_TRADES',oosEvaluation:{validationMidpointMs,selectedVersion:selected,selectedBeforeOos:true,processedCandles:oos.challenger.processedCandles,metrics,minClosedTrades,sufficient,improvedNetPnl:sufficient?metrics.selected.netRealizedPnl>metrics.champion.netRealizedPnl:null,warning:'Untouched chronological holdout; research-only comparison, never automatic promotion.'}};
 }

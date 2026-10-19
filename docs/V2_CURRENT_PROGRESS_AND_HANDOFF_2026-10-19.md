@@ -239,3 +239,9 @@ group by artifact_kind;
 - `507c6a46`：24 個月重評 JSON 增加 `calibrationEligibility`，Railway 605/605 PASS 且部署 SUCCESS。
 - `9e75d1d6`：GitHub Actions 摘要顯示並驗證校準資格，增加依賴檔案的 push 觸發路徑；提交後查詢 commit workflow runs 暫無結果，**不得標記歷史重評 PASS 或宣稱已取得合格樣本數**。Railway 當時 DEPLOYING。
 - 已知每側 CLOSED 有數值勝率 58 筆，並不等於 58 筆完整可校準觀測；必須從新的歷史重評 artifact 取得 `eligible`、`excluded` 與時間窗驗證結果。研究模式，不更新權重、不自動下單。
+
+### 2026-10-19 Supabase 歷史 CLOSED 校準證據實查（唯讀 SQL）
+- 原始 24 個月診斷 artifact：Champion CLOSED=118，Challenger CLOSED=119；各有 58 筆數值 `proposalAtDecision.winProbability`。
+- CLOSED 中 `evidence.realizedWin` 明確 boolean = **0/118、0/119**；`evidence.closedAt` 數值時間戳記 = **0/118、0/119**。現行 `extractP4ClosedWinObservations` 同時要求有效機率、`decisionTime`、`closedAt`、`realizedWin`，故**目前可用校準樣本必為 0**，不是 58。
+- Champion CLOSED evidence 已確認有 `netPnl`、`exitReason`、`exitPrice`、`decisionTime`，但沒有 `realizedWin` 或 `closedAt`。**不得直接以 netPnl 正負推導並回填歷史 `realizedWin`，亦不得捏造 closedAt**；應先追查 replay CLOSED 事件原始結算時間與 outcome 定義、確定可驗證且無未來資訊洩漏後再新增證據輸出與新一輪 replay。
+- GitHub Actions commit `9e75d1d6` 的 workflow run 查詢當時為空；Railway `9e75d1d6` 部署 SUCCESS。以上 SQL 為直接資料庫觀察，不代表 Actions artifact 已完成重新驗證。

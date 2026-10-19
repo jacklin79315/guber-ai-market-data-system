@@ -47,6 +47,12 @@ export async function runP4HistoricalResearchJob({supabaseUrl,apiKey,fetchImpl=f
    if(!evidence||!Array.isArray(evidence.champion)||!Array.isArray(evidence.challenger))throw Error('P4 diagnostic evidence missing before durable artifact commit');
    const manifest={};
    const closedEvidenceAudit={champion:auditP4ClosedEvidence(evidence.champion),challenger:auditP4ClosedEvidence(evidence.challenger)};
+   // A new immutable round must not archive CLOSED trades without causal exit timestamps.
+   // Zero-PnL trades may legitimately have unknown binary outcome; do not invent one.
+   for(const side of ['champion','challenger']){
+    const audit=closedEvidenceAudit[side];
+    if(audit.closed>0&&audit.validCloseTime!==audit.closed)throw Error('P4 CLOSED causal timestamps incomplete before artifact commit: '+side);
+   }
    for(const [side,kind] of [['champion','CHAMPION_DIAGNOSTICS'],['challenger','CHALLENGER_DIAGNOSTICS']]){
     manifest[side]=await artifactStore.write({jobId,ownerToken,specFingerprint,iteration:x.iteration,kind,records:evidence[side]});
     const restored=await artifactStore.read({jobId,iteration:x.iteration,kind,manifest:manifest[side]});

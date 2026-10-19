@@ -12,6 +12,7 @@ export function assessP4ResearchFeedback({comparison,minClosedTrades=30,diagnost
  const champion=summarize(a),challenger=summarize(b);
  const sufficient=champion.closedTrades>=minClosedTrades&&challenger.closedTrades>=minClosedTrades;
  const risk=diagnosticAudit?.challenger?.actors?.Risk;
+ const baselineRisk=diagnosticAudit?.champion?.actors?.Risk;
  const actors=diagnosticAudit?.challenger?.actors;
  const blockingActors=actors?['Entry','Reward','Win','Risk','Time','Brain'].filter(name=>Number.isSafeInteger(actors[name]?.negative)&&actors[name].negative>0):[];
  const blockingRiskFault=blockingActors.includes('Risk');

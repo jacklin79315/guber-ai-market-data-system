@@ -105,3 +105,8 @@ group by artifact_kind;
 - 發現 `assessP4ExpertHistory` 先用 `String(...).replace(/[-_ ]/g,'').toLowerCase()` 正規化名稱，卻只在 `actorFor` 中定義駝峰 `winProbability` 與 `riskPosition`，造成 `win_probability`／`risk_position` 等格式無法識別；缺失的診斷證據不能推斷為 SOUND。
 - commit `8510c7bc` 補上正規化 `winprobability`、`riskposition` 對應，commit `1d1b83e9` 加入多種名稱回歸測試。**待 Railway 建置與既存歷史重評驗證**。
 - workflow `e7d8c911` 已設定歷史重評報告與 artifact，但此處尚未取得可核對的 GitHub Actions run ID 或 24 月重評統計，不能標記歷史重評 PASS。
+
+### P4 本輪部署及多重 Win FAULT 回歸測試
+- Railway deployment `71f9f359-4835-4d15-b6b7-9fff305d8adc`，commit `f280f7f4`：**SUCCESS**、healthcheck PASS、Node tests **596 pass / 0 fail**。
+- 檢查發現先前的「同 actor 多 FAULT」測試只產生一筆 Win FAULT，無法真正驗證重複歸因合併。commit `ae516fc4` 改用同時違反「負預期值」與「機率加權 EV 不一致」的證據，明確斷言合併前兩筆 Win FAULT，合併後一筆。**待新提交 CI／Railway 驗證**。
+- 24 月 immutable 歷史診斷 workflow 的實際 run ID、前後六專家覆蓋數據仍未取得；維持 P4 未驗收，研究模式不下單、不自動晉升。

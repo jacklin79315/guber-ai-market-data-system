@@ -121,3 +121,9 @@ group by artifact_kind;
 - `proposalAtDecision.expectedValue` 欄位有值：Champion 1167、Challenger 1170。注意「有值」不等於已校準／有預測效力。
 - `accountAtDecision.equity`、`committedCapital`、`allocation` 三欄皆有值：Champion 118、Challenger 119；僅代表 Risk 資金占用檢查的基本欄位齊備，尚須依動作／數值合法性判定能否歸因。其他紀錄可能為 WAIT／RETURN，不能把未滿足 APPROVE 檢查條件直接當作 Risk 缺陷。
 - 此 SQL 盤點**不包含**分段後重組的各 19／15 筆紀錄，**沒有**執行完整 SHA256 讀取與 JS `reassessP4PersistedDiagnostics`，也不是 GitHub Actions 重評結果。需完整報告才能評估六專家覆蓋率前後變化。
+
+### P4 研究資料按決策類型核對（非正式重評）
+- Supabase 唯讀核對既存 24 月診斷 artifact 的未分段紀錄：Champion 1227 = APPROVE 118 + WAIT 1109；Challenger 1231 = APPROVE 119 + WAIT 1112。
+- APPROVE 中三個 Risk 80% 資金占用規則必要欄位均為合法數值：Champion 118/118、Challenger 119/119；以 `(committedCapital+allocation)/equity > 0.800000001` 判斷，**兩組皆 0 筆違反**。這只代表已檢查 APPROVE 子集符合此單一 hard cap，不是所有 Risk 維度都 SOUND。
+- `expertHistory` 陣列長度：WAIT 均為 4 個步驟（Champion 1109／Challenger 1112），APPROVE 均為 6 個步驟（Champion 118／Challenger 119）。故不應以「WAIT 缺少 APPROVE 專用 Risk 欄位」推斷歷史資料缺失或診斷錯誤。
+- 尚有 Champion 19、Challenger 15 筆分段紀錄待 SHA256 驗證與重組，亦未執行完整 JS 重新歸因；不宣稱全部 1246 筆皆符合上述比例。

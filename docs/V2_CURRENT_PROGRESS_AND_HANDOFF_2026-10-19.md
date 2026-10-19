@@ -209,3 +209,8 @@ group by artifact_kind;
 - `1b87b898`–`892b2f8b` 的初版 Railway 測試為 597 pass / 2 fail，原因是 legacy research fixture 未提供 outcome；**不可當作通過**。
 - `a6761bf55f1fe91bb0c3c63fe2dfc0f0d519ce1b` 修復缺 outcome 的研究樣本相容性（不虛構分類），Railway deployment `438deb41-59a7-4ffd-ae9f-3b0a16e43c03` **SUCCESS，599 pass / 0 fail**。
 - `5e4bebb7beaefc1ac03ae3f328050650e910c0da` 加強 Actions Step Summary：必須存在 `decisionInputCoverage`、與 1246 records/side 對齊，分類合計一致，並輸出欄位覆蓋詳情；**尚待新 Actions artifact 實際驗證**。
+
+### P4 24 個月證據覆蓋報告驗收門檻（2026-10-19）
+- `a9463f36691068e4f694a1068d1ee59507083635` Railway deployment `11148f54-e14a-4ee8-a640-ba29d363cf24` SUCCESS，600 tests pass / 0 fail。
+- `83477921ac686ca4fd9e9052d554c7ab5f2d026d`：歷史重評 runner 除總量與 CLOSED/SHADOW/WAIT/RETURN 一致性外，要求 Entry.entryRange、Reward.expectedGain/expectedLoss/riskReward、Win.winProbability/expectedValue、Time.expectedHoldingMs 每個 outcome 的統計欄位存在且為整數；防止缺欄位報告誤判 PASS。
+- 待辦：確認新版 GitHub Actions artifact 的真實 24m `decisionInputCoverage`，根據有效資料數量決定診斷研究優先順序；不得以欄位存在當作 SOUND，亦不得自動更新模型或下單。

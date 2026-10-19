@@ -5,7 +5,7 @@ on:
       research_scope:
         description: "SMOKE (up to 500 candles) or HISTORICAL_24M (BTC 1h, full 24 months)"
         required: true
-        default: "SMOKE"
+        default: "HISTORICAL_24M"
         type: choice
         options: ["SMOKE", "HISTORICAL_24M"]
       exploration_mode:
@@ -15,25 +15,29 @@ on:
         type: choice
         options: ["DIAGNOSTIC_GUIDED", "UNGUIDED"]
       job_id:
-        description: "Unique research job id (letters, digits, underscore, hyphen)"
-        required: true
+        description: "Optional unique job id; leave empty to generate automatically"
+        required: false
+        default: ""
         type: string
       from_ms:
         description: "UTC aligned first candle open timestamp (milliseconds)"
         required: true
+        default: "1729353600000"
         type: string
       to_ms:
         description: "UTC aligned last candle open timestamp (milliseconds)"
         required: true
+        default: "1792422000000"
         type: string
       as_of_ms:
         description: "Historical cutoff, strictly after final candle close (milliseconds)"
         required: true
+        default: "1792425600000"
         type: string
       iterations:
         description: "Research iterations (1 to 3)"
         required: true
-        default: "1"
+        default: "3"
         type: choice
         options: ["1", "2", "3"]
 permissions:
@@ -53,7 +57,7 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       P4_RESEARCH_CONFIRM: RESEARCH_ONLY
-      P4_JOB_ID: ${{ inputs.job_id }}
+      P4_JOB_ID: ${{ inputs.job_id || format('p4_btc24m_{0}_{1}', inputs.exploration_mode, github.run_id) }}
       P4_EXPLORATION_MODE: ${{ inputs.exploration_mode }}
       P4_SYMBOL: BTCUSDT
       P4_TIMEFRAME: 1h

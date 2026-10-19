@@ -52,7 +52,7 @@
 5. 檢查規劃書與實作是否偏離。階段性實際進展請**更新本檔及根目錄交接入口**；資料庫 schema 變更時更新字典增量，不要修改 10/17 原始快照冒充當時資料。
 
 ## 4. Supabase 資料庫字典：10/19 即時核對增量
-專案 ID `xqtsmrzxixkecvaovzfy`，schema `public`、`ai_v2`。2026-10-19 查 `information_schema.columns`：**public 12 表、ai_v2 20 表，合計 32 表**。原 10/17 字典為 public 5 + ai_v2 20 = 25 表；新增 7 張 public 表（4 張 p1 訓練控制相關、6 張 p4 研究相關，但同時原 public 基礎表數差異須以即時查詢為準；請直接核對完整清單，不以算術推論來源）。
+專案 ID `xqtsmrzxixkecvaovzfy`，schema `public`、`ai_v2`。2026-10-19 即時查詢 `information_schema.columns`：**public 15 表、ai_v2 20 表，共 35 表**。10/17 的字典是 public 5 + ai_v2 20 = 25 表的歷史快照，後續新增 public 10 表（P1 四表、P4 六表）。
 
 當前 public P4 六表與欄位（直接查 `information_schema`）：
 - `p4_diagnostic_research_summaries`: `job_id text, summary jsonb, summary_sha256 text, created_at timestamptz`
@@ -62,7 +62,7 @@
 - `p4_research_leases`: `job_id text, owner_token text, acquired_at timestamptz, expires_at timestamptz`
 - `p4_research_rounds`: `job_id text, iteration integer, spec_fingerprint text, round_result jsonb, committed_at timestamptz`
 
-**修正計數說明**：10/19 即時查詢的 public 表為 `data_quality_issues`, `ingestion_jobs`, `market_data_watchlist`, `market_features`, `raw_candles`, `p1_training_configuration`, `p1_training_requests`, `p1_training_runs`, `p1_training_settings`, 以及上述六張 `p4_*`，**共 15 張 public**，加 `ai_v2` 20 張，共 **35 張**；以此逐表清單為準，前一段 12/32 是錯誤的暫時計數，**不得沿用**。舊 25 表字典仍是歷史快照。請在後續更新時直接取完整清單核算。
+10/19 public 完整表清單：`data_quality_issues`, `ingestion_jobs`, `market_data_watchlist`, `market_features`, `raw_candles`, `p1_training_configuration`, `p1_training_requests`, `p1_training_runs`, `p1_training_settings`, `p4_diagnostic_research_summaries`, `p4_diagnostic_research_tasks`, `p4_research_artifact_chunks`, `p4_research_checkpoints`, `p4_research_leases`, `p4_research_rounds`。
 
 P4 artifacts 查詢範例：
 ```sql

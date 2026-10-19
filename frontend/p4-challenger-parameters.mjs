@@ -32,6 +32,13 @@ export function generateChallengerParameters({parent,seed,iteration=0,preferredA
  }
  // Search all one-tick neighbors before admitting exhaustion; never recycle a known candidate.
  for(const key of preferredKeys){const {min,max,step}=SPECS[key],at=Math.round((current[key]-min)/step),ticks=Math.round((max-min)/step);for(const direction of [-1,1]){const index=at+direction;if(index<0||index>ticks)continue;const trial={...current,[key]:round(min+index*step)};if(unseen(trial))return {parameters:validateTrainingParameters(trial),mutatedParameter:key,from:parent[key],to:trial[key],seed,iteration,probeSource:'UNSEEN_NEIGHBOR'};}}
- return {parameters:current,mutatedParameter:null,from:null,to:null,seed,iteration,probeSource:'NEIGHBORS_EXHAUSTED'};
+ // When immediate neighbors are exhausted, expand the radius on a single parameter.
+ // This escapes a local oscillation without changing multiple expert parameters at once.
+ for(let radius=2;radius<=1000;radius++){
+  let possible=false;
+  for(const key of preferredKeys){const {min,max,step}=SPECS[key],at=Math.round((current[key]-min)/step),ticks=Math.round((max-min)/step);for(const direction of [-1,1]){const index=at+direction*radius;if(index<0||index>ticks)continue;possible=true;const trial={...current,[key]:round(min+index*step)};if(unseen(trial))return {parameters:validateTrainingParameters(trial),mutatedParameter:key,from:parent[key],to:trial[key],seed,iteration,probeSource:'UNSEEN_RADIUS_EXPANSION'};}}
+  if(!possible)break;
+ }
+ return {parameters:current,mutatedParameter:null,from:null,to:null,seed,iteration,probeSource:'SEARCH_SPACE_EXHAUSTED'};
 }
 export const DEFAULT_TRAINING_PARAMETERS=Object.freeze({entryLookback:20,entryThreshold:0.001,rewardAtrPeriod:14,rewardStopAtr:1.5,rewardTakeAtr:3});

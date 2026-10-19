@@ -7,15 +7,16 @@ export function validateTrainingParameters(params){
  for(const k of keys){const {min,max,step}=SPECS[k],v=params[k];if(!Number.isFinite(v)||v<min-1e-9||v>max+1e-9||Math.abs((v-min)/step-Math.round((v-min)/step))>1e-6)throw Error('invalid parameter '+k)}
  return structuredClone(params);
 }
-export function generateChallengerParameters({parent,seed,iteration=0}={}){
+export function generateChallengerParameters({parent,seed,iteration=0,preferredActor=null}={}){
  const current=validateTrainingParameters(parent);
  if(!Number.isSafeInteger(seed)||seed<0||!Number.isSafeInteger(iteration)||iteration<0)throw Error('invalid mutation seed');
  // Integer-only deterministic mixing, independent of Math.random and process state.
  let x=(seed^(Math.imul(iteration+1,0x9e3779b1)))>>>0;
  const next=()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return x>>>0};
- const offset=next()%keys.length;
- for(let j=0;j<keys.length;j++){
-  const key=keys[(offset+j)%keys.length],{min,max,step}=SPECS[key];
+ const preferredKeys=preferredActor==='Entry'?keys.filter(k=>k.startsWith('entry')):preferredActor==='Reward'?keys.filter(k=>k.startsWith('reward')):keys;
+ const offset=next()%preferredKeys.length;
+ for(let j=0;j<preferredKeys.length;j++){
+  const key=preferredKeys[(offset+j)%preferredKeys.length],{min,max,step}=SPECS[key];
   const ticks=Math.round((max-min)/step),at=Math.round((current[key]-min)/step);
   const direction=(next()&1)?1:-1;
   const candidate=at+direction;

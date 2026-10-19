@@ -59,3 +59,16 @@ test('unguided control ignores diagnostic focus and keeps reproducible mutation'
  assert.deepEqual(a.iterations.map(x=>x.candidate.parameters),b.iterations.map(x=>x.candidate.parameters));
  assert.equal(a.promotionAllowed,false);
 });
+
+test('guided cycle uses prior measured research feedback for a directed probe when expert diagnosis is unresolved',async()=>{
+ const result=await runP4ResearchCycle({...base,iterations:2,onIteration:round=>{
+  if(round.iteration===1)round.feedback.status='RESEARCH_EVIDENCE_ONLY';
+ }});
+ const first=result.iterations[0].candidate;
+ const second=result.iterations[1];
+ assert.equal(second.preferredActor,null);
+ assert.equal(second.directedProbe?.parameter,first.mutatedParameter);
+ assert.equal(second.directedProbe?.direction,first.to>first.from?-1:1);
+ assert.equal(second.candidate.probeSource,'PRIOR_SAME_WINDOW_RESULT');
+ assert.equal(result.promotionAllowed,false);
+});

@@ -85,8 +85,8 @@ export function assessP4ProposalInvariants({evidence}={}){
  }
  // An explicitly computed negative expectancy cannot justify an approval.
  // Do not infer negativity when expectancy is absent or uncalibrated.
- if(typeof p.expectedValue==='number'&&Number.isFinite(p.expectedValue)&&p.expectedValue<0&&!results.some(x=>x.actor==='Reward')){
-  results.push({actor:'Reward',quality:'FAULT',responsibility:'PRIMARY',reason:'Approved proposal has explicitly negative expected value',evidenceKeys:['proposalAtDecision']});
+ if(typeof p.expectedValue==='number'&&Number.isFinite(p.expectedValue)&&p.expectedValue<0&&!results.some(x=>x.actor==='Win')){
+  results.push({actor:'Win',quality:'FAULT',responsibility:'PRIMARY',reason:'Win-owned expected value is explicitly negative in an approved proposal; approval gate responsibility requires separate review',evidenceKeys:['proposalAtDecision']});
  }
  const prob=p.winProbability,ev=p.expectedValue;
  if([prob,ev,gain,loss].every(v=>typeof v==='number'&&Number.isFinite(v))&&prob>=0&&prob<=1&&loss>0&&gain>=0){

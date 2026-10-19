@@ -72,3 +72,14 @@ test('Risk WAIT claiming negative expectancy despite positive EV is attributable
 test('Risk WAIT with unknown EV cannot earn a diagnostic rating',()=>{
  assert.deepEqual(assessP4ExpertHistory({evidence:{action:'WAIT',proposalAtDecision:{expectedValue:null},expertHistory:[{expert:'riskPosition',action:'WAIT',reason:'NON_POSITIVE_EXPECTANCY'}]}}),[]);
 });
+
+test('non-positive expected loss is Reward fault independent of realized PnL',()=>{
+ const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{expectedLoss:0},netPnl:500}});
+ assert.equal(findings.some(x=>x.actor==='Reward'&&x.quality==='FAULT'),true);
+});
+test('negative risk reward is Reward fault; missing ratio remains unknown',()=>{
+ const bad=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{riskReward:-2}}});
+ assert.equal(bad.some(x=>x.actor==='Reward'&&x.quality==='FAULT'),true);
+ const missing=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{}}});
+ assert.equal(missing.some(x=>x.actor==='Reward'),false);
+});

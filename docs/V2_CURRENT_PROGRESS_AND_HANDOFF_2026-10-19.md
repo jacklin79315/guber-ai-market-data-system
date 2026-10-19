@@ -311,3 +311,9 @@ group by artifact_kind;
 - `20b94daa`：研究每輪紀錄 `preferredActor`（Entry/Reward/null），並能從上輪已存的比較診斷紀錄取得探索焦點，方便追蹤哪種診斷引導了哪次參數變異。
 - `b8cbc090`：新增兩輪整合測試，第一輪模擬已歸因 Entry 負面，驗證第二輪只變異 Entry 所屬參數、正式 Champion 不變。最新 Railway 尚 BUILDING，未宣稱測試通過。
 - 下一步：確定跨輪整合測試通過，再做診斷引導與未引導探索的同資料比較、真實歷史 OOS 測試；目前不聲稱 AI 已達穩定盈利。
+
+### 2026-10-19 P4 跨輪診斷傳遞修復
+- `b8cbc090` 跨輪 Entry 測試揭露下一輪錯讀未更新的 ledger 診斷資料，Railway 619/618 PASS/1 FAIL。
+- `cfe66dbc` 改由上一輪已保存的 `ledgerSnapshot` 優先取得診斷，Railway **619/619 PASS**，部署進行中。
+- `60877a5e` 補上 Reward 診斷引導下一輪 Reward 參數探索的跨輪測試，Railway 尚待建置驗收。
+- 目前實現「已歸因問題 → 下一輪參數家族選擇 → 研究回放」初步閉環；仍未證明參數方向最佳、OOS 改善或穩定獲利，也不自動下單／升級 Champion。

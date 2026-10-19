@@ -35,3 +35,16 @@ test('Reward diagnosis focuses the following round on Reward parameters',async()
  assert.ok(result.iterations[1].candidate.mutatedParameter.startsWith('reward'));
  assert.equal(result.promotionAllowed,false);
 });
+
+test('equal baseline and challenger Entry faults do not steer next mutation',async()=>{
+ let count=0;
+ const result=await runP4ResearchCycle({...base,iterations:2,onIteration:round=>{
+  if(++count===1){const audit=round.ledgerSnapshot.runs.at(-1).result.comparison.diagnosticAudit;
+   audit.champion.actors.Entry.negative=3;
+   audit.challenger.actors.Entry.negative=3;
+   audit.challenger.actors.Reward.negative=0;
+  }
+ }});
+ assert.equal(result.iterations[1].preferredActor,null);
+ assert.equal(result.promotionAllowed,false);
+});

@@ -17,7 +17,7 @@ export function parseP4RunnerOptions(env=process.env){
  const fromOpenTime=Number(env.P4_FROM_MS),toOpenTime=Number(env.P4_TO_MS),asOfMs=Number(env.P4_AS_OF_MS);
  const iterations=Number(env.P4_ITERATIONS||1),seed=Number(env.P4_SEED||7);
  const step={'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000}[timeframe];
- if(![fromOpenTime,toOpenTime,asOfMs].every(Number.isSafeInteger)||fromOpenTime<0||toOpenTime<fromOpenTime+step*24||asOfMs<=toOpenTime+step-1||fromOpenTime%step||toOpenTime%step||!Number.isSafeInteger(iterations)||iterations<1||iterations>3||!Number.isSafeInteger(seed)||seed<0)throw Error('invalid P4 bounded research window');
+ if(![fromOpenTime,toOpenTime,asOfMs].every(Number.isSafeInteger)||fromOpenTime<0||toOpenTime<fromOpenTime+step*24||asOfMs<=toOpenTime+step-1||fromOpenTime%step||toOpenTime%step||!Number.isSafeInteger(iterations)||iterations<1||iterations>24||!Number.isSafeInteger(seed)||seed<0)throw Error('invalid P4 bounded research window');
  const explorationMode=env.P4_EXPLORATION_MODE||'DIAGNOSTIC_GUIDED';
  if(!['DIAGNOSTIC_GUIDED','UNGUIDED'].includes(explorationMode))throw Error('invalid P4_EXPLORATION_MODE');
  const partitioned=env.P4_PARTITIONED==='TRUE';
@@ -27,7 +27,7 @@ export function parseP4RunnerOptions(env=process.env){
  if(!['SMOKE','HISTORICAL_24M'].includes(scope))throw Error('invalid P4_RESEARCH_SCOPE');
  if(scope==='SMOKE'&&expectedCandles>500)throw Error('P4 initial runner limited to 500 candles');
  if(scope==='HISTORICAL_24M'){
-  if(env.P4_RESEARCH_CONFIRM!=='RESEARCH_ONLY'||timeframe!=='1h'||symbol!=='BTCUSDT'||iterations>3||expectedCandles<17000||expectedCandles>18000)throw Error('P4 24-month research requires BTCUSDT 1h, 17000-18000 candles and at most 3 iterations');
+  if(env.P4_RESEARCH_CONFIRM!=='RESEARCH_ONLY'||timeframe!=='1h'||symbol!=='BTCUSDT'||iterations>24||expectedCandles<17000||expectedCandles>18000)throw Error('P4 24-month research requires BTCUSDT 1h, 17000-18000 candles and at most 24 iterations');
   if(!partitioned)throw Error('P4 24-month research requires chronological partitioned validation');
  }
  return {jobId,symbol,timeframe,fromOpenTime,toOpenTime,asOfMs,iterations,seed,expectedCandles,partitioned,scope,explorationMode};

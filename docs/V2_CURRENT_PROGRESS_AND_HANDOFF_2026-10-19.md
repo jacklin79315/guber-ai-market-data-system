@@ -335,3 +335,10 @@ group by artifact_kind;
 - `3edc90eb` 新增 `frontend/p4-guidance-ab-comparison.mjs`，同一輸入、同一 seed、同一時間切分，依序執行 DIAGNOSTIC_GUIDED 和 UNGUIDED，兩組均完成 OOS 且各自有足夠已結算樣本才回傳 OOS 損益差；禁止自動 Champion promotion。
 - `6655d310` 新增 160 根 1h K 線 WAIT fixture 的雙組 OOS 測試，預期回報樣本不足而非虛構勝者。Railway 尚 BUILDING，未宣稱通過。
 - 未執行真實 24 個月歷史雙組對照，尚無證據認定診斷引導勝過一般探索。
+
+### 2026-10-20 P4 實際歷史研究入口模式串接
+- `edb9ec7a` Railway **624/624 PASS**、部署 SUCCESS；配對 OOS 對照研究程式已具備。
+- 查明既有 `.github/workflows/p4-manual-research.yml` 與 `p4-backend-runner.mjs` 尚未提供模式選擇；`6791e782` 新增後端 `P4_EXPLORATION_MODE` 驗證與傳入。
+- `d3aa6e1b`：歷史研究工作將探索模式納入 job fingerprint 並傳入研究循環，確保兩種模式不能混用同一 checkpoint。
+- `07522093`：GitHub Actions 手動執行介面新增 `exploration_mode` 選項；`a5b64aa6`：補模式解析測試。最新 Railway 尚待驗收。
+- 目前尚未手動觸發真實 24m 雙組訓練。歷史研究每組須不同 job_id；舊 job checkpoint 可能因新增 fingerprint 欄位而不相容，切勿直接覆蓋。

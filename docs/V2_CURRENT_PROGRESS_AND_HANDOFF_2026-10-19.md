@@ -95,3 +95,8 @@ group by artifact_kind;
 - Railway `uber-v2-control-center` commit `d15c1fe75db7ab0a3fabbf6b89b2c99649af5ac9`，deployment `cffbcd1c-19ad-4692-a981-73712c6ba85f` 狀態 **SUCCESS**；建置測試輸出 **594 pass**。前一版 `dd75f278` 因新增測試檢出合併理由被拆成字元而失敗（593 pass、1 fail），已在 `d15c1fe7` 修復。
 - 此驗證證明程式測試／Railway 建置成功，**不是** GitHub 歷史重評 workflow 成功或歷史歸因統計已改變。GitHub Actions 新 run ID 與 24 月前後統計仍待查證。
 - 另查 Supabase `p4_diagnostic_research_summaries`，最新可見 `p4_auto_20261019_d_job_1` 於 2026-10-18 22:11 UTC 已存檔，status `OOS_RESEARCH_EVALUATED`，followUpPlan 標示 `SELECTED_CHALLENGER_DID_NOT_IMPROVE_OOS`，**不可誤當 OOS 提升或正式晉升**。此為既存研究摘要，不是本次修正新跑的 24 月歷史重評。
+
+### P4 24 月歷史重評可觀測性更新
+- 回歸測試 commit `6f4737ab` Railway 部署 `ef5b12f3-91ed-494f-b2ed-7546f926c00d` **SUCCESS**，建置測試 **595 pass / 0 fail**；涵蓋舊 SOUND 與新 FAULT 衝突時不覆寫原始診斷。
+- GitHub workflow `.github/workflows/p4-existing-diagnostic-reassessment.yml` commit `e7d8c911`：重新評估輸出存成 `p4-reassessment-report.json`，成功後在 GitHub Actions Step Summary 顯示 Champion/Challenger before/after 與各角色 SOUND/FAULT/UNKNOWN、missingAfter；同時上傳 14 天保留的報告 artifact。保留 SHA256 驗證、唯讀、無模型更新與無真實下單。
+- **待驗證**：新 workflow 的實際 run ID、執行結論、24 月完整歷史 before/after 數據；不能僅因 workflow 提交成功就標記完成，也不可拿既存 OOS 研究摘要代替本次重評。

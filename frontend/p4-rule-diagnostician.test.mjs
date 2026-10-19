@@ -83,3 +83,16 @@ test('negative risk reward is Reward fault; missing ratio remains unknown',()=>{
  const missing=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{}}});
  assert.equal(missing.some(x=>x.actor==='Reward'),false);
 });
+
+test('Reward arithmetic contradiction is attributed without realized PnL',()=>{
+ const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{expectedGain:12,expectedLoss:4,riskReward:2},netPnl:100}});
+ assert.equal(findings.some(x=>x.actor==='Reward'&&x.quality==='FAULT'),true);
+});
+test('Win expected value contradiction is attributed without hindsight',()=>{
+ const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{winProbability:0.6,expectedGain:10,expectedLoss:5,expectedValue:5},netPnl:-100}});
+ assert.equal(findings.some(x=>x.actor==='Win'&&x.quality==='FAULT'),true);
+});
+test('consistent proposal mathematics does not manufacture SOUND verdicts',()=>{
+ const findings=assessP4ProposalInvariants({evidence:{action:'APPROVE',proposalAtDecision:{winProbability:0.6,expectedGain:10,expectedLoss:5,riskReward:2,expectedValue:4}}});
+ assert.deepEqual(findings,[]);
+});

@@ -72,3 +72,11 @@ test('guided cycle uses prior measured research feedback for a directed probe wh
  assert.equal(second.candidate.probeSource,'PRIOR_SAME_WINDOW_RESULT');
  assert.equal(result.promotionAllowed,false);
 });
+
+test('unguided mode never adopts a measured directional probe',async()=>{
+ const result=await runP4ResearchCycle({...base,iterations:2,explorationMode:'UNGUIDED',onIteration:round=>{
+  if(round.iteration===1)round.feedback.status='RESEARCH_EVIDENCE_ONLY';
+ }});
+ assert.equal(result.iterations[1].directedProbe,null);
+ assert.equal(result.iterations[1].candidate.probeSource,undefined);
+});

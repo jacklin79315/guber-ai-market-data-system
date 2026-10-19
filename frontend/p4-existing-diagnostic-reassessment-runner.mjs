@@ -48,6 +48,12 @@ for(const side of ['champion','challenger']){
   const slot=inputs.byOutcome[outcome];
   if(!slot||slot.records!==report.outcomes[outcome]||slot.approved>slot.records||slot.proposalPresent>slot.records||slot.expertHistoryPresent>slot.records)throw Error('invalid input outcome: '+side+'/'+outcome);
   for(const fields of Object.values(slot.fieldCounts??{}))for(const count of Object.values(fields))if(!Number.isInteger(count)||count<0||count>slot.proposalPresent)throw Error('invalid causal field count: '+side+'/'+outcome);
+  const expectedFields={Entry:['entryRange'],Reward:['expectedGain','expectedLoss','riskReward'],Win:['winProbability','expectedValue'],Time:['expectedHoldingMs']};
+  for(const [actor,keys] of Object.entries(expectedFields)){
+   if(!slot.fieldCounts||!Object.hasOwn(slot.fieldCounts,actor))throw Error('missing causal actor: '+side+'/'+outcome+'/'+actor);
+   for(const key of keys)if(!Number.isInteger(slot.fieldCounts[actor]?.[key]))throw Error('missing causal field: '+side+'/'+outcome+'/'+actor+'/'+key);
+  }
+
  }
 
  const by=report.byOutcome;

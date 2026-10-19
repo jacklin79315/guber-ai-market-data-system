@@ -43,6 +43,7 @@ const decisionInputCoverage=Object.fromEntries(['champion','challenger'].map(lab
 for(const side of ['champion','challenger']){
  const manifest=manifests[side],report=summary[side];
  if(manifest.recordCount!==1246||report?.sourceRecords!==manifest.recordCount)throw Error('incomplete 24-month historical reassessment: '+side);
+ if(manifest.chunkCount!==(side==='champion'?254:201)||manifest.fragmented!==true)throw Error('unexpected immutable artifact manifest: '+side);
  if(report.before.reviewed+report.before.unresolved!==report.sourceRecords||report.after.reviewed+report.after.unresolved!==report.sourceRecords)throw Error('invalid reassessment coverage totals: '+side);
  if(report.modelUpdateApplied!==false)throw Error('unsafe model update flag: '+side);
  const inputs=decisionInputCoverage[side];

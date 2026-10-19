@@ -73,6 +73,14 @@ export function assessP4ProposalInvariants({evidence}={}){
  if(Array.isArray(p.entryRange)&&p.entryRange.length===2&&p.entryRange.every(Number.isFinite)&&p.entryRange[0]>p.entryRange[1]){
   results.push({actor:'Entry',quality:'FAULT',responsibility:'PRIMARY',reason:'Approved proposal entry range has reversed bounds',evidenceKeys:['proposalAtDecision']});
  }
+ // Non-positive declared loss cannot define a valid reward-to-risk denominator.
+ // Attribute only explicit numeric contradictions, never missing fields.
+ if(typeof p.expectedLoss==='number'&&Number.isFinite(p.expectedLoss)&&p.expectedLoss<=0){
+  results.push({actor:'Reward',quality:'FAULT',responsibility:'PRIMARY',reason:'Approved proposal declares non-positive expected loss, invalidating reward-to-risk denominator',evidenceKeys:['proposalAtDecision']});
+ }
+ if(typeof p.riskReward==='number'&&Number.isFinite(p.riskReward)&&p.riskReward<0){
+  results.push({actor:'Reward',quality:'FAULT',responsibility:'PRIMARY',reason:'Approved proposal declares negative risk/reward ratio',evidenceKeys:['proposalAtDecision']});
+ }
  const rr=p.riskReward, gain=p.expectedGain,loss=p.expectedLoss;
  if([rr,gain,loss].every(v=>typeof v==='number'&&Number.isFinite(v))&&loss>0&&gain>=0){
   if(Math.abs(rr-gain/loss)>1e-6*Math.max(1,Math.abs(rr)))results.push({actor:'Reward',quality:'FAULT',responsibility:'PRIMARY',reason:'Recorded risk/reward contradicts expected gain divided by expected loss',evidenceKeys:['proposalAtDecision']});

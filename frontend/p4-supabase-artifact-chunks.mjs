@@ -23,9 +23,10 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
     let response;
     for(let attempt=0;attempt<3;attempt++){
      try{response=await fetchImpl(page.toString(),{method:'GET',headers,signal:AbortSignal.timeout(60000)});}
-     catch(error){if(attempt===2||!/fetch|timeout|abort|network/i.test(String(error?.message??error)))throw error;continue;}
+     catch(error){if(attempt===2||!/fetch|timeout|abort|network/i.test(String(error?.message??error)))throw error;await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));continue;}
      if(response.ok)break;
      if(attempt===2||![429,500,502,503,504].includes(response.status))throw Error('P4 artifact read failed: '+response.status+' kind='+kind+' offset='+offset+' requestId='+(response.headers.get('x-request-id')??'unknown'));
+     await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
     }
     const batch=await response.json();
     if(!Array.isArray(batch)||batch.length!==Math.min(5,manifest.chunkCount-offset))throw Error('P4 artifact chunk count mismatch');
@@ -89,12 +90,13 @@ export function createP4ArtifactChunkStore({supabaseUrl,serviceRoleKey,fetchImpl
     const hash=createHash('sha256').update(stableJson(payload)).digest('hex');
     const body=JSON.stringify({p_job_id:jobId,p_owner_token:ownerToken,p_iteration:iteration,p_spec_fingerprint:specFingerprint,p_artifact_kind:kind,p_chunk_index:index,p_payload:payload,p_payload_sha256:hash});
     let saved=false;
-    for(let attempt=0;attempt<3&&!saved;attempt++){
+    for(let attempt=0;attempt<6&&!saved;attempt++){
      let response;
      try{response=await fetchImpl(url.toString(),{method:'POST',headers,body,signal:AbortSignal.timeout(60000)});}
-     catch(error){if(attempt===2||!/fetch|timeout|abort|network/i.test(String(error?.message??error)))throw error;continue;}
+     catch(error){if(attempt===5||!/fetch|timeout|abort|network/i.test(String(error?.message??error)))throw error;await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));continue;}
      if(response.ok){if(await response.json()!==true)throw Error('P4 artifact chunk commit denied');saved=true;break;}
-     if(![429,500,502,503,504].includes(response.status)||attempt===2)throw Error('P4 artifact chunk commit failed: '+response.status+' index='+index);
+     if(![429,500,502,503,504].includes(response.status)||attempt===5)throw Error('P4 artifact chunk commit failed: '+response.status+' index='+index);
+     await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
     }
    }
    return {fragmented,chunkCount:chunks.length,recordCount:records.length,chunkHashes:chunks.map(payload=>createHash('sha256').update(stableJson(payload)).digest('hex'))};

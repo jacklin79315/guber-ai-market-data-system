@@ -46,7 +46,7 @@ test('P4 readback rejects manifest hash mismatch',async()=>{
 });
 
 test('P4 chunk upload resumes after partial failure without changing prior chunks',async()=>{
- const chunks=new Map();let failuresRemaining=3;
+ const chunks=new Map();let failuresRemaining=6;
  const fetchImpl=async(_url,opts)=>{
   if(opts.method==='POST'){
    const b=JSON.parse(opts.body);
